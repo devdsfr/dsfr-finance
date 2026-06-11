@@ -114,6 +114,7 @@ func main() {
 		auth.GET("/activity", activityH.List)
 	}
 
+	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
 	log.Printf("server listening on :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)

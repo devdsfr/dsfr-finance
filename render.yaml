@@ -1,0 +1,44 @@
+databases:
+  - name: finance-db
+    databaseName: finance
+    user: finance
+    plan: free
+
+services:
+  # ── Backend Go ──────────────────────────────────────────────────────────────
+  - type: web
+    name: finance-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finance-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SPENDING_ALERT_PCT
+        value: "80"
+      - key: APP_ENV
+        value: production
+      - key: STORAGE_ENDPOINT
+        value: ""
+      - key: SMTP_HOST
+        value: ""
+      - key: PORT
+        value: "8080"
+    healthCheckPath: /api/v1/health
+
+  # ── Frontend Angular ─────────────────────────────────────────────────────
+  - type: web
+    name: finance-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npx serve -s dist/dsfr-finance/browser -l 4200
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
