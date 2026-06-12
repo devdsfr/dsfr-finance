@@ -20,6 +20,8 @@ services:
         value: ""
       - key: PORT
         value: "8080"
+      - key: CORS_ORIGINS
+        value: "https://finance-frontend-3tf6.onrender.com"
     healthCheckPath: /api/v1/health
 
   - type: web

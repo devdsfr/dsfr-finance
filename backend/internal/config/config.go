@@ -22,6 +22,7 @@ type Config struct {
 	SMTPFrom          string
 	SpendingAlertPct  float64
 	AppEnv            string
+	CORSOrigins       string
 }
 
 func Load() *Config {
@@ -45,6 +46,7 @@ func Load() *Config {
 		SMTPFrom:         getEnv("SMTP_FROM", "no-reply@finance.local"),
 		SpendingAlertPct: alertPct,
 		AppEnv:           getEnv("APP_ENV", "development"),
+		CORSOrigins:      getEnv("CORS_ORIGINS", "http://localhost:4200"),
 	}
 }
 
