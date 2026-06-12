@@ -144,7 +144,7 @@ export class TransactionListComponent implements OnInit {
   page = signal(1);
   limit = 20;
 
-  filters: Record<string, any> = { search: '', type: '', paid: '', date_from: '', date_to: '' };
+  filters = { search: '', type: '', paid: '', date_from: '', date_to: '' };
 
   get totalPages(): () => number {
     return () => Math.max(1, Math.ceil(this.total() / this.limit));
@@ -209,3 +209,4 @@ export class TransactionListComponent implements OnInit {
     this.load();
   }
 }
+                     
