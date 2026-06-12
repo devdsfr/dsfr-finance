@@ -209,4 +209,3 @@ export class TransactionListComponent implements OnInit {
     this.load();
   }
 }
-                     
