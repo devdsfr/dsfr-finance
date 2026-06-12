@@ -54,7 +54,7 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:4200", "https://app.dsfr-finance.com"},
+		AllowOrigins:     []string{"http://localhost:4200", "https://app.dsfr-finance.com", "https://finance-frontend-3tf6.onrender.com"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
