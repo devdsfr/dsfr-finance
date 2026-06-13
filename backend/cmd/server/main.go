@@ -117,4 +117,39 @@ func main() {
 		auth.PATCH("/notifications/:id/read", notifH.MarkRead)
 		auth.POST("/notifications/read-all", notifH.MarkAllRead)
 		auth.GET("/alert-configs", notifH.GetAlertConfigs)
-		auth.PUT("/alert-con
+		auth.PUT("/alert-configs", notifH.UpsertAlertConfig)
+
+		// Activity log — AC-AT-05
+		auth.GET("/activity", activityH.List)
+
+		// Accounts
+		auth.GET("/accounts", accountH.List)
+		auth.POST("/accounts", accountH.Create)
+		auth.PUT("/accounts/:id", accountH.Update)
+		auth.DELETE("/accounts/:id", accountH.Delete)
+
+		// Credit Cards
+		auth.GET("/credit-cards", creditCardH.List)
+		auth.POST("/credit-cards", creditCardH.Create)
+		auth.PUT("/credit-cards/:id", creditCardH.Update)
+		auth.DELETE("/credit-cards/:id", creditCardH.Delete)
+
+		// Categories
+		auth.GET("/categories", categoryH.List)
+		auth.POST("/categories", categoryH.Create)
+		auth.PUT("/categories/:id", categoryH.Update)
+		auth.DELETE("/categories/:id", categoryH.Delete)
+
+		// Workspace
+		auth.GET("/workspace", workspaceH.GetInfo)
+		auth.GET("/workspace/members", workspaceH.GetMembers)
+		auth.POST("/workspace/members/invite", workspaceH.InviteMember)
+		auth.DELETE("/workspace/members/:user_id", workspaceH.RemoveMember)
+	}
+
+	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	log.Printf("server listening on :%s", cfg.Port)
+	if err := r.Run(":" + cfg.Port); err != nil {
+		log.Fatal(err)
+	}
+}
