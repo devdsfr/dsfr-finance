@@ -49,6 +49,10 @@ func main() {
 	spendingH := handlers.NewSpendingHandler(spendingRepo)
 	notifH := handlers.NewNotificationHandler(notifSvc)
 	activityH := handlers.NewActivityHandler(activitySvc)
+	accountH := handlers.NewAccountHandler(db)
+	creditCardH := handlers.NewCreditCardHandler(db)
+	categoryH := handlers.NewCategoryHandler(db)
+	workspaceH := handlers.NewWorkspaceHandler(db)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -113,15 +117,4 @@ func main() {
 		auth.PATCH("/notifications/:id/read", notifH.MarkRead)
 		auth.POST("/notifications/read-all", notifH.MarkAllRead)
 		auth.GET("/alert-configs", notifH.GetAlertConfigs)
-		auth.PUT("/alert-configs", notifH.UpsertAlertConfig)
-
-		// Activity log — AC-AT-05
-		auth.GET("/activity", activityH.List)
-	}
-
-	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
-	log.Printf("server listening on :%s", cfg.Port)
-	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatal(err)
-	}
-}
+		auth.PUT("/alert-con
