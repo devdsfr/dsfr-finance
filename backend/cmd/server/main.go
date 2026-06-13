@@ -53,10 +53,11 @@ func main() {
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
 
-	corsOrigins := []string{cfg.CORSOrigins}
-	if cfg.CORSOrigins == "" {
-		corsOrigins = []string{"http://localhost:4200"}
+	corsOrigins := []string{"http://localhost:4200"}
+	if cfg.CORSOrigins != "" {
+		corsOrigins = []string{cfg.CORSOrigins}
 	}
+	log.Printf("CORS Origins configured: %v", corsOrigins)
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     corsOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
