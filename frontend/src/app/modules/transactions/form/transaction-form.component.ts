@@ -198,6 +198,14 @@ export class TransactionFormComponent implements OnInit {
         this.form = { ...tx, installments: 1, tags: tx.tags ?? [] };
       });
     }
+
+    // AC-UX-06: pre-fill form when duplicating
+    const duplicateId = this.route.snapshot.queryParamMap.get('duplicate');
+    if (duplicateId) {
+      this.api.get<any>(`/transactions/${duplicateId}`).subscribe(tx => {
+        this.form = { ...tx, id: null, date: new Date().toISOString().slice(0, 10), installments: 1, tags: tx.tags ?? [] };
+      });
+    }
   }
 
   onFileSelected(file: File | null): void {

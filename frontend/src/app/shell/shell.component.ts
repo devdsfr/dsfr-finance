@@ -28,10 +28,17 @@ import { ToastComponent } from '../shared/components/toast/toast.component';
           <li class="nav-group">
             <span class="nav-group__label">Relatórios</span>
             <ul>
+              <li><a routerLink="/reports/flow" routerLinkActive="active">📊 Entradas x Saídas</a></li>
               <li><a routerLink="/reports/patrimony" routerLinkActive="active">📈 Evolução Patrimonial</a></li>
               <li><a routerLink="/reports/accounts" routerLinkActive="active">🏦 Contas</a></li>
+              <li><a routerLink="/reports/categories" routerLinkActive="active">🏷 Categorias</a></li>
+              <li><a routerLink="/reports/tags" routerLinkActive="active">🔖 Tags</a></li>
+              <li><a routerLink="/reports/installments" routerLinkActive="active">📆 Parcelamentos</a></li>
+              <li><a routerLink="/reports/card-invoices" routerLinkActive="active">💳 Faturas</a></li>
             </ul>
           </li>
+          <li><a routerLink="/categories" routerLinkActive="active">📁 Categorias</a></li>
+          <li><a routerLink="/banking" routerLinkActive="active">🏦 Conexão Bancária</a></li>
           <li><a routerLink="/spending-limits" routerLinkActive="active">⚡ Limites de Gastos</a></li>
           <li class="notification-link">
             <a routerLink="/notifications" routerLinkActive="active">

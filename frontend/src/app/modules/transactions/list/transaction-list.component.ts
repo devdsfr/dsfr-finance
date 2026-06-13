@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -137,6 +138,7 @@ interface Transaction {
 export class TransactionListComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private router = inject(Router);
 
   transactions = signal<Transaction[]>([]);
   overdueCount = signal(0);
@@ -188,12 +190,9 @@ export class TransactionListComponent implements OnInit {
     });
   }
 
-  // AC-UX-06
+  // AC-UX-06: open pre-filled form for editing before saving
   duplicate(tx: Transaction): void {
-    this.api.post<any>(`/transactions/${tx.id}/duplicate`, {}).subscribe(() => {
-      this.toast.success('Lançamento duplicado!');
-      this.load();
-    });
+    this.router.navigate(['/transactions/new'], { queryParams: { duplicate: tx.id } });
   }
 
   delete(tx: Transaction): void {
@@ -209,3 +208,4 @@ export class TransactionListComponent implements OnInit {
     this.load();
   }
 }
+                     
