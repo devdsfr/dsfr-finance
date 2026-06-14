@@ -125,4 +125,96 @@ import { filter } from 'rxjs/operators';
     }
     .dropdown.open .dropdown__menu { display: block; }
     .dropdown__menu a {
-      display: block; padding: .45rem 1rem; color: 
+      display: block; padding: .45rem 1rem; color: #374151;
+      font-size: .875rem; text-decoration: none;
+    }
+    .dropdown__menu a:hover { background: #f3f4f6; }
+    .dropdown__menu a.active { color: #2e7736; font-weight: 600; }
+
+    /* Right section */
+    .topnav__right { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
+
+    .notif-btn { position: relative; font-size: 1.1rem; cursor: pointer; text-decoration: none; }
+    .notif-badge {
+      position: absolute; top: -4px; right: -6px;
+      background: #ef4444; color: #fff;
+      border-radius: 9999px; font-size: .6rem;
+      padding: .05rem .3rem; font-weight: 700;
+    }
+
+    /* User menu */
+    .user-menu { position: relative; }
+    .user-menu__trigger {
+      display: flex; align-items: center; gap: .4rem;
+      background: none; border: none; cursor: pointer; color: #fff;
+      padding: .3rem .5rem; border-radius: .25rem;
+      transition: background .15s;
+    }
+    .user-menu__trigger:hover { background: rgba(255,255,255,.12); }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.25); display: flex;
+      align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 700; flex-shrink: 0;
+    }
+    .user-name { font-size: .82rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-menu__dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); right: 0;
+      background: #fff; border-radius: .375rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 180px;
+      padding: .375rem 0; z-index: 200;
+    }
+    .user-menu.open .user-menu__dropdown { display: block; }
+    .user-menu__dropdown a,
+    .user-menu__dropdown button {
+      display: block; width: 100%; text-align: left;
+      padding: .45rem 1rem; color: #374151;
+      font-size: .875rem; text-decoration: none;
+      background: none; border: none; cursor: pointer;
+    }
+    .user-menu__dropdown a:hover,
+    .user-menu__dropdown button:hover { background: #f3f4f6; }
+    .user-menu__dropdown hr { margin: .375rem 0; border: none; border-top: 1px solid #e5e7eb; }
+    .user-menu__dropdown button { color: #ef4444; }
+
+    /* Main content */
+    .main { flex: 1; padding: 1.5rem 2rem; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+    @media (max-width: 768px) {
+      .topnav__links { display: none; }
+      .user-name { display: none; }
+      .main { padding: 1rem; }
+    }
+  `]
+})
+export class ShellComponent implements OnInit {
+  auth = inject(AuthService);
+  private api = inject(ApiService);
+  private router = inject(Router);
+
+  unreadCount = signal(0);
+  reportsOpen = signal(false);
+  userMenuOpen = signal(false);
+
+  initials(): string {
+    const name = this.auth.currentUser()?.name ?? '';
+    return name.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase();
+  }
+
+  isReportsActive(): boolean {
+    return this.router.url.includes('/reports');
+  }
+
+  ngOnInit(): void {
+    this.api.get<any>('/notifications').subscribe(r => {
+      const list: any[] = r.data ?? [];
+      this.unreadCount.set(list.filter((n: any) => !n.read).length);
+    });
+
+    // Close menus on navigation
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+      this.reportsOpen.set(false);
+      this.userMenuOpen.set(false);
+    });
+  }
+}
