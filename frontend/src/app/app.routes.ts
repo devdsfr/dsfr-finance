@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'transactions', pathMatch: 'full' },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
   // Auth
   {
@@ -67,38 +67,4 @@ export const routes: Routes = [
       },
       {
         path: 'reports/card-invoices',
-        loadComponent: () => import('./modules/reports/card-invoices/card-invoices.component').then(m => m.CardInvoicesComponent)
-      },
-      {
-        path: 'spending-limits',
-        loadComponent: () => import('./modules/spending-limits/list/spending-limits.component').then(m => m.SpendingLimitsComponent)
-      },
-      {
-        path: 'categories',
-        loadComponent: () => import('./modules/categories/list/categories.component').then(m => m.CategoriesComponent)
-      },
-      {
-        path: 'banking',
-        loadComponent: () => import('./modules/banking/banking.component').then(m => m.BankingComponent)
-      },
-      {
-        path: 'notifications',
-        loadComponent: () => import('./modules/notifications/list/notifications-list.component').then(m => m.NotificationsListComponent)
-      },
-      {
-        path: 'alert-config',
-        loadComponent: () => import('./modules/notifications/alert-config/alert-config.component').then(m => m.AlertConfigComponent)
-      },
-      {
-        path: 'account',
-        loadComponent: () => import('./modules/account/profile/account-profile.component').then(m => m.AccountProfileComponent)
-      },
-      {
-        path: 'activity',
-        loadComponent: () => import('./modules/account/activity/activity-log.component').then(m => m.ActivityLogComponent)
-      }
-    ]
-  },
-
-  { path: '**', redirectTo: 'transactions' }
-];
+        loadComponent: () => 
