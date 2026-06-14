@@ -26,6 +26,10 @@ export const routes: Routes = [
     loadComponent: () => import('./shell/shell.component').then(m => m.ShellComponent),
     children: [
       {
+        path: 'dashboard',
+        loadComponent: () => import('./modules/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+      {
         path: 'transactions',
         loadComponent: () => import('./modules/transactions/list/transaction-list.component').then(m => m.TransactionListComponent)
       },
@@ -38,6 +42,10 @@ export const routes: Routes = [
         loadComponent: () => import('./modules/transactions/form/transaction-form.component').then(m => m.TransactionFormComponent)
       },
       {
+        path: 'reports/flow',
+        loadComponent: () => import('./modules/reports/flow/flow-report.component').then(m => m.FlowReportComponent)
+      },
+      {
         path: 'reports/patrimony',
         loadComponent: () => import('./modules/reports/patrimony/patrimony-report.component').then(m => m.PatrimonyReportComponent)
       },
@@ -46,27 +54,17 @@ export const routes: Routes = [
         loadComponent: () => import('./modules/reports/accounts/accounts-report.component').then(m => m.AccountsReportComponent)
       },
       {
-        path: 'spending-limits',
-        loadComponent: () => import('./modules/spending-limits/list/spending-limits.component').then(m => m.SpendingLimitsComponent)
+        path: 'reports/categories',
+        loadComponent: () => import('./modules/reports/categories/categories-report.component').then(m => m.CategoriesReportComponent)
       },
       {
-        path: 'notifications',
-        loadComponent: () => import('./modules/notifications/list/notifications-list.component').then(m => m.NotificationsListComponent)
+        path: 'reports/tags',
+        loadComponent: () => import('./modules/reports/tags/tags-report.component').then(m => m.TagsReportComponent)
       },
       {
-        path: 'alert-config',
-        loadComponent: () => import('./modules/notifications/alert-config/alert-config.component').then(m => m.AlertConfigComponent)
+        path: 'reports/installments',
+        loadComponent: () => import('./modules/reports/installments/installments-report.component').then(m => m.InstallmentsReportComponent)
       },
       {
-        path: 'account',
-        loadComponent: () => import('./modules/account/profile/account-profile.component').then(m => m.AccountProfileComponent)
-      },
-      {
-        path: 'activity',
-        loadComponent: () => import('./modules/account/activity/activity-log.component').then(m => m.ActivityLogComponent)
-      }
-    ]
-  },
-
-  { path: '**', redirectTo: 'transactions' }
-];
+        path: 'reports/card-invoices',
+        loadComponent: () => 

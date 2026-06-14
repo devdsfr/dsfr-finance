@@ -1,62 +1,75 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, RouterOutlet } from '@angular/router';
+import { RouterModule, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
 import { ToastComponent } from '../shared/components/toast/toast.component';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
   imports: [CommonModule, RouterModule, RouterOutlet, ToastComponent],
   template: `
-    <div class="layout">
-      <!-- Sidebar -->
-      <nav class="sidebar">
-        <div class="sidebar__logo">
-          <span class="logo-icon">💰</span>
-          <span class="logo-text">dsfr-finance</span>
+    <div class="app">
+      <!-- Top Navigation -->
+      <header class="topnav">
+        <div class="topnav__brand">
+          <span class="brand-icon">💰</span>
+          <span class="brand-name">dsfr finance</span>
         </div>
 
-        <div class="sidebar__user">
-          <span class="user-avatar">{{ initials() }}</span>
-          <span class="user-name">{{ auth.currentUser()?.name }}</span>
+        <nav class="topnav__links">
+          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Visão Geral</a>
+          <a routerLink="/transactions" routerLinkActive="active">Lançamentos</a>
+
+          <!-- Relatórios dropdown -->
+          <div class="dropdown" [class.open]="reportsOpen()">
+            <button class="dropdown__trigger" (click)="reportsOpen.set(!reportsOpen())"
+                    [class.active]="isReportsActive()">
+              Relatórios <span class="caret">▾</span>
+            </button>
+            <div class="dropdown__menu" (mouseleave)="reportsOpen.set(false)">
+              <a routerLink="/reports/flow" routerLinkActive="active" (click)="reportsOpen.set(false)">Entradas x Saídas</a>
+              <a routerLink="/reports/patrimony" routerLinkActive="active" (click)="reportsOpen.set(false)">Evolução Patrimonial</a>
+              <a routerLink="/reports/categories" routerLinkActive="active" (click)="reportsOpen.set(false)">Categorias</a>
+              <a routerLink="/reports/tags" routerLinkActive="active" (click)="reportsOpen.set(false)">Tags</a>
+              <a routerLink="/reports/installments" routerLinkActive="active" (click)="reportsOpen.set(false)">Parcelamentos</a>
+              <a routerLink="/reports/card-invoices" routerLinkActive="active" (click)="reportsOpen.set(false)">Faturas de Cartão</a>
+            </div>
+          </div>
+
+          <a routerLink="/spending-limits" routerLinkActive="active">Limite de Gastos</a>
+          <a routerLink="/banking" routerLinkActive="active">Conexão Bancária</a>
+        </nav>
+
+        <div class="topnav__right">
+          <a routerLink="/notifications" class="notif-btn" title="Notificações">
+            🔔
+            @if (unreadCount() > 0) {
+              <span class="notif-badge">{{ unreadCount() }}</span>
+            }
+          </a>
+
+          <div class="user-menu" [class.open]="userMenuOpen()">
+            <button class="user-menu__trigger" (click)="userMenuOpen.set(!userMenuOpen())">
+              <span class="avatar">{{ initials() }}</span>
+              <span class="user-name">{{ auth.currentUser()?.name }}</span>
+              <span class="caret">▾</span>
+            </button>
+            <div class="user-menu__dropdown" (mouseleave)="userMenuOpen.set(false)">
+              <a routerLink="/account" (click)="userMenuOpen.set(false)">Minha Conta</a>
+              <a routerLink="/categories" (click)="userMenuOpen.set(false)">Categorias</a>
+              <a routerLink="/alert-config" (click)="userMenuOpen.set(false)">Configurar Alertas</a>
+              <a routerLink="/activity" (click)="userMenuOpen.set(false)">Log de Atividades</a>
+              <hr/>
+              <button (click)="auth.logout()">Sair</button>
+            </div>
+          </div>
         </div>
+      </header>
 
-        <ul class="sidebar__nav">
-          <li><a routerLink="/transactions" routerLinkActive="active">📋 Lançamentos</a></li>
-          <li class="nav-group">
-            <span class="nav-group__label">Relatórios</span>
-            <ul>
-              <li><a routerLink="/reports/flow" routerLinkActive="active">📊 Entradas x Saídas</a></li>
-              <li><a routerLink="/reports/patrimony" routerLinkActive="active">📈 Evolução Patrimonial</a></li>
-              <li><a routerLink="/reports/accounts" routerLinkActive="active">🏦 Contas</a></li>
-              <li><a routerLink="/reports/categories" routerLinkActive="active">🏷 Categorias</a></li>
-              <li><a routerLink="/reports/tags" routerLinkActive="active">🔖 Tags</a></li>
-              <li><a routerLink="/reports/installments" routerLinkActive="active">📆 Parcelamentos</a></li>
-              <li><a routerLink="/reports/card-invoices" routerLinkActive="active">💳 Faturas</a></li>
-            </ul>
-          </li>
-          <li><a routerLink="/categories" routerLinkActive="active">📁 Categorias</a></li>
-          <li><a routerLink="/banking" routerLinkActive="active">🏦 Conexão Bancária</a></li>
-          <li><a routerLink="/spending-limits" routerLinkActive="active">⚡ Limites de Gastos</a></li>
-          <li class="notification-link">
-            <a routerLink="/notifications" routerLinkActive="active">
-              🔔 Notificações
-              @if (unreadCount() > 0) {
-                <span class="badge">{{ unreadCount() }}</span>
-              }
-            </a>
-          </li>
-          <li><a routerLink="/alert-config" routerLinkActive="active">⚙️ Alertas</a></li>
-          <li><a routerLink="/activity" routerLinkActive="active">📜 Atividades</a></li>
-          <li><a routerLink="/account" routerLinkActive="active">👤 Minha Conta</a></li>
-        </ul>
-
-        <button class="sidebar__logout" (click)="auth.logout()">Sair</button>
-      </nav>
-
-      <!-- Main content -->
+      <!-- Page content -->
       <main class="main">
         <router-outlet />
       </main>
@@ -64,57 +77,52 @@ import { ToastComponent } from '../shared/components/toast/toast.component';
     <app-toast />
   `,
   styles: [`
-    .layout { display: flex; height: 100vh; overflow: hidden; }
-    .sidebar {
-      width: 220px; background: #1e1b4b; color: #c7d2fe;
-      display: flex; flex-direction: column; padding: 1rem; flex-shrink: 0;
-    }
-    .sidebar__logo { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.5rem; }
-    .logo-icon { font-size: 1.5rem; }
-    .logo-text { font-size: 1rem; font-weight: 700; color: #fff; }
-    .sidebar__user { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.5rem;
-                     padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,.1); }
-    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #6366f1;
-                   display: flex; align-items: center; justify-content: center;
-                   color: #fff; font-size: .8rem; font-weight: 700; flex-shrink: 0; }
-    .user-name { font-size: .8rem; color: #e0e7ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sidebar__nav { list-style: none; padding: 0; margin: 0; flex: 1; display: flex; flex-direction: column; gap: .15rem; }
-    .sidebar__nav li a {
-      display: flex; align-items: center; gap: .5rem; padding: .5rem .65rem;
-      border-radius: .375rem; text-decoration: none; color: #a5b4fc;
-      font-size: .82rem; transition: background .15s;
-    }
-    .sidebar__nav li a:hover { background: rgba(255,255,255,.08); color: #fff; }
-    .sidebar__nav li a.active { background: #6366f1; color: #fff; }
-    .nav-group__label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
-                        color: #6b7280; padding: .75rem .65rem .25rem; display: block; }
-    .nav-group ul { list-style: none; padding: 0; }
-    .notification-link .badge {
-      background: #ef4444; color: #fff; border-radius: 9999px;
-      padding: .1rem .4rem; font-size: .65rem; margin-left: auto;
-    }
-    .sidebar__logout {
-      margin-top: auto; padding: .5rem; background: none; border: 1px solid rgba(255,255,255,.15);
-      color: #a5b4fc; border-radius: .375rem; cursor: pointer; font-size: .82rem;
-    }
-    .sidebar__logout:hover { background: rgba(255,255,255,.08); color: #fff; }
-    .main { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; background: #f8fafc; }
-  `]
-})
-export class ShellComponent {
-  auth = inject(AuthService);
-  private api = inject(ApiService);
-  unreadCount = signal(0);
+    * { box-sizing: border-box; }
 
-  initials(): string {
-    const name = this.auth.currentUser()?.name ?? '';
-    return name.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase();
-  }
+    .app { display: flex; flex-direction: column; min-height: 100vh; background: #f4f6f8; }
 
-  constructor() {
-    this.api.get<any>('/notifications').subscribe(r => {
-      const list: any[] = r.data ?? [];
-      this.unreadCount.set(list.filter(n => !n.read).length);
-    });
-  }
-}
+    /* ── Top Nav ─────────────────────────────────────────── */
+    .topnav {
+      display: flex; align-items: center; gap: 1.5rem;
+      background: #2e7736; color: #fff;
+      padding: 0 1.5rem; height: 52px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+
+    .topnav__brand {
+      display: flex; align-items: center; gap: .5rem;
+      font-weight: 700; font-size: 1rem; white-space: nowrap;
+      margin-right: .5rem;
+    }
+    .brand-icon { font-size: 1.2rem; }
+    .brand-name { letter-spacing: -.01em; }
+
+    .topnav__links {
+      display: flex; align-items: center; gap: .25rem; flex: 1;
+    }
+    .topnav__links > a,
+    .dropdown__trigger {
+      padding: .3rem .75rem; border-radius: .25rem;
+      text-decoration: none; color: rgba(255,255,255,.88);
+      font-size: .875rem; font-weight: 500; white-space: nowrap;
+      border: none; background: none; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .topnav__links > a:hover,
+    .dropdown__trigger:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .topnav__links > a.active,
+    .dropdown__trigger.active { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* Dropdown */
+    .dropdown { position: relative; }
+    .caret { font-size: .65rem; vertical-align: middle; margin-left: .15rem; }
+    .dropdown__menu {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0;
+      background: #fff; border-radius: .375rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 200px;
+      padding: .375rem 0; z-index: 200;
+    }
+    .dropdown.open .dropdown__menu { display: block; }
+    .dropdown__menu a {
+      display: block; padding: .45rem 1rem; color: 
