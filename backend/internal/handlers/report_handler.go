@@ -22,6 +22,28 @@ func NewReportHandler(repo *repositories.ReportRepository) *ReportHandler {
 // MonthlyFlow — income vs expense per month
 func (h *ReportHandler) MonthlyFlow(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
+	// Support ?month=YYYY-MM as shorthand for a single month
+	if month := c.Query("month"); month != "" {
+		year, mo := month[:4], month[5:7]
+		from := fmt.Sprintf("%s-%s-01", year, mo)
+		to := fmt.Sprintf("%s-%s-31", year, mo)
+		data, err := h.repo.MonthlyFlow(wsID, from, to)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// Return single-month summary object for dashboard
+		if len(data) > 0 {
+			row := data[0]
+			c.JSON(http.StatusOK, gin.H{"data": gin.H{
+				"month": row.Month, "income": row.Income,
+				"expense": row.Expense, "net": row.Net,
+			}})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"data": gin.H{"month": month, "income": 0.0, "expense": 0.0, "net": 0.0}})
+		}
+		return
+	}
 	from := c.DefaultQuery("from", "2024-01-01")
 	to := c.DefaultQuery("to", "2024-12-31")
 	data, err := h.repo.MonthlyFlow(wsID, from, to)
@@ -148,6 +170,15 @@ func (h *ReportHandler) ExportCSV(c *gin.Context) {
 		_ = w.Write([]string{"Categoria", "Total", "Qtd."})
 		for _, row := range data {
 			_ = w.Write([]string{row.CategoryName, fmt.Sprintf("%.2f", row.Total), fmt.Sprintf("%d", row.Count)})
+		}
+	case "installments":
+		data, _ := h.repo.ActiveInstallments(wsID)
+		_ = w.Write([]string{"Descricao", "Cartao", "Parcela", "Valor/Parcela", "Total Restante"})
+		for _, row := range data {
+			_ = w.Write([]string{row.Description, row.CardName,
+				fmt.Sprintf("%d/%d", row.InstallmentNum, row.InstallmentTotal),
+				fmt.Sprintf("%.2f", row.AmountPerPart),
+				fmt.Sprintf("%.2f", row.TotalRemaining)})
 		}
 	}
 }

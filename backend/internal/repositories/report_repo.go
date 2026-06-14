@@ -22,7 +22,7 @@ func (r *ReportRepository) MonthlyFlow(workspaceID, from, to string) ([]models.M
 		       COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0) AS income,
 		       COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0) AS expense
 		FROM transactions
-		WHERE workspace_id=$1 AND paid=true AND date BETWEEN $2 AND $3
+		WHERE workspace_id=$1 AND ignored=false AND date BETWEEN $2 AND $3
 		GROUP BY month ORDER BY month`
 	rows, err := r.db.Query(q, workspaceID, from, to)
 	if err != nil {
@@ -108,7 +108,7 @@ func (r *ReportRepository) CategorySummary(workspaceID, txType, from, to string)
 		       COUNT(t.id) AS cnt
 		FROM transactions t
 		JOIN categories c ON c.id = t.category_id
-		WHERE t.workspace_id=$1 AND t.type=$2 AND t.paid=true AND t.date BETWEEN $3 AND $4
+		WHERE t.workspace_id=$1 AND t.type=$2 AND t.ignored=false AND t.date BETWEEN $3 AND $4
 		GROUP BY c.id, c.name, c.color, c.icon
 		ORDER BY total DESC`
 	rows, err := r.db.Query(q, workspaceID, txType, from, to)
@@ -176,11 +176,11 @@ func (r *ReportRepository) ActiveInstallments(workspaceID string) ([]models.Acti
 func (r *ReportRepository) CardInvoiceHistory(workspaceID, cardID string) ([]models.MonthlyBalance, error) {
 	q := `
 		SELECT TO_CHAR(date,'YYYY-MM') AS month,
-		       0 AS income,
-		       COALESCE(SUM(amount),0) AS expense
+		       COALESCE(SUM(amount),0) AS total,
+		       COUNT(*) AS cnt
 		FROM transactions
 		WHERE workspace_id=$1 AND credit_card_id=$2 AND type='expense'
-		GROUP BY month ORDER BY month`
+		GROUP BY month ORDER BY month DESC`
 	rows, err := r.db.Query(q, workspaceID, cardID)
 	if err != nil {
 		return nil, err
@@ -189,10 +189,11 @@ func (r *ReportRepository) CardInvoiceHistory(workspaceID, cardID string) ([]mod
 	var result []models.MonthlyBalance
 	for rows.Next() {
 		var m models.MonthlyBalance
-		if err := rows.Scan(&m.Month, &m.Income, &m.Expense); err != nil {
+		var cnt int
+		if err := rows.Scan(&m.Month, &m.Expense, &cnt); err != nil {
 			return nil, err
 		}
-		m.Net = -m.Expense
+		m.Net = float64(cnt)
 		result = append(result, m)
 	}
 	return result, nil

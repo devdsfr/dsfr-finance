@@ -100,9 +100,9 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="limit-card__progress">
             <div class="progress-bar">
               <div class="progress-bar__fill"
-                   [style.width.%]="Math.min(100, l.usage_pct)"
-                   [class.progress-bar__fill--warning]="l.usage_pct >= l.alert_pct"
-                   [class.progress-bar__fill--danger]="l.usage_pct >= 100">
+                   [style.width.%]="barWidth(l)"
+                   [class.progress-bar__fill--warning]="isWarning(l)"
+                   [class.progress-bar__fill--danger]="isDanger(l)">
               </div>
             </div>
             <div class="progress-bar__labels">
@@ -224,4 +224,18 @@ export class SpendingLimitsComponent implements OnInit {
       this.load();
     });
   }
+  barWidth(l: any): number {
+    const pct = +(l.usage_pct ?? 0);
+    return isNaN(pct) ? 0 : Math.min(100, Math.max(0, pct));
+  }
+  isWarning(l: any): boolean {
+    const pct = +(l.usage_pct ?? 0);
+    const alert = +(l.alert_pct ?? 80);
+    return !isNaN(pct) && pct >= alert && pct < 100;
+  }
+  isDanger(l: any): boolean {
+    const pct = +(l.usage_pct ?? 0);
+    return !isNaN(pct) && pct >= 100;
+  }
+
 }

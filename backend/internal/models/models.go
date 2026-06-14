@@ -172,8 +172,8 @@ type SpendingLimit struct {
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	// computed
-	CurrentSpend float64  `json:"current_spend,omitempty"`
-	UsagePct     float64  `json:"usage_pct,omitempty"`
+	CurrentSpend float64  `json:"current_spend"`
+	UsagePct     float64  `json:"usage_pct"`
 }
 
 // ────────────────────────────────────────────────────────────────────────────
