@@ -322,7 +322,7 @@ export class DashboardComponent implements OnInit {
     this.monthLabel.set(MONTHS[now.getMonth()]);
 
     const from = `${year}-${String(mon).padStart(2,'0')}-01`;
-    const to   = `${year}-${String(mon).padStart(2,'0')}-31`;
+    const to   = new Date(year, mon, 0).toISOString().slice(0, 10); // último dia real do mês
 
     forkJoin({
       txs:     this.api.get<any>('/transactions', { date_from: from, date_to: to, limit: 500 }).pipe(catchError(() => of({ data: [] }))),

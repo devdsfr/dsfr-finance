@@ -303,8 +303,10 @@ export class TransactionListComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    const monthStr = `${this.year()}-${String(this.month()).padStart(2,'0')}`;
-    const params: any = { month: monthStr, limit: 200 };
+    const y = this.year(), m = this.month();
+    const from = `${y}-${String(m).padStart(2,'0')}-01`;
+    const to   = new Date(y, m, 0).toISOString().slice(0, 10); // último dia real do mês
+    const params: any = { date_from: from, date_to: to, limit: 200 };
     if (this.search) params['search'] = this.search;
     if (this.filterType) params['type'] = this.filterType;
     if (this.filterPaid !== '') params['paid'] = this.filterPaid;
