@@ -96,6 +96,10 @@ export const routes: Routes = [
       {
         path: 'activity',
         loadComponent: () => import('./modules/account/activity/activity-log.component').then(m => m.ActivityLogComponent)
+      },
+      {
+        path: 'debt-strategy',
+        loadComponent: () => import('./modules/debt-strategy/debt-strategy.component').then(m => m.DebtStrategyComponent)
       }
     ]
   },

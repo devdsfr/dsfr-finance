@@ -40,6 +40,7 @@ import { filter } from 'rxjs/operators';
           </div>
 
           <a routerLink="/spending-limits" routerLinkActive="active">Limite de Gastos</a>
+          <a routerLink="/debt-strategy" routerLinkActive="active">Estratégia de Dívidas</a>
           <a routerLink="/banking" routerLinkActive="active">Conexão Bancária</a>
         </nav>
 
