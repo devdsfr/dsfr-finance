@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
@@ -14,34 +14,39 @@ import { filter } from 'rxjs/operators';
     <div class="app">
       <!-- Top Navigation -->
       <header class="topnav">
+        <!-- Hamburger (mobile only) -->
+        <button class="hamburger" (click)="drawerOpen.set(!drawerOpen())" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+
         <div class="topnav__brand">
           <span class="brand-icon">💰</span>
           <span class="brand-name">dsfr finance</span>
         </div>
 
+        <!-- Desktop nav -->
         <nav class="topnav__links">
           <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Visão Geral</a>
           <a routerLink="/transactions" routerLinkActive="active">Lançamentos</a>
 
-          <!-- Relatórios dropdown -->
           <div class="dropdown" [class.open]="reportsOpen()">
             <button class="dropdown__trigger" (click)="reportsOpen.set(!reportsOpen())"
                     [class.active]="isReportsActive()">
               Relatórios <span class="caret">▾</span>
             </button>
             <div class="dropdown__menu" (mouseleave)="reportsOpen.set(false)">
-              <a routerLink="/reports/flow" routerLinkActive="active" (click)="reportsOpen.set(false)">Entradas x Saídas</a>
-              <a routerLink="/reports/patrimony" routerLinkActive="active" (click)="reportsOpen.set(false)">Evolução Patrimonial</a>
-              <a routerLink="/reports/categories" routerLinkActive="active" (click)="reportsOpen.set(false)">Categorias</a>
-              <a routerLink="/reports/tags" routerLinkActive="active" (click)="reportsOpen.set(false)">Tags</a>
+              <a routerLink="/reports/flow"         routerLinkActive="active" (click)="reportsOpen.set(false)">Entradas x Saídas</a>
+              <a routerLink="/reports/patrimony"    routerLinkActive="active" (click)="reportsOpen.set(false)">Evolução Patrimonial</a>
+              <a routerLink="/reports/categories"   routerLinkActive="active" (click)="reportsOpen.set(false)">Categorias</a>
+              <a routerLink="/reports/tags"         routerLinkActive="active" (click)="reportsOpen.set(false)">Tags</a>
               <a routerLink="/reports/installments" routerLinkActive="active" (click)="reportsOpen.set(false)">Parcelamentos</a>
               <a routerLink="/reports/card-invoices" routerLinkActive="active" (click)="reportsOpen.set(false)">Faturas de Cartão</a>
             </div>
           </div>
 
           <a routerLink="/spending-limits" routerLinkActive="active">Limite de Gastos</a>
-          <a routerLink="/debt-strategy" routerLinkActive="active">Estratégia de Dívidas</a>
-          <a routerLink="/banking" routerLinkActive="active">Conexão Bancária</a>
+          <a routerLink="/debt-strategy"   routerLinkActive="active">Estratégia de Dívidas</a>
+          <a routerLink="/banking"         routerLinkActive="active">Conexão Bancária</a>
         </nav>
 
         <div class="topnav__right">
@@ -59,16 +64,93 @@ import { filter } from 'rxjs/operators';
               <span class="caret">▾</span>
             </button>
             <div class="user-menu__dropdown" (mouseleave)="userMenuOpen.set(false)">
-              <a routerLink="/account" (click)="userMenuOpen.set(false)">Minha Conta</a>
-              <a routerLink="/categories" (click)="userMenuOpen.set(false)">Categorias</a>
-              <a routerLink="/alert-config" (click)="userMenuOpen.set(false)">Configurar Alertas</a>
-              <a routerLink="/activity" (click)="userMenuOpen.set(false)">Log de Atividades</a>
+              <a routerLink="/account"     (click)="userMenuOpen.set(false)">Minha Conta</a>
+              <a routerLink="/categories"  (click)="userMenuOpen.set(false)">Categorias</a>
+              <a routerLink="/alert-config"(click)="userMenuOpen.set(false)">Configurar Alertas</a>
+              <a routerLink="/activity"    (click)="userMenuOpen.set(false)">Log de Atividades</a>
               <hr/>
               <button (click)="auth.logout()">Sair</button>
             </div>
           </div>
         </div>
       </header>
+
+      <!-- ── Mobile Drawer ──────────────────────────────────── -->
+      @if (drawerOpen()) {
+        <div class="drawer-overlay" (click)="drawerOpen.set(false)"></div>
+      }
+      <nav class="drawer" [class.drawer--open]="drawerOpen()">
+        <!-- Drawer header -->
+        <div class="drawer__head">
+          <span class="avatar drawer__avatar">{{ initials() }}</span>
+          <div>
+            <div class="drawer__name">{{ auth.currentUser()?.name }}</div>
+            <div class="drawer__email">dsfr finance</div>
+          </div>
+          <button class="drawer__close" (click)="drawerOpen.set(false)">✕</button>
+        </div>
+
+        <!-- Nav links -->
+        <div class="drawer__section">
+          <a class="drawer__link" routerLink="/dashboard" routerLinkActive="drawer__link--active"
+             [routerLinkActiveOptions]="{exact:true}" (click)="drawerOpen.set(false)">
+            🏠 Visão Geral
+          </a>
+          <a class="drawer__link" routerLink="/transactions" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            📋 Lançamentos
+          </a>
+          <a class="drawer__link" routerLink="/spending-limits" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            🎯 Limite de Gastos
+          </a>
+          <a class="drawer__link" routerLink="/debt-strategy" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            📊 Estratégia de Dívidas
+          </a>
+          <a class="drawer__link" routerLink="/banking" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            🏦 Conexão Bancária
+          </a>
+        </div>
+
+        <div class="drawer__label">Relatórios</div>
+        <div class="drawer__section">
+          <a class="drawer__link" routerLink="/reports/flow" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">📈 Entradas x Saídas</a>
+          <a class="drawer__link" routerLink="/reports/patrimony" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">💹 Evolução Patrimonial</a>
+          <a class="drawer__link" routerLink="/reports/categories" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">🏷️ Categorias</a>
+          <a class="drawer__link" routerLink="/reports/tags" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">🔖 Tags</a>
+          <a class="drawer__link" routerLink="/reports/installments" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">📆 Parcelamentos</a>
+          <a class="drawer__link" routerLink="/reports/card-invoices" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">💳 Faturas de Cartão</a>
+        </div>
+
+        <div class="drawer__label">Conta</div>
+        <div class="drawer__section">
+          <a class="drawer__link" routerLink="/notifications" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            🔔 Notificações
+            @if (unreadCount() > 0) { <span class="drawer__badge">{{ unreadCount() }}</span> }
+          </a>
+          <a class="drawer__link" routerLink="/account" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">👤 Minha Conta</a>
+          <a class="drawer__link" routerLink="/categories" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">📁 Categorias</a>
+          <a class="drawer__link" routerLink="/alert-config" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">⚙️ Configurar Alertas</a>
+          <a class="drawer__link" routerLink="/activity" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">📝 Log de Atividades</a>
+        </div>
+
+        <div class="drawer__footer">
+          <button class="drawer__logout" (click)="auth.logout()">🚪 Sair</button>
+        </div>
+      </nav>
 
       <!-- Page content -->
       <main class="main">
@@ -84,36 +166,42 @@ import { filter } from 'rxjs/operators';
 
     /* ── Top Nav ─────────────────────────────────────────── */
     .topnav {
-      display: flex; align-items: center; gap: 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
       background: #2e7736; color: #fff;
       padding: 0 1.5rem; height: 52px;
-      position: sticky; top: 0; z-index: 100;
+      position: sticky; top: 0; z-index: 300;
       box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+
+    /* Hamburger — hidden on desktop */
+    .hamburger {
+      display: none; flex-direction: column; justify-content: center; gap: 5px;
+      background: none; border: none; cursor: pointer; padding: .25rem;
+      width: 36px; height: 36px; flex-shrink: 0;
+    }
+    .hamburger span {
+      display: block; height: 2px; background: #fff; border-radius: 2px;
+      transition: transform .2s, opacity .2s;
     }
 
     .topnav__brand {
       display: flex; align-items: center; gap: .5rem;
       font-weight: 700; font-size: 1rem; white-space: nowrap;
-      margin-right: .5rem;
     }
     .brand-icon { font-size: 1.2rem; }
-    .brand-name { letter-spacing: -.01em; }
 
     .topnav__links {
       display: flex; align-items: center; gap: .25rem; flex: 1;
     }
-    .topnav__links > a,
-    .dropdown__trigger {
+    .topnav__links > a, .dropdown__trigger {
       padding: .3rem .75rem; border-radius: .25rem;
       text-decoration: none; color: rgba(255,255,255,.88);
       font-size: .875rem; font-weight: 500; white-space: nowrap;
       border: none; background: none; cursor: pointer;
       transition: background .15s, color .15s;
     }
-    .topnav__links > a:hover,
-    .dropdown__trigger:hover { background: rgba(255,255,255,.12); color: #fff; }
-    .topnav__links > a.active,
-    .dropdown__trigger.active { background: rgba(255,255,255,.2); color: #fff; }
+    .topnav__links > a:hover, .dropdown__trigger:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .topnav__links > a.active, .dropdown__trigger.active { background: rgba(255,255,255,.2); color: #fff; }
 
     /* Dropdown */
     .dropdown { position: relative; }
@@ -122,7 +210,7 @@ import { filter } from 'rxjs/operators';
       display: none; position: absolute; top: calc(100% + 4px); left: 0;
       background: #fff; border-radius: .375rem;
       box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 200px;
-      padding: .375rem 0; z-index: 200;
+      padding: .375rem 0; z-index: 400;
     }
     .dropdown.open .dropdown__menu { display: block; }
     .dropdown__menu a {
@@ -132,24 +220,19 @@ import { filter } from 'rxjs/operators';
     .dropdown__menu a:hover { background: #f3f4f6; }
     .dropdown__menu a.active { color: #2e7736; font-weight: 600; }
 
-    /* Right section */
+    /* Right */
     .topnav__right { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
-
     .notif-btn { position: relative; font-size: 1.1rem; cursor: pointer; text-decoration: none; }
     .notif-badge {
       position: absolute; top: -4px; right: -6px;
-      background: #ef4444; color: #fff;
-      border-radius: 9999px; font-size: .6rem;
-      padding: .05rem .3rem; font-weight: 700;
+      background: #ef4444; color: #fff; border-radius: 9999px;
+      font-size: .6rem; padding: .05rem .3rem; font-weight: 700;
     }
-
-    /* User menu */
     .user-menu { position: relative; }
     .user-menu__trigger {
       display: flex; align-items: center; gap: .4rem;
       background: none; border: none; cursor: pointer; color: #fff;
-      padding: .3rem .5rem; border-radius: .25rem;
-      transition: background .15s;
+      padding: .3rem .5rem; border-radius: .25rem; transition: background .15s;
     }
     .user-menu__trigger:hover { background: rgba(255,255,255,.12); }
     .avatar {
@@ -163,28 +246,80 @@ import { filter } from 'rxjs/operators';
       display: none; position: absolute; top: calc(100% + 4px); right: 0;
       background: #fff; border-radius: .375rem;
       box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 180px;
-      padding: .375rem 0; z-index: 200;
+      padding: .375rem 0; z-index: 400;
     }
     .user-menu.open .user-menu__dropdown { display: block; }
-    .user-menu__dropdown a,
-    .user-menu__dropdown button {
+    .user-menu__dropdown a, .user-menu__dropdown button {
       display: block; width: 100%; text-align: left;
-      padding: .45rem 1rem; color: #374151;
-      font-size: .875rem; text-decoration: none;
-      background: none; border: none; cursor: pointer;
+      padding: .45rem 1rem; color: #374151; font-size: .875rem;
+      text-decoration: none; background: none; border: none; cursor: pointer;
     }
-    .user-menu__dropdown a:hover,
-    .user-menu__dropdown button:hover { background: #f3f4f6; }
+    .user-menu__dropdown a:hover, .user-menu__dropdown button:hover { background: #f3f4f6; }
     .user-menu__dropdown hr { margin: .375rem 0; border: none; border-top: 1px solid #e5e7eb; }
     .user-menu__dropdown button { color: #ef4444; }
 
-    /* Main content */
+    /* ── Mobile Drawer ───────────────────────────────────── */
+    .drawer-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 400; display: none;
+    }
+    .drawer {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 288px;
+      background: #fff; z-index: 500; display: flex; flex-direction: column;
+      transform: translateX(-100%); transition: transform .28s ease;
+      overflow-y: auto; box-shadow: 4px 0 24px rgba(0,0,0,.12);
+    }
+    .drawer--open { transform: translateX(0); }
+
+    .drawer__head {
+      display: flex; align-items: center; gap: .75rem;
+      background: #2e7736; color: #fff; padding: 1rem 1rem 1rem 1.25rem;
+    }
+    .drawer__avatar { background: rgba(255,255,255,.25); font-size: .85rem; width: 36px; height: 36px; }
+    .drawer__name { font-weight: 700; font-size: .9rem; }
+    .drawer__email { font-size: .72rem; opacity: .75; }
+    .drawer__close {
+      margin-left: auto; background: none; border: none; color: #fff;
+      font-size: 1.1rem; cursor: pointer; padding: .25rem; line-height: 1;
+    }
+
+    .drawer__label {
+      font-size: .68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: #9ca3af; padding: .875rem 1.25rem .35rem;
+    }
+    .drawer__section { padding: 0 .5rem; }
+    .drawer__link {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .7rem .875rem; border-radius: .375rem; margin-bottom: .1rem;
+      color: #374151; text-decoration: none; font-size: .875rem; font-weight: 500;
+      transition: background .15s;
+    }
+    .drawer__link:hover { background: #f3f4f6; }
+    .drawer__link--active { background: #f0fdf4; color: #2e7736; font-weight: 600; }
+    .drawer__badge {
+      margin-left: auto; background: #ef4444; color: #fff;
+      border-radius: 9999px; font-size: .65rem; padding: .1rem .4rem; font-weight: 700;
+    }
+
+    .drawer__footer {
+      margin-top: auto; padding: 1rem; border-top: 1px solid #f3f4f6;
+    }
+    .drawer__logout {
+      width: 100%; padding: .65rem 1rem; background: #fee2e2; border: none;
+      border-radius: .375rem; color: #dc2626; font-size: .875rem; font-weight: 500;
+      cursor: pointer; text-align: left;
+    }
+
+    /* ── Main ────────────────────────────────────────────── */
     .main { flex: 1; padding: 1.5rem 2rem; max-width: 1100px; margin: 0 auto; width: 100%; }
 
+    /* ── Responsive ──────────────────────────────────────── */
     @media (max-width: 768px) {
+      .hamburger { display: flex; }
       .topnav__links { display: none; }
       .user-name { display: none; }
-      .main { padding: 1rem; }
+      .main { padding: 1rem .75rem; }
+      .drawer-overlay { display: block; }
     }
   `]
 })
@@ -193,9 +328,13 @@ export class ShellComponent implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
 
-  unreadCount = signal(0);
-  reportsOpen = signal(false);
+  unreadCount  = signal(0);
+  reportsOpen  = signal(false);
   userMenuOpen = signal(false);
+  drawerOpen   = signal(false);
+
+  @HostListener('document:keydown.escape')
+  onEscape() { this.drawerOpen.set(false); }
 
   initials(): string {
     const name = this.auth.currentUser()?.name ?? '';
@@ -216,6 +355,7 @@ export class ShellComponent implements OnInit {
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
       this.reportsOpen.set(false);
       this.userMenuOpen.set(false);
+      this.drawerOpen.set(false);
     });
   }
 }
