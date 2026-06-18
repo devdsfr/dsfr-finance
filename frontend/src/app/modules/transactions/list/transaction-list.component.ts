@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ImportOrganizzeComponent } from '../../import-organizze/import-organizze.component';
 
 interface Transaction {
   id: string; description: string; amount: number; type: string;
@@ -21,7 +22,7 @@ interface DayGroup {
 @Component({
   selector: 'app-transaction-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, ImportOrganizzeComponent],
   template: `
     <!-- Overdue banner (AC-UX-01 / AC-UX-02) -->
     @if (overdueCount() > 0) {
@@ -44,6 +45,7 @@ interface DayGroup {
       <button class="month-nav__arrow" (click)="changeMonth(1)">&#8250;</button>
       <div class="month-nav__actions">
         <a routerLink="/transactions/new" class="btn btn--primary btn--sm">+ Novo lancamento</a>
+        <app-import-organizze (imported)="load()"></app-import-organizze>
       </div>
     </div>
 

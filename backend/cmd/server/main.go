@@ -54,6 +54,7 @@ func main() {
 	categoryH := handlers.NewCategoryHandler(db)
 	workspaceH := handlers.NewWorkspaceHandler(db)
 	debtH := handlers.NewDebtHandler(db)
+	importH := handlers.NewImportHandler(db)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -140,6 +141,9 @@ func main() {
 		auth.POST("/categories", categoryH.Create)
 		auth.PUT("/categories/:id", categoryH.Update)
 		auth.DELETE("/categories/:id", categoryH.Delete)
+
+		// Import — Organizze PDF
+		auth.POST("/import/organizze", importH.ImportOrganizze)
 
 		// Debt Strategy
 		auth.GET("/debts", debtH.List)
