@@ -38,6 +38,16 @@ import { ApiService } from '../../../core/services/api.service';
           <tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr>
         </thead>
         <tbody>
+          @if (loading()) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>
+                <td><span class="skel-block skel-p" style="width:70px"></span></td>
+                <td><span class="skel-block skel-p" style="width:80px"></span></td>
+                <td><span class="skel-block skel-p" style="width:80px"></span></td>
+                <td><span class="skel-block skel-p" style="width:80px"></span></td>
+              </tr>
+            }
+          }
           @for (row of rows(); track row.month) {
             <tr>
               <td>{{ row.month }}</td>
@@ -76,6 +86,7 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class FlowReportComponent implements OnInit {
   private api = inject(ApiService);
+  loading = signal(true);
   rows = signal<any[]>([]);
   month = new Date().toISOString().slice(0, 7);
 
@@ -86,7 +97,8 @@ export class FlowReportComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
-    this.api.get<any>('/reports/flow', { month: this.month }).subscribe(r => this.rows.set(r.data ?? []));
+    this.loading.set(true);
+    this.api.get<any>('/reports/flow', { month: this.month }).subscribe(r => { this.rows.set(r.data ?? []); this.loading.set(false); });
   }
 
   export(format: string) {

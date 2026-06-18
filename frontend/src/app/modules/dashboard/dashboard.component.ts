@@ -20,12 +20,14 @@ import { catchError } from 'rxjs/operators';
           <div class="month-summary">
             <div class="ms-item">
               <span class="ms-label">Receitas no mês atual</span>
-              <span class="ms-value ms-value--income">{{ income() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+              @if (loading()) { <span class="skel skel--val"></span> }
+              @else { <span class="ms-value ms-value--income">{{ income() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span> }
             </div>
             <div class="ms-sep"></div>
             <div class="ms-item">
               <span class="ms-label">Despesas no mês atual</span>
-              <span class="ms-value ms-value--expense">{{ expense() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+              @if (loading()) { <span class="skel skel--val"></span> }
+              @else { <span class="ms-value ms-value--expense">{{ expense() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span> }
             </div>
           </div>
         </div>
@@ -62,10 +64,17 @@ import { catchError } from 'rxjs/operators';
               <span class="green-bar"></span>
               <div>
                 <p class="card__sup">Saldo geral</p>
-                <p class="card__big">{{ totalBalance() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</p>
+                @if (loading()) { <span class="skel skel--val"></span> }
+                @else { <p class="card__big">{{ totalBalance() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</p> }
               </div>
             </div>
             <p class="section-label">Minhas contas</p>
+            @if (loading()) {
+              <div class="skel-rows">
+                <div class="skel skel--row"></div>
+                <div class="skel skel--row"></div>
+              </div>
+            }
             @for (acc of accounts(); track acc.id) {
               <div class="acc-row">
                 <div class="acc-icon">{{ acc.name[0] }}</div>
@@ -76,7 +85,7 @@ import { catchError } from 'rxjs/operators';
                 <span class="acc-balance">{{ acc.balance | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
               </div>
             }
-            @if (accounts().length === 0) {
+            @if (!loading() && accounts().length === 0) {
               <p class="empty-msg">Nenhuma conta cadastrada.</p>
             }
             <a routerLink="/banking" class="manage-link">Gerenciar contas</a>
@@ -109,7 +118,22 @@ import { catchError } from 'rxjs/operators';
         <div class="col">
 
           <!-- Faturas do mes -->
-          @if (cards().length > 0) {
+          @if (loading()) {
+            <div class="card">
+              <div class="card__header">
+                <span class="green-bar"></span>
+                <div>
+                  <p class="card__sup">Faturas do mês</p>
+                  <span class="skel skel--val"></span>
+                </div>
+              </div>
+              <div class="skel-rows">
+                <div class="skel skel--row"></div>
+                <div class="skel skel--row"></div>
+              </div>
+            </div>
+          }
+          @if (!loading() && cards().length > 0) {
             <div class="card">
               <div class="card__header">
                 <span class="green-bar"></span>
@@ -147,10 +171,17 @@ import { catchError } from 'rxjs/operators';
           <!-- Quick stats -->
           <div class="card mt">
             <p class="section-label" style="margin-top:0">Resultado do mês</p>
+            @if (loading()) {
+              <div class="result-row">
+                <span class="skel skel--text"></span>
+                <span class="skel skel--val"></span>
+              </div>
+            } @else {
             <div class="result-row" [class.negative]="balance() < 0">
               <span>{{ balance() < 0 ? 'Déficit' : 'Saldo' }}</span>
               <span class="result-val">{{ balance() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
             </div>
+            }
             <a routerLink="/reports/flow" class="manage-link">Ver relatório de entradas e saídas →</a>
           </div>
         </div>
@@ -279,11 +310,29 @@ import { catchError } from 'rxjs/operators';
     .result-row { display: flex; justify-content: space-between; align-items: center; padding: .75rem 0; border-top: 1px solid #f3f4f6; }
     .result-val { font-size: 1.15rem; font-weight: 700; color: #16a34a; }
     .result-row.negative .result-val { color: #dc2626; }
+
+    /* Skeleton loading */
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skel {
+      display: inline-block; border-radius: .375rem;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    .skel--val  { width: 120px; height: 1.6rem; vertical-align: middle; margin: .15rem 0; }
+    .skel--text { width: 60px;  height: 1rem;   vertical-align: middle; }
+    .skel--row  { height: 44px; border-radius: .375rem; margin: .4rem 0; display: block; width: 100%; }
+    .skel-rows  { margin: .5rem 0; }
   `]
 })
 export class DashboardComponent implements OnInit {
   private api  = inject(ApiService);
   private auth = inject(AuthService);
+
+  loading = signal(true);
 
   income  = signal(0);
   expense = signal(0);
@@ -358,6 +407,8 @@ export class DashboardComponent implements OnInit {
         current_invoice: cardExpMap.get(c.id) ?? 0,
         available_limit: (c.limit ?? 0) - (cardExpMap.get(c.id) ?? 0),
       })));
+
+      this.loading.set(false);
     });
   }
 }

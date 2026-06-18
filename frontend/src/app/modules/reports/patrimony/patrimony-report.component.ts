@@ -26,7 +26,15 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- Simple chart representation -->
       <div class="chart-area">
-        @if (points().length === 0) {
+        @if (loading()) {
+          <div class="skel-bars">
+            @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+              <div class="skel-bar-col">
+                <div class="skel-block" style="width:32px;height:{{ 40 + i * 8 }}px;margin-bottom:.5rem"></div>
+              </div>
+            }
+          </div>
+        } @else if (points().length === 0) {
           <div class="empty">Nenhum dado para o período selecionado.</div>
         } @else {
           <div class="bar-chart">
@@ -49,6 +57,15 @@ import { ToastService } from '../../../core/services/toast.service';
       <table class="table">
         <thead><tr><th>Mês</th><th>Patrimônio Líquido</th><th>Variação</th></tr></thead>
         <tbody>
+          @if (loading()) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>
+                <td><span class="skel-block skel-p" style="width:70px"></span></td>
+                <td><span class="skel-block skel-p" style="width:90px"></span></td>
+                <td><span class="skel-block skel-p" style="width:70px"></span></td>
+              </tr>
+            }
+          }
           @for (p of points(); track p.month; let i = $index) {
             <tr>
               <td>{{ p.month }}</td>
@@ -83,6 +100,8 @@ import { ToastService } from '../../../core/services/toast.service';
     .bar--positive { background: #22c55e; }
     .bar--negative { background: #ef4444; }
     .bar-month { font-size: .7rem; color: #9ca3af; }
+    .skel-bars { display: flex; align-items: flex-end; gap: .75rem; height: 200px; }
+    .skel-bar-col { display: flex; flex-direction: column; justify-content: flex-end; flex: 1; }
     .table { width: 100%; border-collapse: collapse; background: #fff; border-radius: .5rem; overflow: hidden; }
     .table th, .table td { padding: .75rem 1rem; text-align: left; border-bottom: 1px solid #f3f4f6; font-size: .875rem; }
     .table th { background: #f9fafb; font-weight: 600; }
@@ -100,6 +119,7 @@ export class PatrimonyReportComponent implements OnInit {
 
   from = `${new Date().getFullYear()}-01-01`;
   to = `${new Date().getFullYear()}-12-31`;
+  loading = signal(true);
   points = signal<any[]>([]);
 
   maxAbs = 0;
@@ -107,9 +127,11 @@ export class PatrimonyReportComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load(): void {
+    this.loading.set(true);
     this.api.get<any>('/reports/patrimony', { from: this.from, to: this.to }).subscribe(res => {
       this.points.set(res.data ?? []);
       this.maxAbs = Math.max(...(res.data ?? []).map((p: any) => Math.abs(p.net_worth)), 1);
+      this.loading.set(false);
     });
   }
 

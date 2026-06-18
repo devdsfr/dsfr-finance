@@ -19,3 +19,51 @@ input, select, textarea, button {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+/* ── Global skeleton / shimmer ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+.skel {
+  display: inline-block;
+  border-radius: .375rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+.skel-block {
+  display: block;
+  border-radius: .375rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+/* size helpers */
+.skel-h1   { height: 2rem;   }
+.skel-h2   { height: 1.5rem; }
+.skel-h3   { height: 1.1rem; }
+.skel-p    { height: .85rem; }
+.skel-w-25 { width: 25%; }
+.skel-w-40 { width: 40%; }
+.skel-w-60 { width: 60%; }
+.skel-w-80 { width: 80%; }
+.skel-w-full { width: 100%; }
+.skel-card {
+  background: #fff;
+  border-radius: .5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.skel-row-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .65rem 0;
+  border-top: 1px solid #f3f4f6;
+}
+.skel-circle { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }

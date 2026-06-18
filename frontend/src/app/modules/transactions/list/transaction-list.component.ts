@@ -68,7 +68,15 @@ interface DayGroup {
     <!-- Grouped list -->
     <div class="tx-board">
       @if (loading()) {
-        <div class="empty-state">Carregando...</div>
+        <div class="skel-list">
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <div class="skel-tx-row">
+              <span class="skel skel--circle"></span>
+              <span class="skel skel--line"></span>
+              <span class="skel skel--amount"></span>
+            </div>
+          }
+        </div>
       } @else if (groups().length === 0) {
         <div class="empty-state">Nenhum lancamento em {{ monthLabel() }}.</div>
       } @else {
@@ -235,6 +243,22 @@ interface DayGroup {
     .act--del:hover { background: #fee2e2; color: #dc2626; }
 
     .empty-state { padding: 3rem; text-align: center; color: #9ca3af; font-size: .875rem; }
+
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skel {
+      display: inline-block; border-radius: .375rem;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    .skel-list { padding: .5rem 0; }
+    .skel-tx-row { display: flex; align-items: center; gap: 1rem; padding: .75rem 1rem; border-bottom: 1px solid #f3f4f6; }
+    .skel--circle { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+    .skel--line   { flex: 1; height: 1rem; }
+    .skel--amount { width: 80px; height: 1rem; flex-shrink: 0; }
 
     .balance-footer {
       position: fixed; bottom: 0; left: 0; right: 0;

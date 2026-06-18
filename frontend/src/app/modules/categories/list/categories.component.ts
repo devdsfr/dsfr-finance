@@ -58,6 +58,18 @@ interface Category { id: string; name: string; color: string; icon: string; type
     }
 
     <div class="categories-grid">
+      @if (loading()) {
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <div class="cat-card">
+            <div class="cat-card__header" style="background:#e5e7eb">
+              <span class="skel-block" style="width:36px;height:36px;border-radius:50%"></span>
+            </div>
+            <div class="cat-card__body">
+              <span class="skel-block skel-h3" style="width:80px"></span>
+            </div>
+          </div>
+        }
+      }
       @for (cat of categories(); track cat.id) {
         <div class="cat-card">
           <div class="cat-card__header" [style.background]="cat.color">
@@ -114,6 +126,7 @@ export class CategoriesComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
 
+  loading = signal(true);
   categories = signal<Category[]>([]);
   showForm = false;
   editing: Category | null = null;
@@ -123,7 +136,8 @@ export class CategoriesComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
-    this.api.get<any>('/categories').subscribe(r => this.categories.set(r.data ?? []));
+    this.loading.set(true);
+    this.api.get<any>('/categories').subscribe(r => { this.categories.set(r.data ?? []); this.loading.set(false); });
   }
 
   openForm() { this.editing = null; this.form = { name: '', type: 'expense', color: '#6366f1', icon: '📁' }; this.showForm = true; }

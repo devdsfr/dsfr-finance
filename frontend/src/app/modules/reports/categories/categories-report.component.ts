@@ -20,6 +20,17 @@ import { ApiService } from '../../../core/services/api.service';
       <table class="table">
         <thead><tr><th>Categoria</th><th>Tipo</th><th>Qtd</th><th>Total</th><th>%</th></tr></thead>
         <tbody>
+          @if (loading()) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>
+                <td><span class="skel-block skel-p" style="width:90px;border-radius:9999px"></span></td>
+                <td><span class="skel-block skel-p" style="width:60px"></span></td>
+                <td><span class="skel-block skel-p" style="width:30px"></span></td>
+                <td><span class="skel-block skel-p" style="width:80px"></span></td>
+                <td><span class="skel-block skel-p" style="width:60px"></span></td>
+              </tr>
+            }
+          }
           @for (row of rows(); track row.category) {
             <tr>
               <td>
@@ -59,6 +70,7 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class CategoriesReportComponent implements OnInit {
   private api = inject(ApiService);
+  loading = signal(true);
   rows = signal<any[]>([]);
   month = new Date().toISOString().slice(0, 7);
 
@@ -66,7 +78,10 @@ export class CategoriesReportComponent implements OnInit {
   pct = (v: number) => Math.round((v / this.maxTotal()) * 100);
 
   ngOnInit() { this.load(); }
-  load() { this.api.get<any>('/reports/categories', { month: this.month }).subscribe(r => this.rows.set(r.data ?? [])); }
+  load() {
+    this.loading.set(true);
+    this.api.get<any>('/reports/categories', { month: this.month }).subscribe(r => { this.rows.set(r.data ?? []); this.loading.set(false); });
+  }
   export(format: string) {
     this.api.download(`/reports/export/${format}`, { type: 'categories', month: this.month })
       .subscribe(blob => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `categories.${format === 'csv' ? 'csv' : 'xlsx'}`; a.click(); });

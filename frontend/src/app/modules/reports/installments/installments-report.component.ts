@@ -28,6 +28,17 @@ import { environment } from '../../../../environments/environment';
           </tr>
         </thead>
         <tbody>
+          @if (loading()) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>
+                <td><span class="skel-block skel-p" style="width:120px"></span></td>
+                <td><span class="skel-block skel-p" style="width:70px"></span></td>
+                <td class="num"><span class="skel-block skel-p" style="width:40px;margin-left:auto"></span></td>
+                <td class="num"><span class="skel-block skel-p" style="width:70px;margin-left:auto"></span></td>
+                <td class="num"><span class="skel-block skel-p" style="width:70px;margin-left:auto"></span></td>
+              </tr>
+            }
+          }
           @for (row of rows(); track row.id) {
             <tr>
               <td>{{ row.description }}</td>
@@ -63,6 +74,7 @@ import { environment } from '../../../../environments/environment';
 })
 export class InstallmentsReportComponent implements OnInit {
   private api = inject(ApiService);
+  loading = signal(true);
   rows = signal<any[]>([]);
 
   ngOnInit() {
@@ -78,6 +90,7 @@ export class InstallmentsReportComponent implements OnInit {
         amount_per_part: i.amount_per_part ?? i.amount ?? 0,
         total_remaining: i.total_remaining ?? 0,
       })));
+      this.loading.set(false);
     });
   }
 

@@ -19,7 +19,22 @@ import { ApiService } from '../../../core/services/api.service';
     </div>
 
     @if (selectedCard) {
-      @if (invoices().length === 0) {
+      @if (loading()) {
+        <div class="card">
+          <table class="table">
+            <thead><tr><th>Competencia</th><th class="num">Total</th><th class="num">Qtd</th></tr></thead>
+            <tbody>
+              @for (i of [1,2,3,4,5,6]; track i) {
+                <tr>
+                  <td><span class="skel-block skel-p" style="width:70px"></span></td>
+                  <td class="num"><span class="skel-block skel-p" style="width:80px;margin-left:auto"></span></td>
+                  <td class="num"><span class="skel-block skel-p" style="width:30px;margin-left:auto"></span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (invoices().length === 0) {
         <div class="empty-state">Nenhuma fatura encontrada para este cartao.</div>
       } @else {
         <div class="card">
@@ -62,6 +77,7 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class CardInvoicesComponent implements OnInit {
   private api = inject(ApiService);
+  loading = signal(false);
   cards = signal<any[]>([]);
   invoices = signal<any[]>([]);
   selectedCard = '';
@@ -72,6 +88,7 @@ export class CardInvoicesComponent implements OnInit {
 
   load() {
     if (!this.selectedCard) return;
+    this.loading.set(true);
     this.api.get<any>(`/reports/cards/${this.selectedCard}/invoices`).subscribe(r => {
       // Backend now returns: { month, expense (=total), net (=count) }
       const raw: any[] = r.data ?? [];
@@ -80,6 +97,7 @@ export class CardInvoicesComponent implements OnInit {
         total: inv.expense ?? inv.total ?? 0,
         count: Math.round(inv.net ?? inv.count ?? 0),
       })));
+      this.loading.set(false);
     });
   }
 }

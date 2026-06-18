@@ -91,6 +91,19 @@ import { ToastService } from '../../../core/services/toast.service';
     }
 
     <div class="limits-list">
+      @if (loading()) {
+        @for (i of [1,2,3]; track i) {
+          <div class="limit-card">
+            <div class="limit-card__info">
+              <div class="skel-block skel-h3 skel-w-40" style="margin-bottom:.3rem"></div>
+              <div class="skel-block skel-p skel-w-25"></div>
+            </div>
+            <div class="limit-card__progress" style="flex:1">
+              <div class="skel-block" style="height:.75rem;border-radius:.375rem;width:100%"></div>
+            </div>
+          </div>
+        }
+      }
       @for (l of limits(); track l.id) {
         <div class="limit-card">
           <div class="limit-card__info">
@@ -162,6 +175,7 @@ export class SpendingLimitsComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
 
+  loading = signal(true);
   limits = signal<any[]>([]);
   categories = signal<any[]>([]);
   accounts = signal<any[]>([]);
@@ -182,7 +196,8 @@ export class SpendingLimitsComponent implements OnInit {
   }
 
   load(): void {
-    this.api.get<any>('/spending-limits').subscribe(r => this.limits.set(r.data ?? []));
+    this.loading.set(true);
+    this.api.get<any>('/spending-limits').subscribe(r => { this.limits.set(r.data ?? []); this.loading.set(false); });
   }
 
   limitTitle(l: any): string {

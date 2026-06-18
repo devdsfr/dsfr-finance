@@ -67,6 +67,16 @@ function months2text(n: number): string {
           <button class="btn btn--primary btn--sm" (click)="openForm()">+ Nova</button>
         </div>
 
+        @if (loading()) {
+          @for (i of [1,2,3]; track i) {
+            <div class="debt-card">
+              <div class="skel-block skel-p" style="width:60px;margin-bottom:.4rem"></div>
+              <div class="skel-block skel-h3" style="width:120px;margin-bottom:.4rem"></div>
+              <div class="skel-block skel-p" style="width:100px;margin-bottom:.5rem"></div>
+              <div class="skel-block" style="height:4px;width:100%;border-radius:2px"></div>
+            </div>
+          }
+        }
         @for (d of debts(); track d.id) {
           <div class="debt-card" [class.debt-card--active]="selected()?.id === d.id"
                (click)="select(d)">
@@ -87,7 +97,7 @@ function months2text(n: number): string {
           </div>
         }
 
-        @if (debts().length === 0) {
+        @if (!loading() && debts().length === 0) {
           <div class="empty-sidebar">
             <p>Nenhuma dívida cadastrada.</p>
             <p>Cadastre financiamentos, consórcios, empréstimos e simule estratégias para quitá-los.</p>
@@ -441,6 +451,7 @@ export class DebtStrategyComponent implements OnInit {
   private api   = inject(ApiService);
   private toast = inject(ToastService);
 
+  loading     = signal(true);
   debts       = signal<Debt[]>([]);
   selected    = signal<Debt | null>(null);
   showForm    = signal(false);
@@ -549,7 +560,7 @@ export class DebtStrategyComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
-    this.api.get<any>('/debts').subscribe(r => this.debts.set(r.data ?? []));
+    this.api.get<any>('/debts').subscribe(r => { this.debts.set(r.data ?? []); this.loading.set(false); });
   }
 
   select(d: Debt) {

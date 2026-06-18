@@ -47,6 +47,15 @@ import { ApiService } from '../../../core/services/api.service';
             </tr>
           </thead>
           <tbody>
+            @if (loading()) {
+              @for (i of [1,2,3,4,5]; track i) {
+                <tr>
+                  <td><span class="skel-block skel-p" style="width:70px"></span></td>
+                  <td><span class="skel-block skel-p" style="width:80px"></span></td>
+                  <td><span class="skel-block skel-p" style="width:80px"></span></td>
+                </tr>
+              }
+            }
             @for (row of tableRows(); track row.month) {
               <tr>
                 <td>{{ row.month }}</td>
@@ -86,6 +95,7 @@ export class AccountsReportComponent implements OnInit {
 
   from = `${new Date().getFullYear()}-01-01`;
   to = `${new Date().getFullYear()}-12-31`;
+  loading = signal(true);
   accounts = signal<any[]>([]);
   selectedAccounts: string[] = [];
   data = signal<any[]>([]);
@@ -99,9 +109,10 @@ export class AccountsReportComponent implements OnInit {
   }
 
   load(): void {
+    this.loading.set(true);
     this.api.get<any>('/reports/accounts', {
       from: this.from, to: this.to, account_id: this.selectedAccounts
-    }).subscribe(r => this.data.set(r.data ?? []));
+    }).subscribe(r => { this.data.set(r.data ?? []); this.loading.set(false); });
   }
 
   toggleAccount(id: string): void {

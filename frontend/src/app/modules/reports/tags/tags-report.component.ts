@@ -20,7 +20,22 @@ import { ApiService } from '../../../core/services/api.service';
       </div>
     </div>
 
-    @if (rows().length === 0) {
+    @if (loading()) {
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Tag</th><th class="num">Qtd</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            @for (i of [1,2,3,4]; track i) {
+              <tr>
+                <td><span class="skel-block skel-p" style="width:70px;border-radius:9999px"></span></td>
+                <td class="num"><span class="skel-block skel-p" style="width:30px;margin-left:auto"></span></td>
+                <td class="num"><span class="skel-block skel-p" style="width:80px;margin-left:auto"></span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (rows().length === 0) {
       <!-- AC-RL-20: CTA contextual quando sem tags -->
       <div class="cta-card">
         <div class="cta-card__icon">🏷️</div>
@@ -90,6 +105,7 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class TagsReportComponent implements OnInit {
   private api = inject(ApiService);
+  loading = signal(true);
   rows = signal<any[]>([]);
 
   month = (() => {
@@ -104,6 +120,7 @@ export class TagsReportComponent implements OnInit {
     const from = `${y}-${m}-01`;
     const to   = `${y}-${m}-31`;
     // Tags are not yet in a dedicated endpoint — derive from transactions
+    this.loading.set(true);
     this.api.get<any>('/transactions', { date_from: from, date_to: to, limit: 500 }).subscribe(r => {
       const txs: any[] = r.data ?? [];
       const map = new Map<string, { tag: string; color: string; count: number; total: number }>();
@@ -117,6 +134,7 @@ export class TagsReportComponent implements OnInit {
         }
       }
       this.rows.set([...map.values()].sort((a, b) => b.total - a.total));
+      this.loading.set(false);
     });
   }
 
