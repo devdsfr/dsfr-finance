@@ -23,6 +23,9 @@ const CARD_BRANDS = [
 
 const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#0891b2','#db2777'];
 
+const ACC_EMOJIS  = ['🏦','🏧','💰','💵','🐷','📈','💼','🏠','🌟','💎','🎯','🔐'];
+const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥','🎓','🛒','🌐','💡'];
+
 @Component({
   selector: 'app-banking',
   standalone: true,
@@ -61,6 +64,16 @@ const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#08
                 <input [(ngModel)]="acc.balance" name="balance" type="number" step="0.01" class="input" placeholder="0,00" />
               </div>
               <div class="form-group">
+                <label>Ícone</label>
+                <div class="emoji-row">
+                  @for (e of accEmojis; track e) {
+                    <button type="button" class="emoji-btn"
+                            [class.selected]="acc.icon === e"
+                            (click)="acc.icon = e">{{ e }}</button>
+                  }
+                </div>
+              </div>
+              <div class="form-group">
                 <label>Cor</label>
                 <div class="color-row">
                   @for (c of colors; track c) {
@@ -96,7 +109,7 @@ const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#08
           @for (a of accounts(); track a.id) {
             <div class="item-card">
               <div class="item-card__top">
-                <div class="item-icon" [style.background]="a.color ?? '#111'">{{ a.name[0] }}</div>
+                <div class="item-icon" [style.background]="a.color ?? '#111'">{{ a.icon || a.name[0] }}</div>
                 <div class="item-info">
                   <span class="item-name">{{ a.name }}</span>
                   <span class="item-sub">{{ accTypeLabel(a.type) }}</span>
@@ -150,6 +163,16 @@ const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#08
                 <input [(ngModel)]="card.due_day" name="due_day" type="number" min="1" max="31" class="input" placeholder="1–31" />
               </div>
               <div class="form-group">
+                <label>Ícone</label>
+                <div class="emoji-row">
+                  @for (e of cardEmojis; track e) {
+                    <button type="button" class="emoji-btn"
+                            [class.selected]="card.icon === e"
+                            (click)="card.icon = e">{{ e }}</button>
+                  }
+                </div>
+              </div>
+              <div class="form-group">
                 <label>Cor</label>
                 <div class="color-row">
                   @for (c of colors; track c) {
@@ -185,7 +208,7 @@ const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#08
           @for (c of cards(); track c.id) {
             <div class="item-card">
               <div class="item-card__top">
-                <div class="item-icon item-icon--card" [style.background]="c.color ?? '#6366f1'">{{ c.name[0] }}</div>
+                <div class="item-icon item-icon--card" [style.background]="c.color ?? '#6366f1'">{{ c.icon || c.name[0] }}</div>
                 <div class="item-info">
                   <span class="item-name">{{ c.name }}</span>
                   <span class="item-sub">{{ brandLabel(c.brand) }}</span>
@@ -238,6 +261,10 @@ const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#08
     .color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform .1s; }
     .color-swatch:hover { transform: scale(1.15); }
     .color-swatch.selected { border-color: #111; transform: scale(1.15); }
+    .emoji-row { display: flex; gap: .25rem; flex-wrap: wrap; padding-top: .25rem; }
+    .emoji-btn { width: 34px; height: 34px; border-radius: .375rem; border: 2px solid transparent; background: #f3f4f6; cursor: pointer; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: transform .1s, border-color .1s; }
+    .emoji-btn:hover { transform: scale(1.15); background: #e5e7eb; }
+    .emoji-btn.selected { border-color: #2e7736; background: #dcfce7; transform: scale(1.1); }
     .form-actions { display: flex; gap: .75rem; justify-content: flex-end; padding-top: .5rem; border-top: 1px solid #f3f4f6; margin-top: .5rem; }
 
     .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
@@ -249,9 +276,9 @@ const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#08
     }
     .item-card__top { display: flex; align-items: center; gap: .75rem; }
     .item-icon {
-      width: 40px; height: 40px; border-radius: 50%;
+      width: 44px; height: 44px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+      color: #fff; font-weight: 700; font-size: 1.35rem; flex-shrink: 0;
     }
     .item-icon--card { border-radius: .5rem; }
     .item-info { display: flex; flex-direction: column; }
@@ -297,6 +324,8 @@ export class BankingComponent implements OnInit {
   readonly accTypes   = ACCOUNT_TYPES;
   readonly cardBrands = CARD_BRANDS;
   readonly colors     = COLORS;
+  readonly accEmojis  = ACC_EMOJIS;
+  readonly cardEmojis = CARD_EMOJIS;
 
   ngOnInit() {
     this.loadAccounts();
@@ -316,7 +345,7 @@ export class BankingComponent implements OnInit {
   // ── Accounts ──
   openAccForm() {
     this.editingAcc = null;
-    this.acc = { name: '', type: 'checking', balance: 0, color: COLORS[0] };
+    this.acc = { name: '', type: 'checking', balance: 0, color: COLORS[0], icon: '' };
     this.accForm = true;
   }
   editAcc(a: any) {
@@ -346,7 +375,7 @@ export class BankingComponent implements OnInit {
   // ── Cards ──
   openCardForm() {
     this.editingCard = null;
-    this.card = { name: '', brand: 'visa', limit: 0, closing_day: null, due_day: null, color: COLORS[1] };
+    this.card = { name: '', brand: 'visa', limit: 0, closing_day: null, due_day: null, color: COLORS[1], icon: '' };
     this.cardForm = true;
   }
   editCard(c: any) {
