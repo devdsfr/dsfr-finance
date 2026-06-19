@@ -24,8 +24,9 @@ services:
         value: "https://finance-frontend-3tf6.onrender.com"
     healthCheckPath: /api/v1/health
 
-  - type: static
+  - type: web
     name: finance-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install --legacy-peer-deps && npm run build
     staticPublishPath: dist/dsfr-finance/browser
