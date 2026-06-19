@@ -28,8 +28,9 @@ services:
     name: finance-frontend
     runtime: static
     rootDir: frontend
-    buildCommand: npm install --legacy-peer-deps && npm run build
-    staticPublishPath: dist/dsfr-finance/browser
+    npmInstallCommand: npm install --legacy-peer-deps
+    buildCommand: npm run build
+    staticPublishPath: frontend/dist/dsfr-finance/browser
     pullRequestPreviewsEnabled: false
     envVars:
       - key: NODE_VERSION
