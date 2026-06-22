@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dsfr/finance/internal/models"
+	"github.com/lib/pq"
 )
 
 type TransactionRepository struct {
@@ -275,6 +276,35 @@ func (r *TransactionRepository) GetTags(txID string) ([]models.Tag, error) {
 		tags = append(tags, tag)
 	}
 	return tags, nil
+}
+
+// GetTagsForTransactions batches tag lookup for a whole page of transactions
+// in a single round-trip, instead of one query per row (N+1). Returns a map
+// keyed by transaction_id. Used by List() to avoid e.g. 500 sequential
+// queries when the dashboard asks for limit=500.
+func (r *TransactionRepository) GetTagsForTransactions(txIDs []string) (map[string][]models.Tag, error) {
+	result := make(map[string][]models.Tag, len(txIDs))
+	if len(txIDs) == 0 {
+		return result, nil
+	}
+	q := `SELECT tt.transaction_id, t.id, t.workspace_id, t.name, t.color, t.created_at
+	      FROM tags t
+	      JOIN transaction_tags tt ON tt.tag_id = t.id
+	      WHERE tt.transaction_id = ANY($1)`
+	rows, err := r.db.Query(q, pq.Array(txIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var txID string
+		var tag models.Tag
+		if err := rows.Scan(&txID, &tag.ID, &tag.WorkspaceID, &tag.Name, &tag.Color, &tag.CreatedAt); err != nil {
+			return nil, err
+		}
+		result[txID] = append(result[txID], tag)
+	}
+	return result, nil
 }
 
 // SuggestTags returns tag suggestions based on description (AC-TG-05)

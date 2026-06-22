@@ -47,9 +47,16 @@ func (h *TransactionHandler) List(c *gin.Context) {
 		return
 	}
 
-	// Attach tags to each transaction
+	// Attach tags in a single batched query (was previously one query per
+	// transaction — with limit=500 that meant up to 500 round-trips and was
+	// the single biggest contributor to dashboard load time).
+	ids := make([]string, len(txs))
+	for i, tx := range txs {
+		ids[i] = tx.ID
+	}
+	tagsByTx, _ := h.repo.GetTagsForTransactions(ids)
 	for _, tx := range txs {
-		tx.Tags, _ = h.repo.GetTags(tx.ID)
+		tx.Tags = tagsByTx[tx.ID]
 	}
 
 	overdue, _ := h.repo.CountOverdue(wsID)
