@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
+import { PlanService } from '../core/services/plan.service';
 import { ToastComponent } from '../shared/components/toast/toast.component';
 import { filter } from 'rxjs/operators';
 
@@ -45,7 +46,12 @@ import { filter } from 'rxjs/operators';
           </div>
 
           <a routerLink="/spending-limits" routerLinkActive="active">Limite de Gastos</a>
-          <a routerLink="/debt-strategy"   routerLinkActive="active">Estratégia de Dívidas</a>
+          <a routerLink="/debt-strategy"   routerLinkActive="active">
+            Estratégia de Dívidas @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
+          </a>
+          <a routerLink="/ai-subscriptions" routerLinkActive="active">
+            Assinaturas de IA @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
+          </a>
           <a routerLink="/banking"         routerLinkActive="active">Conexão Bancária</a>
         </nav>
 
@@ -66,6 +72,10 @@ import { filter } from 'rxjs/operators';
             <div class="user-menu__dropdown" (mouseleave)="userMenuOpen.set(false)">
               <a routerLink="/account"     (click)="userMenuOpen.set(false)">Minha Conta</a>
               <a routerLink="/categories"  (click)="userMenuOpen.set(false)">Categorias</a>
+              <a routerLink="/plan"        (click)="userMenuOpen.set(false)">
+                Controle de Acesso
+                <span class="plan-pill" [class.plan-pill--premium]="plan.isPremium()">{{ plan.isPremium() ? 'Premium' : 'Free' }}</span>
+              </a>
               <a routerLink="/alert-config"(click)="userMenuOpen.set(false)">Configurar Alertas</a>
               <a routerLink="/activity"    (click)="userMenuOpen.set(false)">Log de Atividades</a>
               <hr/>
@@ -107,6 +117,12 @@ import { filter } from 'rxjs/operators';
           <a class="drawer__link" routerLink="/debt-strategy" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
             📊 Estratégia de Dívidas
+            @if (!plan.isPremium()) { <span class="drawer__lock">🔒</span> }
+          </a>
+          <a class="drawer__link" routerLink="/ai-subscriptions" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            🤖 Assinaturas de IA
+            @if (!plan.isPremium()) { <span class="drawer__lock">🔒</span> }
           </a>
           <a class="drawer__link" routerLink="/banking" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
@@ -141,6 +157,11 @@ import { filter } from 'rxjs/operators';
              (click)="drawerOpen.set(false)">👤 Minha Conta</a>
           <a class="drawer__link" routerLink="/categories" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">📁 Categorias</a>
+          <a class="drawer__link" routerLink="/plan" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            🔑 Controle de Acesso
+            <span class="plan-pill" [class.plan-pill--premium]="plan.isPremium()">{{ plan.isPremium() ? 'Premium' : 'Free' }}</span>
+          </a>
           <a class="drawer__link" routerLink="/alert-config" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">⚙️ Configurar Alertas</a>
           <a class="drawer__link" routerLink="/activity" routerLinkActive="drawer__link--active"
@@ -258,6 +279,15 @@ import { filter } from 'rxjs/operators';
     .user-menu__dropdown hr { margin: .375rem 0; border: none; border-top: 1px solid #e5e7eb; }
     .user-menu__dropdown button { color: #ef4444; }
 
+    .lock-dot { font-size: .65rem; opacity: .8; margin-left: .2rem; }
+    .plan-pill {
+      display: inline-block; margin-left: .4rem; padding: .05rem .4rem;
+      border-radius: 9999px; background: #e5e7eb; color: #374151;
+      font-size: .62rem; font-weight: 700; vertical-align: middle;
+    }
+    .plan-pill--premium { background: #2e7736; color: #fff; }
+    .drawer__lock { font-size: .7rem; margin-left: .3rem; }
+
     /* ── Mobile Drawer ───────────────────────────────────── */
     .drawer-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -325,6 +355,7 @@ import { filter } from 'rxjs/operators';
 })
 export class ShellComponent implements OnInit {
   auth = inject(AuthService);
+  plan = inject(PlanService);
   private api = inject(ApiService);
   private router = inject(Router);
 
@@ -346,6 +377,7 @@ export class ShellComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.plan.load();
     this.api.get<any>('/notifications').subscribe(r => {
       const list: any[] = r.data ?? [];
       this.unreadCount.set(list.filter((n: any) => !n.read).length);

@@ -21,7 +21,7 @@ services:
       - key: PORT
         value: "8080"
       - key: CORS_ORIGINS
-        value: "https://finance-frontend-3tf6.onrender.com"
+        value: "https://finance-frontend-6r9b.onrender.com"
     healthCheckPath: /api/v1/health
 
   - type: web
@@ -34,9 +34,14 @@ services:
       - key: NODE_VERSION
         value: "20"
     headers:
+      # Hashed JS/CSS bundles never change content for a given filename — cache them for a year.
       - path: /*
         name: Cache-Control
-        value: no-cache
+        value: public, max-age=31536000, immutable
+      # index.html must always be revalidated so users get the pointer to the latest hashed bundles.
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
     routes:
       - type: rewrite
         source: /*

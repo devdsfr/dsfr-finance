@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"database/sql"
 	"net/http"
 	"strings"
 
@@ -50,4 +51,22 @@ func GetWorkspaceID(c *gin.Context) string {
 	v, _ := c.Get("workspace_id")
 	s, _ := v.(string)
 	return s
+}
+
+// RequirePremium blocks a route unless the logged-in user's plan is "premium".
+// Must run after Auth(). Returns 403 with code "premium_required" so the
+// frontend can show an upsell instead of a generic error.
+func RequirePremium(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var plan string
+		err := db.QueryRowContext(c, `SELECT plan FROM users WHERE id=$1`, GetUserID(c)).Scan(&plan)
+		if err != nil || plan != "premium" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "este recurso está disponível apenas no plano Premium",
+				"code":  "premium_required",
+			})
+			return
+		}
+		c.Next()
+	}
 }

@@ -2,19 +2,26 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
+import { PlanService } from '../../../core/services/plan.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-accounts-report',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <!-- AC-RL-18: multi-account comparison; AC-RL-19: monthly consolidated balance -->
     <div class="report-page">
       <div class="report-header">
         <h1>Relatório de Contas</h1>
         <div class="report-actions">
-          <button class="btn btn--outline btn--sm" (click)="exportData('csv')">⬇ CSV</button>
-          <button class="btn btn--outline btn--sm" (click)="exportData('excel')">⬇ Excel</button>
+          <button class="btn btn--outline btn--sm" (click)="exportData('csv')" title="Exportar CSV — recurso Premium">
+            {{ plan.isPremium() ? '⬇' : '🔒' }} CSV
+          </button>
+          <button class="btn btn--outline btn--sm" (click)="exportData('excel')" title="Exportar Excel — recurso Premium">
+            {{ plan.isPremium() ? '⬇' : '🔒' }} Excel
+          </button>
         </div>
       </div>
 
@@ -92,6 +99,8 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class AccountsReportComponent implements OnInit {
   private api = inject(ApiService);
+  private toast = inject(ToastService);
+  plan = inject(PlanService);
 
   from = `${new Date().getFullYear()}-01-01`;
   to = `${new Date().getFullYear()}-12-31`;
@@ -101,6 +110,7 @@ export class AccountsReportComponent implements OnInit {
   data = signal<any[]>([]);
 
   ngOnInit(): void {
+    if (!this.plan.loaded()) this.plan.load();
     this.api.get<any>('/accounts').subscribe(r => {
       this.accounts.set(r.data ?? []);
       this.selectedAccounts = (r.data ?? []).map((a: any) => a.id);
@@ -142,6 +152,10 @@ export class AccountsReportComponent implements OnInit {
   }
 
   exportData(fmt: string): void {
+    if (!this.plan.isPremium()) {
+      this.toast.show('Exportar relatórios é um recurso Premium.', 'warning');
+      return;
+    }
     const path = fmt === 'csv' ? '/reports/export/csv' : '/reports/export/excel';
     this.api.download(path, { report: 'accounts', from: this.from, to: this.to }).subscribe(blob => {
       const ext = fmt === 'csv' ? 'csv' : 'xlsx';

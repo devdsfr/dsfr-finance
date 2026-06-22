@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PlanService } from '../../../core/services/plan.service';
 
 @Component({
   selector: 'app-patrimony-report',
@@ -15,8 +16,8 @@ import { ToastService } from '../../../core/services/toast.service';
         <h1>Evolução Patrimonial</h1>
         <div class="report-actions">
           <!-- AC-RL-21: Export -->
-          <button class="btn btn--outline btn--sm" (click)="exportData('csv')">⬇ CSV</button>
-          <button class="btn btn--outline btn--sm" (click)="exportData('excel')">⬇ Excel</button>
+          <button class="btn btn--outline btn--sm" (click)="exportData('csv')" title="Recurso Premium">{{ plan.isPremium() ? '⬇' : '🔒' }} CSV</button>
+          <button class="btn btn--outline btn--sm" (click)="exportData('excel')" title="Recurso Premium">{{ plan.isPremium() ? '⬇' : '🔒' }} Excel</button>
         </div>
       </div>
       <div class="filters">
@@ -116,6 +117,7 @@ import { ToastService } from '../../../core/services/toast.service';
 export class PatrimonyReportComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  plan = inject(PlanService);
 
   from = `${new Date().getFullYear()}-01-01`;
   to = `${new Date().getFullYear()}-12-31`;
@@ -124,7 +126,10 @@ export class PatrimonyReportComponent implements OnInit {
 
   maxAbs = 0;
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    if (!this.plan.loaded()) this.plan.load();
+    this.load();
+  }
 
   load(): void {
     this.loading.set(true);
@@ -145,6 +150,10 @@ export class PatrimonyReportComponent implements OnInit {
   }
 
   exportData(format: 'csv' | 'excel'): void {
+    if (!this.plan.isPremium()) {
+      this.toast.show('Exportar relatórios é um recurso Premium.', 'warning');
+      return;
+    }
     const path = format === 'csv' ? '/reports/export/csv' : '/reports/export/excel';
     this.api.download(path, { report: 'patrimony', from: this.from, to: this.to }).subscribe(blob => {
       const ext = format === 'csv' ? 'csv' : 'xlsx';

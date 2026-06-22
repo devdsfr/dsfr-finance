@@ -1,8 +1,10 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { PlanService } from '../../core/services/plan.service';
 
 interface Debt {
   id: string; name: string; type: string; system: string;
@@ -56,8 +58,17 @@ function months2text(n: number): string {
 @Component({
   selector: 'app-debt-strategy',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
+    @if (!plan.isPremium()) {
+      <div class="upsell-card">
+        <div class="upsell-icon">🔒</div>
+        <h2>Recurso Premium</h2>
+        <p>Simule estratégias de quitação de dívidas (bola de neve, avalanche, amortização) e descubra quanto você
+           economiza pagando parcelas maiores ou investindo a diferença.</p>
+        <a routerLink="/plan" class="btn btn--primary">Ver planos</a>
+      </div>
+    } @else {
     <div class="ds-page">
 
       <!-- ── Sidebar ──────────────────────────────────────────────────── -->
@@ -330,8 +341,17 @@ function months2text(n: number): string {
         </div>
       </div>
     }
+    }
   `,
   styles: [`
+    .upsell-card {
+      background: #fff; border-radius: .75rem; padding: 3rem 2rem; text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07); max-width: 480px; margin: 2rem auto;
+    }
+    .upsell-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    .upsell-card h2 { margin: 0 0 .5rem; font-size: 1.2rem; color: #111; }
+    .upsell-card p { color: #6b7280; font-size: .9rem; line-height: 1.5; margin-bottom: 1.5rem; }
+    .upsell-card .btn--primary { display: inline-block; text-decoration: none; padding: .55rem 1.2rem; border-radius: .375rem; background: #2e7736; color: #fff; font-weight: 600; font-size: .85rem; }
     .ds-page { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 52px); gap: 0; margin: -1.5rem -2rem; }
 
     /* Sidebar */
@@ -450,6 +470,7 @@ function months2text(n: number): string {
 export class DebtStrategyComponent implements OnInit {
   private api   = inject(ApiService);
   private toast = inject(ToastService);
+  plan = inject(PlanService);
 
   loading     = signal(true);
   debts       = signal<Debt[]>([]);
@@ -557,7 +578,20 @@ export class DebtStrategyComponent implements OnInit {
   });
 
   // ── Lifecycle ────────────────────────────────────────────────────────
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    if (this.plan.loaded()) {
+      if (this.plan.isPremium()) this.load();
+      else this.loading.set(false);
+    } else {
+      this.api.get<any>('/plan').subscribe(r => {
+        this.plan.plan.set(r.plan ?? 'free');
+        this.plan.features.set(r.features ?? []);
+        this.plan.loaded.set(true);
+        if (this.plan.isPremium()) this.load();
+        else this.loading.set(false);
+      });
+    }
+  }
 
   load() {
     this.api.get<any>('/debts').subscribe(r => { this.debts.set(r.data ?? []); this.loading.set(false); });

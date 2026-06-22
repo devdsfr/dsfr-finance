@@ -1,6 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../core/services/api.service';
+import { PlanService } from '../../../core/services/plan.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -11,8 +13,8 @@ import { environment } from '../../../../environments/environment';
     <div class="page-header">
       <h1>Parcelamentos Ativos</h1>
       <div class="header-actions">
-        <button class="btn btn--outline btn--sm" (click)="exportCSV()">CSV</button>
-        <button class="btn btn--outline btn--sm" (click)="exportExcel()">Excel</button>
+        <button class="btn btn--outline btn--sm" (click)="exportCSV()" title="Recurso Premium">{{ plan.isPremium() ? '' : '🔒 ' }}CSV</button>
+        <button class="btn btn--outline btn--sm" (click)="exportExcel()" title="Recurso Premium">{{ plan.isPremium() ? '' : '🔒 ' }}Excel</button>
       </div>
     </div>
 
@@ -74,10 +76,13 @@ import { environment } from '../../../../environments/environment';
 })
 export class InstallmentsReportComponent implements OnInit {
   private api = inject(ApiService);
+  private toast = inject(ToastService);
+  plan = inject(PlanService);
   loading = signal(true);
   rows = signal<any[]>([]);
 
   ngOnInit() {
+    if (!this.plan.loaded()) this.plan.load();
     this.api.get<any>('/reports/installments').subscribe(r => {
       const raw: any[] = r.data ?? [];
       // Normalise field names from backend model
@@ -95,9 +100,11 @@ export class InstallmentsReportComponent implements OnInit {
   }
 
   exportCSV() {
+    if (!this.plan.isPremium()) { this.toast.show('Exportar relatórios é um recurso Premium.', 'warning'); return; }
     window.open(`${environment.apiUrl}/reports/export/csv?report=installments`, '_blank');
   }
   exportExcel() {
+    if (!this.plan.isPremium()) { this.toast.show('Exportar relatórios é um recurso Premium.', 'warning'); return; }
     window.open(`${environment.apiUrl}/reports/export/excel?report=installments`, '_blank');
   }
 }

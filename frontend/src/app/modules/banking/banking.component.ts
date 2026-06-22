@@ -13,18 +13,35 @@ const ACCOUNT_TYPES = [
 ];
 
 const CARD_BRANDS = [
-  { value: 'visa',       label: 'Visa',        color: '#1a1f71' },
-  { value: 'mastercard', label: 'Mastercard',   color: '#eb001b' },
-  { value: 'elo',        label: 'Elo',          color: '#ffcb05' },
-  { value: 'amex',       label: 'Amex',         color: '#2e77bc' },
-  { value: 'hipercard',  label: 'Hipercard',    color: '#b3093c' },
-  { value: 'other',      label: 'Outro',        color: '#6b7280' },
+  { value: 'visa',       label: 'Visa' },
+  { value: 'mastercard', label: 'Mastercard' },
+  { value: 'elo',        label: 'Elo' },
+  { value: 'amex',       label: 'Amex' },
+  { value: 'hipercard',  label: 'Hipercard' },
+  { value: 'other',      label: 'Outro' },
 ];
 
 const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#0891b2','#db2777'];
 
-const ACC_EMOJIS  = ['🏦','🏧','💰','💵','🐷','📈','💼','🏠','🌟','💎','🎯','🔐'];
-const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥','🎓','🛒','🌐','💡'];
+// Bancos/instituições com logo (Clearbit) e cor da marca
+const BANK_PRESETS = [
+  { name: 'Nubank',          color: '#8a05be', logo: 'https://logo.clearbit.com/nubank.com.br' },
+  { name: 'Inter',           color: '#ff7000', logo: 'https://logo.clearbit.com/bancointer.com.br' },
+  { name: 'Itaú',            color: '#003d8f', logo: 'https://logo.clearbit.com/itau.com.br' },
+  { name: 'Bradesco',        color: '#cc092f', logo: 'https://logo.clearbit.com/bradesco.com.br' },
+  { name: 'Santander',       color: '#ec0000', logo: 'https://logo.clearbit.com/santander.com.br' },
+  { name: 'Caixa',           color: '#005ca9', logo: 'https://logo.clearbit.com/caixa.gov.br' },
+  { name: 'Banco do Brasil', color: '#f9dd16', logo: 'https://logo.clearbit.com/bb.com.br' },
+  { name: 'C6 Bank',         color: '#242424', logo: 'https://logo.clearbit.com/c6bank.com.br' },
+  { name: 'BTG',             color: '#002060', logo: 'https://logo.clearbit.com/btgpactual.com' },
+  { name: 'XP',              color: '#000000', logo: 'https://logo.clearbit.com/xpi.com.br' },
+  { name: 'Mercado Pago',    color: '#009ee3', logo: 'https://logo.clearbit.com/mercadopago.com.br' },
+  { name: 'PicPay',          color: '#21c25e', logo: 'https://logo.clearbit.com/picpay.com' },
+  { name: 'Sicoob',          color: '#007a3d', logo: 'https://logo.clearbit.com/sicoob.com.br' },
+  { name: 'Sicredi',         color: '#009a44', logo: 'https://logo.clearbit.com/sicredi.com.br' },
+  { name: 'Neon',            color: '#00e5ff', logo: 'https://logo.clearbit.com/neon.com.br' },
+  { name: 'Outro',           color: '#6b7280', logo: '' },
+];
 
 @Component({
   selector: 'app-banking',
@@ -46,6 +63,28 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
         <div class="form-card">
           <h3>{{ editingAcc ? 'Editar conta' : 'Nova conta' }}</h3>
           <form (ngSubmit)="saveAcc()" #af="ngForm">
+
+            <!-- Bank presets -->
+            <div class="form-group" style="margin-bottom:1rem">
+              <label>Escolher banco</label>
+              <div class="preset-grid">
+                @for (b of bankPresets; track b.name) {
+                  <button type="button" class="preset-btn"
+                          [class.selected]="acc.logo === b.logo"
+                          (click)="applyBankPreset(acc, b)"
+                          [title]="b.name">
+                    @if (b.logo) {
+                      <img [src]="b.logo" [alt]="b.name" class="preset-logo"
+                           (error)="onLogoError($event, b.color, b.name)" />
+                    } @else {
+                      <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
+                    }
+                    <span class="preset-label">{{ b.name }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+
             <div class="form-row">
               <div class="form-group">
                 <label>Nome</label>
@@ -62,27 +101,6 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
               <div class="form-group">
                 <label>Saldo inicial (R$)</label>
                 <input [(ngModel)]="acc.balance" name="balance" type="number" step="0.01" class="input" placeholder="0,00" />
-              </div>
-              <div class="form-group">
-                <label>Ícone</label>
-                <div class="emoji-row">
-                  @for (e of accEmojis; track e) {
-                    <button type="button" class="emoji-btn"
-                            [class.selected]="acc.icon === e"
-                            (click)="acc.icon = e">{{ e }}</button>
-                  }
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Cor</label>
-                <div class="color-row">
-                  @for (c of colors; track c) {
-                    <button type="button" class="color-swatch"
-                            [style.background]="c"
-                            [class.selected]="acc.color === c"
-                            (click)="acc.color = c"></button>
-                  }
-                </div>
               </div>
             </div>
             <div class="form-actions">
@@ -109,7 +127,14 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
           @for (a of accounts(); track a.id) {
             <div class="item-card">
               <div class="item-card__top">
-                <div class="item-icon" [style.background]="a.color ?? '#111'">{{ a.icon || a.name[0] }}</div>
+                @if (a.logo) {
+                  <div class="item-icon" [style.background]="a.color ?? '#111'">
+                    <img [src]="a.logo" [alt]="a.name" class="icon-logo"
+                         (error)="onLogoError($event, a.color ?? '#111', a.name)" />
+                  </div>
+                } @else {
+                  <div class="item-icon" [style.background]="a.color ?? '#111'">{{ a.name[0] }}</div>
+                }
                 <div class="item-info">
                   <span class="item-name">{{ a.name }}</span>
                   <span class="item-sub">{{ accTypeLabel(a.type) }}</span>
@@ -137,6 +162,28 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
         <div class="form-card">
           <h3>{{ editingCard ? 'Editar cartão' : 'Novo cartão' }}</h3>
           <form (ngSubmit)="saveCard()" #cf="ngForm">
+
+            <!-- Bank presets -->
+            <div class="form-group" style="margin-bottom:1rem">
+              <label>Escolher banco</label>
+              <div class="preset-grid">
+                @for (b of bankPresets; track b.name) {
+                  <button type="button" class="preset-btn"
+                          [class.selected]="card.logo === b.logo"
+                          (click)="applyBankPreset(card, b)"
+                          [title]="b.name">
+                    @if (b.logo) {
+                      <img [src]="b.logo" [alt]="b.name" class="preset-logo"
+                           (error)="onLogoError($event, b.color, b.name)" />
+                    } @else {
+                      <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
+                    }
+                    <span class="preset-label">{{ b.name }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+
             <div class="form-row">
               <div class="form-group">
                 <label>Nome</label>
@@ -161,27 +208,6 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
               <div class="form-group">
                 <label>Dia de vencimento</label>
                 <input [(ngModel)]="card.due_day" name="due_day" type="number" min="1" max="31" class="input" placeholder="1–31" />
-              </div>
-              <div class="form-group">
-                <label>Ícone</label>
-                <div class="emoji-row">
-                  @for (e of cardEmojis; track e) {
-                    <button type="button" class="emoji-btn"
-                            [class.selected]="card.icon === e"
-                            (click)="card.icon = e">{{ e }}</button>
-                  }
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Cor</label>
-                <div class="color-row">
-                  @for (c of colors; track c) {
-                    <button type="button" class="color-swatch"
-                            [style.background]="c"
-                            [class.selected]="card.color === c"
-                            (click)="card.color = c"></button>
-                  }
-                </div>
               </div>
             </div>
             <div class="form-actions">
@@ -208,7 +234,14 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
           @for (c of cards(); track c.id) {
             <div class="item-card">
               <div class="item-card__top">
-                <div class="item-icon item-icon--card" [style.background]="c.color ?? '#6366f1'">{{ c.icon || c.name[0] }}</div>
+                @if (c.logo) {
+                  <div class="item-icon item-icon--card" [style.background]="c.color ?? '#6366f1'">
+                    <img [src]="c.logo" [alt]="c.name" class="icon-logo"
+                         (error)="onLogoError($event, c.color ?? '#6366f1', c.name)" />
+                  </div>
+                } @else {
+                  <div class="item-icon item-icon--card" [style.background]="c.color ?? '#6366f1'">{{ c.name[0] }}</div>
+                }
                 <div class="item-info">
                   <span class="item-name">{{ c.name }}</span>
                   <span class="item-sub">{{ brandLabel(c.brand) }}</span>
@@ -257,16 +290,23 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
     label { font-size: .8rem; font-weight: 500; color: #374151; }
     .input { padding: .45rem .75rem; border: 1px solid #d1d5db; border-radius: .375rem; font-size: .875rem; width: 100%; box-sizing: border-box; }
     .input:focus { outline: none; border-color: #2e7736; box-shadow: 0 0 0 3px rgba(46,119,54,.1); }
-    .color-row { display: flex; gap: .35rem; flex-wrap: wrap; padding-top: .25rem; }
-    .color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform .1s; }
-    .color-swatch:hover { transform: scale(1.15); }
-    .color-swatch.selected { border-color: #111; transform: scale(1.15); }
-    .emoji-row { display: flex; gap: .25rem; flex-wrap: wrap; padding-top: .25rem; }
-    .emoji-btn { width: 34px; height: 34px; border-radius: .375rem; border: 2px solid transparent; background: #f3f4f6; cursor: pointer; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: transform .1s, border-color .1s; }
-    .emoji-btn:hover { transform: scale(1.15); background: #e5e7eb; }
-    .emoji-btn.selected { border-color: #2e7736; background: #dcfce7; transform: scale(1.1); }
     .form-actions { display: flex; gap: .75rem; justify-content: flex-end; padding-top: .5rem; border-top: 1px solid #f3f4f6; margin-top: .5rem; }
 
+    /* Bank preset grid */
+    .preset-grid { display: flex; flex-wrap: wrap; gap: .5rem; padding-top: .25rem; }
+    .preset-btn {
+      display: flex; flex-direction: column; align-items: center; gap: .25rem;
+      width: 68px; padding: .5rem .25rem; border-radius: .5rem;
+      border: 2px solid transparent; background: #f9fafb; cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .preset-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+    .preset-btn.selected { border-color: #2e7736; background: #f0fdf4; }
+    .preset-logo { width: 36px; height: 36px; border-radius: 50%; object-fit: contain; background: #fff; padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .preset-initial { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; }
+    .preset-label { font-size: .6rem; color: #6b7280; text-align: center; line-height: 1.2; max-width: 60px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+    /* Card list */
     .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
     .item-card {
       background: #fff; border-radius: .5rem;
@@ -278,9 +318,11 @@ const CARD_EMOJIS = ['💳','✈️','🛍️','🍔','⛽','🎮','📱','🏥'
     .item-icon {
       width: 44px; height: 44px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 700; font-size: 1.35rem; flex-shrink: 0;
+      color: #fff; font-weight: 700; font-size: 1.2rem; flex-shrink: 0;
+      overflow: hidden;
     }
     .item-icon--card { border-radius: .5rem; }
+    .icon-logo { width: 100%; height: 100%; object-fit: contain; padding: 4px; background: transparent; }
     .item-info { display: flex; flex-direction: column; }
     .item-name { font-size: .95rem; font-weight: 700; color: #111; }
     .item-sub { font-size: .75rem; color: #9ca3af; }
@@ -323,9 +365,7 @@ export class BankingComponent implements OnInit {
 
   readonly accTypes   = ACCOUNT_TYPES;
   readonly cardBrands = CARD_BRANDS;
-  readonly colors     = COLORS;
-  readonly accEmojis  = ACC_EMOJIS;
-  readonly cardEmojis = CARD_EMOJIS;
+  readonly bankPresets = BANK_PRESETS;
 
   ngOnInit() {
     this.loadAccounts();
@@ -342,17 +382,33 @@ export class BankingComponent implements OnInit {
     this.api.get<any>('/credit-cards').subscribe(r => { this.cards.set(r.data ?? []); this.loadingCards.set(false); });
   }
 
+  applyBankPreset(obj: any, bank: typeof BANK_PRESETS[0]) {
+    if (bank.name !== 'Outro') obj.name = bank.name;
+    obj.color = bank.color;
+    obj.logo  = bank.logo;
+  }
+
+  onLogoError(event: Event, color: string, name: string) {
+    const img = event.target as HTMLImageElement;
+    const parent = img.parentElement!;
+    img.style.display = 'none';
+    parent.style.background = color;
+    parent.textContent = name[0];
+    parent.style.color = '#fff';
+    parent.style.fontWeight = '700';
+    parent.style.fontSize = '1.2rem';
+    parent.style.display = 'flex';
+    parent.style.alignItems = 'center';
+    parent.style.justifyContent = 'center';
+  }
+
   // ── Accounts ──
   openAccForm() {
     this.editingAcc = null;
-    this.acc = { name: '', type: 'checking', balance: 0, color: COLORS[0], icon: '' };
+    this.acc = { name: '', type: 'checking', balance: 0, color: '#111827', logo: '' };
     this.accForm = true;
   }
-  editAcc(a: any) {
-    this.editingAcc = a;
-    this.acc = { ...a };
-    this.accForm = true;
-  }
+  editAcc(a: any) { this.editingAcc = a; this.acc = { ...a }; this.accForm = true; }
   cancelAcc() { this.accForm = false; }
   saveAcc() {
     const obs = this.editingAcc
@@ -375,14 +431,10 @@ export class BankingComponent implements OnInit {
   // ── Cards ──
   openCardForm() {
     this.editingCard = null;
-    this.card = { name: '', brand: 'visa', limit: 0, closing_day: null, due_day: null, color: COLORS[1], icon: '' };
+    this.card = { name: '', brand: 'visa', limit: 0, closing_day: null, due_day: null, color: '#111827', logo: '' };
     this.cardForm = true;
   }
-  editCard(c: any) {
-    this.editingCard = c;
-    this.card = { ...c };
-    this.cardForm = true;
-  }
+  editCard(c: any) { this.editingCard = c; this.card = { ...c }; this.cardForm = true; }
   cancelCard() { this.cardForm = false; }
   saveCard() {
     const obs = this.editingCard

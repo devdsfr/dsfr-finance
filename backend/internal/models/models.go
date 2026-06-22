@@ -10,14 +10,15 @@ import (
 // ────────────────────────────────────────────────────────────────────────────
 
 type User struct {
-	ID           string     `json:"id" db:"id"`
-	Name         string     `json:"name" db:"name"`
-	Email        string     `json:"email" db:"email"`
-	PasswordHash string     `json:"-" db:"password_hash"`
-	MFASecret    *string    `json:"-" db:"mfa_secret"`
-	MFAEnabled   bool       `json:"mfa_enabled" db:"mfa_enabled"`
-	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+	ID           string    `json:"id" db:"id"`
+	Name         string    `json:"name" db:"name"`
+	Email        string    `json:"email" db:"email"`
+	PasswordHash string    `json:"-" db:"password_hash"`
+	MFASecret    *string   `json:"-" db:"mfa_secret"`
+	MFAEnabled   bool      `json:"mfa_enabled" db:"mfa_enabled"`
+	Plan         string    `json:"plan" db:"plan"` // free | premium
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -150,9 +151,9 @@ type Transaction struct {
 	CreatedAt        time.Time  `json:"created_at"`
 	UpdatedAt        time.Time  `json:"updated_at"`
 	// expanded
-	Tags     []Tag     `json:"tags,omitempty"`
-	Category *Category `json:"category,omitempty"`
-	Account  *Account  `json:"account,omitempty"`
+	Tags     []Tag       `json:"tags,omitempty"`
+	Category *Category   `json:"category,omitempty"`
+	Account  *Account    `json:"account,omitempty"`
 	Card     *CreditCard `json:"credit_card,omitempty"`
 }
 
@@ -172,8 +173,8 @@ type SpendingLimit struct {
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	// computed
-	CurrentSpend float64  `json:"current_spend"`
-	UsagePct     float64  `json:"usage_pct"`
+	CurrentSpend float64 `json:"current_spend"`
+	UsagePct     float64 `json:"usage_pct"`
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -221,6 +222,59 @@ type ActivityLog struct {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// AI SUBSCRIPTIONS
+// ────────────────────────────────────────────────────────────────────────────
+
+type AISubscription struct {
+	ID           string     `json:"id"`
+	WorkspaceID  string     `json:"workspace_id"`
+	Provider     string     `json:"provider"` // openai | anthropic | google | other
+	Name         string     `json:"name"`
+	PlanName     *string    `json:"plan_name,omitempty"`
+	MonthlyCost  float64    `json:"monthly_cost"`
+	BillingDay   *int       `json:"billing_day,omitempty"`
+	HasAPIKey    bool       `json:"has_api_key"`
+	Color        *string    `json:"color,omitempty"`
+	Logo         *string    `json:"logo,omitempty"`
+	Status       string     `json:"status"` // active | canceled
+	LastSyncedAt *time.Time `json:"last_synced_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	// computed
+	CurrentUsage   *AIUsageSnapshot  `json:"current_usage,omitempty"`
+	Recommendation *AIRecommendation `json:"recommendation,omitempty"`
+}
+
+type AIUsageSnapshot struct {
+	ID             string    `json:"id"`
+	SubscriptionID string    `json:"subscription_id"`
+	Period         string    `json:"period"` // YYYY-MM
+	RequestsCount  int       `json:"requests_count"`
+	TokensUsed     int64     `json:"tokens_used"`
+	CostUSD        float64   `json:"cost_usd"`
+	Source         string    `json:"source"` // manual | api
+	SyncedAt       time.Time `json:"synced_at"`
+}
+
+type AIRecommendation struct {
+	Label      string  `json:"label"` // "Compensa manter" | "Baixo uso" | "Cancelar" | "Sem dados"
+	Score      string  `json:"score"` // good | warning | bad | unknown
+	CostPerUse float64 `json:"cost_per_use"`
+	Message    string  `json:"message"`
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// PLAN / ACCESS CONTROL
+// ────────────────────────────────────────────────────────────────────────────
+
+type FeatureInfo struct {
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // REPORT DTOs
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -248,8 +302,8 @@ type CategorySummary struct {
 }
 
 type PatrimonyPoint struct {
-	Month     string  `json:"month"`
-	NetWorth  float64 `json:"net_worth"`
+	Month    string  `json:"month"`
+	NetWorth float64 `json:"net_worth"`
 }
 
 type ActiveInstallment struct {

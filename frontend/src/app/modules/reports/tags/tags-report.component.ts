@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
+import { PlanService } from '../../../core/services/plan.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-tags-report',
@@ -14,8 +16,8 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="header-actions">
         <input type="month" [(ngModel)]="month" (ngModelChange)="load()" class="input" />
         @if (rows().length > 0) {
-          <button class="btn btn--outline btn--sm" (click)="exportCSV()">CSV</button>
-          <button class="btn btn--outline btn--sm" (click)="exportExcel()">Excel</button>
+          <button class="btn btn--outline btn--sm" (click)="exportCSV()" title="Recurso Premium">{{ plan.isPremium() ? '' : '🔒 ' }}CSV</button>
+          <button class="btn btn--outline btn--sm" (click)="exportExcel()" title="Recurso Premium">{{ plan.isPremium() ? '' : '🔒 ' }}Excel</button>
         }
       </div>
     </div>
@@ -105,6 +107,8 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class TagsReportComponent implements OnInit {
   private api = inject(ApiService);
+  private toast = inject(ToastService);
+  plan = inject(PlanService);
   loading = signal(true);
   rows = signal<any[]>([]);
 
@@ -113,7 +117,10 @@ export class TagsReportComponent implements OnInit {
     return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
   })();
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    if (!this.plan.loaded()) this.plan.load();
+    this.load();
+  }
 
   load() {
     const [y, m] = this.month.split('-');
@@ -139,10 +146,12 @@ export class TagsReportComponent implements OnInit {
   }
 
   exportCSV() {
+    if (!this.plan.isPremium()) { this.toast.show('Exportar relatórios é um recurso Premium.', 'warning'); return; }
     const [y, m] = this.month.split('-');
     window.open(`/api/v1/reports/export/csv?report=tags&from=${y}-${m}-01&to=${y}-${m}-31`, '_blank');
   }
   exportExcel() {
+    if (!this.plan.isPremium()) { this.toast.show('Exportar relatórios é um recurso Premium.', 'warning'); return; }
     const [y, m] = this.month.split('-');
     window.open(`/api/v1/reports/export/excel?report=tags&from=${y}-${m}-01&to=${y}-${m}-31`, '_blank');
   }

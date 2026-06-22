@@ -100,6 +100,14 @@ export const routes: Routes = [
       {
         path: 'debt-strategy',
         loadComponent: () => import('./modules/debt-strategy/debt-strategy.component').then(m => m.DebtStrategyComponent)
+      },
+      {
+        path: 'ai-subscriptions',
+        loadComponent: () => import('./modules/ai-subscriptions/ai-subscriptions.component').then(m => m.AiSubscriptionsComponent)
+      },
+      {
+        path: 'plan',
+        loadComponent: () => import('./modules/plan/plan.component').then(m => m.PlanComponent)
       }
     ]
   },

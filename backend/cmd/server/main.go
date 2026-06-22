@@ -41,6 +41,10 @@ func main() {
 	activitySvc := services.NewActivityService(db)
 	authSvc := services.NewAuthService(db, cfg.JWTSecret)
 	txSvc := services.NewTransactionService(txRepo, spendingRepo, notifSvc, activitySvc)
+	aiUsageSvc, err := services.NewAIUsageService(cfg.EncryptionKey)
+	if err != nil {
+		log.Fatalf("failed to init ai usage service: %v", err)
+	}
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	authH := handlers.NewAuthHandler(authSvc)
@@ -55,6 +59,8 @@ func main() {
 	workspaceH := handlers.NewWorkspaceHandler(db)
 	debtH := handlers.NewDebtHandler(db)
 	importH := handlers.NewImportHandler(db)
+	aiSubH := handlers.NewAISubscriptionHandler(db, aiUsageSvc)
+	planH := handlers.NewPlanHandler(db)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -64,6 +70,7 @@ func main() {
 		corsOrigins = []string{cfg.CORSOrigins}
 	}
 	log.Printf("CORS Origins configured: %v", corsOrigins)
+	r.Use(middleware.Gzip())
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     corsOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -105,8 +112,8 @@ func main() {
 		auth.GET("/reports/tags-cta", reportH.TagsCTA)
 		auth.GET("/reports/installments", reportH.ActiveInstallments)
 		auth.GET("/reports/cards/:card_id/invoices", reportH.CardInvoiceHistory)
-		auth.GET("/reports/export/csv", reportH.ExportCSV)
-		auth.GET("/reports/export/excel", reportH.ExportExcel)
+		auth.GET("/reports/export/csv", middleware.RequirePremium(db), reportH.ExportCSV)
+		auth.GET("/reports/export/excel", middleware.RequirePremium(db), reportH.ExportExcel)
 
 		// Spending limits — AC-LG-07..11
 		auth.GET("/spending-limits", spendingH.List)
@@ -145,17 +152,29 @@ func main() {
 		// Import — Organizze PDF
 		auth.POST("/import/organizze", importH.ImportOrganizze)
 
-		// Debt Strategy
-		auth.GET("/debts", debtH.List)
-		auth.POST("/debts", debtH.Create)
-		auth.PUT("/debts/:id", debtH.Update)
-		auth.DELETE("/debts/:id", debtH.Delete)
+		// Debt Strategy — Premium
+		auth.GET("/debts", middleware.RequirePremium(db), debtH.List)
+		auth.POST("/debts", middleware.RequirePremium(db), debtH.Create)
+		auth.PUT("/debts/:id", middleware.RequirePremium(db), debtH.Update)
+		auth.DELETE("/debts/:id", middleware.RequirePremium(db), debtH.Delete)
 
 		// Workspace
 		auth.GET("/workspace", workspaceH.GetInfo)
 		auth.GET("/workspace/members", workspaceH.GetMembers)
 		auth.POST("/workspace/members/invite", workspaceH.InviteMember)
 		auth.DELETE("/workspace/members/:user_id", workspaceH.RemoveMember)
+
+		// AI Subscriptions — Premium
+		auth.GET("/ai-subscriptions", middleware.RequirePremium(db), aiSubH.List)
+		auth.POST("/ai-subscriptions", middleware.RequirePremium(db), aiSubH.Create)
+		auth.PUT("/ai-subscriptions/:id", middleware.RequirePremium(db), aiSubH.Update)
+		auth.DELETE("/ai-subscriptions/:id", middleware.RequirePremium(db), aiSubH.Delete)
+		auth.POST("/ai-subscriptions/:id/sync", middleware.RequirePremium(db), aiSubH.Sync)
+		auth.POST("/ai-subscriptions/:id/usage", middleware.RequirePremium(db), aiSubH.Usage)
+
+		// Plan / Access Control
+		auth.GET("/plan", planH.GetPlan)
+		auth.PUT("/plan", planH.UpdatePlan)
 	}
 
 	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })

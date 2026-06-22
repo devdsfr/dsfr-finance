@@ -6,6 +6,9 @@
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <!-- Pre-warm DNS/TLS to the API origin so the first XHR doesn't pay that cost -->
+  <link rel="preconnect" href="https://finance-backend-vajj.onrender.com" crossorigin />
+  <link rel="dns-prefetch" href="https://finance-backend-vajj.onrender.com" />
 </head>
 <body>
   <app-root></app-root>
