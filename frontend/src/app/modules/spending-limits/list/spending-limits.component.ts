@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
 
 @Component({
   selector: 'app-spending-limits',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MoneyMaskDirective],
   template: `
     <!-- AC-LG-07..11 -->
     <div class="page-header">
@@ -65,8 +66,8 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Valor limite (R$)</label>
-              <input [(ngModel)]="form.amount" name="amount" type="number" step="0.01" class="input" />
+              <label>Valor limite</label>
+              <input [(ngModel)]="form.amount" name="amount" type="text" inputmode="decimal" appMoneyMask class="input" />
             </div>
             <div class="form-group">
               <label>Período</label>

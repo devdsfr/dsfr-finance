@@ -3,40 +3,51 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { Lang } from '../../../core/i18n/translations';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="auth-page">
+      <div class="lang-bar">
+        @for (l of i18n.langs; track l.value) {
+          <button [class.active]="i18n.lang() === l.value" (click)="setLang(l.value)">{{ l.flag }}</button>
+        }
+      </div>
       <div class="auth-card">
-        <h1>💰 dsfr-finance</h1>
-        <h2>Criar conta</h2>
+        <h1>💰 {{ 'auth.app_name' | translate }}</h1>
+        <h2>{{ 'auth.register_title' | translate }}</h2>
         <form (ngSubmit)="register()" class="form">
           <div class="form-group">
-            <label>Nome</label>
+            <label>{{ 'auth.name' | translate }}</label>
             <input [(ngModel)]="name" name="name" required class="input" />
           </div>
           <div class="form-group">
-            <label>E-mail</label>
+            <label>{{ 'auth.email' | translate }}</label>
             <input [(ngModel)]="email" name="email" type="email" required class="input" />
           </div>
           <div class="form-group">
-            <label>Senha (mín. 8 caracteres)</label>
+            <label>{{ 'auth.password_hint' | translate }}</label>
             <input [(ngModel)]="password" name="password" type="password" minlength="8" required class="input" />
           </div>
           @if (error()) { <div class="error">{{ error() }}</div> }
           <button type="submit" class="btn btn--primary" [disabled]="loading()">
-            {{ loading() ? 'Cadastrando...' : 'Criar conta' }}
+            {{ loading() ? ('auth.registering' | translate) : ('auth.register_button' | translate) }}
           </button>
         </form>
-        <a routerLink="/auth/login" class="auth-link">Já tem conta? Entre</a>
+        <a routerLink="/auth/login" class="auth-link">{{ 'auth.have_account' | translate }}</a>
       </div>
     </div>
   `,
   styles: [`
-    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; }
+    .auth-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; gap: 1rem; }
+    .lang-bar { display: flex; gap: .4rem; }
+    .lang-bar button { background: #fff; border: 2px solid transparent; border-radius: .375rem; padding: .3rem .55rem; font-size: 1.1rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .lang-bar button.active { border-color: #6366f1; }
     .auth-card { background: #fff; border-radius: .75rem; padding: 2rem; width: 100%; max-width: 380px;
                  box-shadow: 0 4px 20px rgba(0,0,0,.08); }
     h1 { font-size: 1.5rem; text-align: center; margin: 0 0 .25rem; }
@@ -52,14 +63,18 @@ import { AuthService } from '../../../core/services/auth.service';
 export class RegisterComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
+  i18n = inject(TranslationService);
+
   name = ''; email = ''; password = '';
   loading = signal(false); error = signal('');
+
+  setLang(lang: Lang): void { this.i18n.setLang(lang); }
 
   register(): void {
     this.loading.set(true); this.error.set('');
     this.auth.register(this.name, this.email, this.password).subscribe({
       next: () => this.router.navigate(['/transactions']),
-      error: err => { this.error.set(err.error?.error ?? 'Erro ao cadastrar'); this.loading.set(false); }
+      error: err => { this.error.set(err.error?.error ?? this.i18n.t('auth.register_error_default')); this.loading.set(false); }
     });
   }
 }

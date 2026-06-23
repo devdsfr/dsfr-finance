@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PlanService } from '../../core/services/plan.service';
+import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 
 const AI_PRESETS = [
   { name: 'ChatGPT Plus',   provider: 'openai',     color: '#10a37f', logo: 'https://logo.clearbit.com/openai.com' },
@@ -27,7 +28,7 @@ const PROVIDERS = [
 @Component({
   selector: 'app-ai-subscriptions',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective],
   template: `
     <div class="page-header">
       <h1>Assinaturas de IA</h1>
@@ -87,8 +88,8 @@ const PROVIDERS = [
                 <input [(ngModel)]="item.plan_name" name="plan_name" class="input" placeholder="Ex: Plus, Pro, Team…" />
               </div>
               <div class="form-group">
-                <label>Custo mensal (R$)</label>
-                <input [(ngModel)]="item.monthly_cost" name="monthly_cost" type="number" step="0.01" class="input" placeholder="0,00" />
+                <label>Custo mensal</label>
+                <input [(ngModel)]="item.monthly_cost" name="monthly_cost" type="text" inputmode="decimal" appMoneyMask class="input" placeholder="0,00" />
               </div>
               <div class="form-group">
                 <label>Dia de cobrança</label>

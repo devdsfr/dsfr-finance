@@ -3,13 +3,18 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslationService } from '../../core/services/translation.service';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+
+const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-RO' };
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe, AppCurrencyPipe],
   template: `
     <div class="dash">
 
@@ -19,33 +24,33 @@ import { catchError } from 'rxjs/operators';
           <p class="greeting">{{ greeting() }}, <strong>{{ firstName() }}!</strong></p>
           <div class="month-summary">
             <div class="ms-item">
-              <span class="ms-label">Receitas no mês atual</span>
+              <span class="ms-label">{{ 'dashboard.income_month' | translate }}</span>
               @if (loading()) { <span class="skel skel--val"></span> }
-              @else { <span class="ms-value ms-value--income">{{ income() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span> }
+              @else { <span class="ms-value ms-value--income">{{ income() | appCurrency }}</span> }
             </div>
             <div class="ms-sep"></div>
             <div class="ms-item">
-              <span class="ms-label">Despesas no mês atual</span>
+              <span class="ms-label">{{ 'dashboard.expense_month' | translate }}</span>
               @if (loading()) { <span class="skel skel--val"></span> }
-              @else { <span class="ms-value ms-value--expense">{{ expense() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span> }
+              @else { <span class="ms-value ms-value--expense">{{ expense() | appCurrency }}</span> }
             </div>
           </div>
         </div>
 
         <div class="quick-access">
-          <p class="qa-title">Acesso rápido</p>
+          <p class="qa-title">{{ 'dashboard.quick_access' | translate }}</p>
           <div class="qa-btns">
             <a routerLink="/transactions/new" [queryParams]="{type:'expense'}" class="qa-btn qa-btn--expense">
-              <span class="qa-icon">➖</span><span>DESPESA</span>
+              <span class="qa-icon">➖</span><span>{{ 'dashboard.expense' | translate }}</span>
             </a>
             <a routerLink="/transactions/new" [queryParams]="{type:'income'}" class="qa-btn qa-btn--income">
-              <span class="qa-icon">➕</span><span>RECEITA</span>
+              <span class="qa-icon">➕</span><span>{{ 'dashboard.income' | translate }}</span>
             </a>
             <a routerLink="/transactions/new" [queryParams]="{type:'transfer'}" class="qa-btn qa-btn--transfer">
-              <span class="qa-icon">⇄</span><span>TRANSF.</span>
+              <span class="qa-icon">⇄</span><span>{{ 'dashboard.transfer' | translate }}</span>
             </a>
             <a routerLink="/transactions" class="qa-btn qa-btn--import">
-              <span class="qa-icon">📥</span><span>IMPORTAR</span>
+              <span class="qa-icon">📥</span><span>{{ 'dashboard.import' | translate }}</span>
             </a>
           </div>
         </div>
@@ -62,12 +67,12 @@ import { catchError } from 'rxjs/operators';
             <div class="card__header">
               <span class="green-bar"></span>
               <div>
-                <p class="card__sup">Saldo geral</p>
+                <p class="card__sup">{{ 'dashboard.overall_balance' | translate }}</p>
                 @if (loading()) { <span class="skel skel--val"></span> }
-                @else { <p class="card__big">{{ totalBalance() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</p> }
+                @else { <p class="card__big">{{ totalBalance() | appCurrency }}</p> }
               </div>
             </div>
-            <p class="section-label">Minhas contas</p>
+            <p class="section-label">{{ 'dashboard.my_accounts' | translate }}</p>
             @if (loading()) {
               <div class="skel-rows">
                 <div class="skel skel--row"></div>
@@ -81,21 +86,21 @@ import { catchError } from 'rxjs/operators';
                   <span class="acc-name">{{ acc.name }}</span>
                   <span class="acc-type">{{ acc.type }}</span>
                 </div>
-                <span class="acc-balance">{{ acc.balance | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                <span class="acc-balance">{{ acc.balance | appCurrency }}</span>
               </div>
             }
             @if (!loading() && accounts().length === 0) {
-              <p class="empty-msg">Nenhuma conta cadastrada.</p>
+              <p class="empty-msg">{{ 'dashboard.no_accounts' | translate }}</p>
             }
-            <a routerLink="/banking" class="manage-link">Gerenciar contas</a>
+            <a routerLink="/banking" class="manage-link">{{ 'dashboard.manage_accounts' | translate }}</a>
           </div>
 
           <!-- Contas a pagar -->
           @if (!loading() && payableBills().length > 0) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">Contas a pagar</p>
+              <p class="section-label" style="margin-top:0">{{ 'dashboard.payable' | translate }}</p>
               @if (overduePayable().length > 0) {
-                <div class="bill-banner bill-banner--danger">Contas a pagar atrasadas</div>
+                <div class="bill-banner bill-banner--danger">{{ 'dashboard.payable_overdue' | translate }}</div>
                 @for (bill of overduePayable().slice(0, 4); track bill.id) {
                   <div class="bill-row">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#ef4444'">{{ (bill.description ?? 'B')[0] }}</div>
@@ -103,12 +108,12 @@ import { catchError } from 'rxjs/operators';
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
-                    <span class="bill-amt">{{ bill.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                    <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
                   </div>
                 }
               }
               @if (upcomingPayable().length > 0) {
-                <p class="section-label">Próximas</p>
+                <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
                 @for (bill of upcomingPayable().slice(0, 4); track bill.id) {
                   <div class="bill-row">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#6b7280'">{{ (bill.description ?? 'B')[0] }}</div>
@@ -116,20 +121,20 @@ import { catchError } from 'rxjs/operators';
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
-                    <span class="bill-amt">{{ bill.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                    <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
                   </div>
                 }
               }
-              <a routerLink="/transactions" [queryParams]="{type:'expense',paid:'false'}" class="manage-link">ver mais ▼</a>
+              <a routerLink="/transactions" [queryParams]="{type:'expense',paid:'false'}" class="manage-link">{{ 'dashboard.see_more' | translate }}</a>
             </div>
           }
 
           <!-- Contas a receber -->
           @if (!loading() && receivableBills().length > 0) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">Contas a receber</p>
+              <p class="section-label" style="margin-top:0">{{ 'dashboard.receivable' | translate }}</p>
               @if (overdueReceivable().length > 0) {
-                <div class="bill-banner bill-banner--warning">Contas a receber atrasadas</div>
+                <div class="bill-banner bill-banner--warning">{{ 'dashboard.receivable_overdue' | translate }}</div>
                 @for (bill of overdueReceivable().slice(0, 4); track bill.id) {
                   <div class="bill-row">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#16a34a'">{{ (bill.description ?? 'R')[0] }}</div>
@@ -137,12 +142,12 @@ import { catchError } from 'rxjs/operators';
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
-                    <span class="bill-amt bill-amt--income">{{ bill.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                    <span class="bill-amt bill-amt--income">{{ bill.amount | appCurrency }}</span>
                   </div>
                 }
               }
               @if (upcomingReceivable().length > 0) {
-                <p class="section-label">Próximas</p>
+                <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
                 @for (bill of upcomingReceivable().slice(0, 4); track bill.id) {
                   <div class="bill-row">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#16a34a'">{{ (bill.description ?? 'R')[0] }}</div>
@@ -150,11 +155,11 @@ import { catchError } from 'rxjs/operators';
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
-                    <span class="bill-amt bill-amt--income">{{ bill.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                    <span class="bill-amt bill-amt--income">{{ bill.amount | appCurrency }}</span>
                   </div>
                 }
               }
-              <a routerLink="/transactions" [queryParams]="{type:'income',paid:'false'}" class="manage-link">ver mais ▼</a>
+              <a routerLink="/transactions" [queryParams]="{type:'income',paid:'false'}" class="manage-link">{{ 'dashboard.see_more' | translate }}</a>
             </div>
           }
         </div>
@@ -168,7 +173,7 @@ import { catchError } from 'rxjs/operators';
               <div class="card__header">
                 <span class="green-bar"></span>
                 <div>
-                  <p class="card__sup">Faturas do mês</p>
+                  <p class="card__sup">{{ 'dashboard.invoices_of' | translate }} {{ monthLabel() }}</p>
                   <span class="skel skel--val"></span>
                 </div>
               </div>
@@ -185,39 +190,39 @@ import { catchError } from 'rxjs/operators';
               <div class="card__header">
                 <span class="green-bar"></span>
                 <div>
-                  <p class="card__sup">Faturas de {{ monthLabel() }}</p>
-                  <p class="card__big card__big--expense">{{ totalCardExpense() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</p>
+                  <p class="card__sup">{{ 'dashboard.invoices_of' | translate }} {{ monthLabel() }}</p>
+                  <p class="card__big card__big--expense">{{ totalCardExpense() | appCurrency }}</p>
                 </div>
               </div>
-              <p class="section-label">Meus cartões</p>
+              <p class="section-label">{{ 'dashboard.my_cards' | translate }}</p>
               @for (card of cards(); track card.id) {
                 <div class="card-row">
                   <div class="card-icon" [style.background]="card.color ?? '#6366f1'">{{ card.name[0] }}</div>
                   <div class="card-info">
                     <span class="card-name">{{ card.name }}</span>
-                    <span class="card-sub">Cartão manual</span>
+                    <span class="card-sub">{{ 'dashboard.manual_card' | translate }}</span>
                   </div>
-                  <a [routerLink]="['/reports/card-invoices']" class="ver-fatura">Ver fatura</a>
+                  <a [routerLink]="['/reports/card-invoices']" class="ver-fatura">{{ 'dashboard.see_invoice' | translate }}</a>
                 </div>
                 <div class="card-limits">
                   <div>
-                    <span class="cl-label">Limite Disponível</span>
-                    <span class="cl-val">{{ card.available_limit | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                    <span class="cl-label">{{ 'dashboard.available_limit' | translate }}</span>
+                    <span class="cl-val">{{ card.available_limit | appCurrency }}</span>
                   </div>
                   <div>
-                    <span class="cl-label">Fatura atual</span>
-                    <span class="cl-val cl-val--expense">{{ card.current_invoice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                    <span class="cl-label">{{ 'dashboard.current_invoice' | translate }}</span>
+                    <span class="cl-val cl-val--expense">{{ card.current_invoice | appCurrency }}</span>
                   </div>
                 </div>
               }
-              <a routerLink="/banking" class="manage-link">Gerenciar cartões</a>
+              <a routerLink="/banking" class="manage-link">{{ 'dashboard.manage_cards' | translate }}</a>
             </div>
           }
 
           <!-- Maiores gastos do mês -->
           @if (!loading() && topCategories().length > 0) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">Maiores gastos do mês atual</p>
+              <p class="section-label" style="margin-top:0">{{ 'dashboard.top_spending' | translate }}</p>
               <div class="cat-chart">
                 <div class="cat-list">
                   @for (c of topCategories(); track c.category) {
@@ -240,14 +245,14 @@ import { catchError } from 'rxjs/operators';
                   }
                 </svg>
               </div>
-              <a routerLink="/reports/categories" class="manage-link">Ver relatório →</a>
+              <a routerLink="/reports/categories" class="manage-link">{{ 'dashboard.see_report' | translate }}</a>
             </div>
           }
 
           <!-- Limite de gastos -->
           @if (!loading() && spendingLimits().length > 0) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">Limite de gastos de {{ monthLabel() }}</p>
+              <p class="section-label" style="margin-top:0">{{ 'dashboard.spending_limit_of' | translate }} {{ monthLabel() }}</p>
               @for (lim of spendingLimits().slice(0, 3); track lim.id) {
                 <div class="lim-row">
                   <svg viewBox="0 0 36 36" class="lim-ring">
@@ -262,25 +267,25 @@ import { catchError } from 'rxjs/operators';
                   </svg>
                   <div class="lim-info">
                     <span class="lim-name">{{ limitName(lim) }}</span>
-                    <span class="lim-detail">Meta: {{ lim.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
-                    <span class="lim-detail">Gasto: {{ lim.current_spend | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                    <span class="lim-detail">{{ 'dashboard.goal' | translate }}: {{ lim.amount | appCurrency }}</span>
+                    <span class="lim-detail">{{ 'dashboard.spent' | translate }}: {{ lim.current_spend | appCurrency }}</span>
                   </div>
                   <span class="lim-pct" [class.lim-pct--over]="lim.usage_pct >= 100">{{ lim.usage_pct | number:'1.0-0' }}%</span>
                 </div>
               }
-              <a routerLink="/spending-limits" class="manage-link">Análise completa →</a>
+              <a routerLink="/spending-limits" class="manage-link">{{ 'dashboard.full_analysis' | translate }}</a>
             </div>
           }
 
           <!-- Resultado do mês -->
           @if (!loading()) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">Resultado do mês</p>
+              <p class="section-label" style="margin-top:0">{{ 'dashboard.month_result' | translate }}</p>
               <div class="result-row" [class.negative]="balance() < 0">
-                <span>{{ balance() < 0 ? 'Déficit' : 'Saldo' }}</span>
-                <span class="result-val">{{ balance() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+                <span>{{ balance() < 0 ? ('dashboard.deficit' | translate) : ('dashboard.balance' | translate) }}</span>
+                <span class="result-val">{{ balance() | appCurrency }}</span>
               </div>
-              <a routerLink="/reports/flow" class="manage-link">Ver relatório de entradas e saídas →</a>
+              <a routerLink="/reports/flow" class="manage-link">{{ 'dashboard.see_flow_report' | translate }}</a>
             </div>
           }
         </div>
@@ -450,6 +455,7 @@ import { catchError } from 'rxjs/operators';
 export class DashboardComponent implements OnInit {
   private api  = inject(ApiService);
   private auth = inject(AuthService);
+  private i18n = inject(TranslationService);
 
   readonly C = 2 * Math.PI * 38; // SVG donut circumference ≈ 238.76
 
@@ -468,7 +474,13 @@ export class DashboardComponent implements OnInit {
 
   totalBalance     = computed(() => this.accounts().reduce((s, a) => s + (a.balance ?? 0), 0));
   totalCardExpense = computed(() => this.cards().reduce((s, c) => s + (c.current_invoice ?? 0), 0));
-  monthLabel = signal('');
+
+  // Recomputed automatically whenever the language changes — uses Intl so
+  // we don't need a hardcoded month-name array per language.
+  monthLabel = computed(() => {
+    const locale = LOCALE_MAP[this.i18n.lang()] ?? 'pt-BR';
+    return new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date());
+  });
 
   overduePayable = computed(() => {
     const t = new Date(); t.setHours(0, 0, 0, 0);
@@ -504,9 +516,9 @@ export class DashboardComponent implements OnInit {
 
   greeting(): string {
     const h = new Date().getHours();
-    if (h < 12) return 'Bom dia';
-    if (h < 18) return 'Boa tarde';
-    return 'Boa noite';
+    if (h < 12) return this.i18n.t('dashboard.greeting_morning');
+    if (h < 18) return this.i18n.t('dashboard.greeting_afternoon');
+    return this.i18n.t('dashboard.greeting_evening');
   }
 
   limitName(l: any): string {
@@ -520,9 +532,6 @@ export class DashboardComponent implements OnInit {
     const now  = new Date();
     const year = now.getFullYear();
     const mon  = now.getMonth() + 1;
-    const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    this.monthLabel.set(MONTHS[now.getMonth()]);
 
     // Current month for income/expense/category totals
     const from = `${year}-${String(mon).padStart(2,'0')}-01`;
@@ -558,43 +567,4 @@ export class DashboardComponent implements OnInit {
         catMap.get(cat)!.total += t.amount;
       });
       const topCats = [...catMap.values()]
-        .sort((a, b) => b.total - a.total).slice(0, 5)
-        .map(c => ({ ...c, pct: exp > 0 ? (c.total / exp) * 100 : 0 }));
-      this.topCategories.set(topCats);
-
-      // Payable / receivable bills from wider range (unpaid only)
-      const payable = billList
-        .filter(t => t.type === 'expense' && !t.paid && !t.ignored)
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 20);
-      this.payableBills.set(payable);
-
-      const receivable = billList
-        .filter(t => t.type === 'income' && !t.paid && !t.ignored)
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 20);
-      this.receivableBills.set(receivable);
-
-      // Accounts
-      this.accounts.set(accs.data ?? []);
-
-      // Cards with invoice amounts from current month
-      const ccList: any[] = ccs.data ?? [];
-      const cardExpMap = new Map<string, number>();
-      list.filter(t => t.credit_card_id && t.type === 'expense').forEach(t => {
-        cardExpMap.set(t.credit_card_id, (cardExpMap.get(t.credit_card_id) ?? 0) + t.amount);
-      });
-      this.cards.set(ccList.map(c => ({
-        ...c,
-        current_invoice:  cardExpMap.get(c.id) ?? 0,
-        available_limit: (c.limit ?? 0) - (cardExpMap.get(c.id) ?? 0),
-      })));
-
-      // Spending limits + categories (for limitName)
-      this.spendingLimits.set(limits.data ?? []);
-      this._categories.set(cats.data ?? []);
-
-      this.loading.set(false);
-    });
-  }
-}
+     

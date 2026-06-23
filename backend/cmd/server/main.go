@@ -61,6 +61,7 @@ func main() {
 	importH := handlers.NewImportHandler(db)
 	aiSubH := handlers.NewAISubscriptionHandler(db, aiUsageSvc)
 	planH := handlers.NewPlanHandler(db)
+	settingsH := handlers.NewSettingsHandler(db)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -175,6 +176,12 @@ func main() {
 		// Plan / Access Control
 		auth.GET("/plan", planH.GetPlan)
 		auth.PUT("/plan", planH.UpdatePlan)
+
+		// Settings / GDPR (profile, currency, data export, account deletion)
+		auth.GET("/me", settingsH.GetMe)
+		auth.PUT("/me/settings", settingsH.UpdateSettings)
+		auth.GET("/me/export", settingsH.ExportData)
+		auth.DELETE("/me", settingsH.DeleteAccount)
 	}
 
 	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })

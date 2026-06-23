@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 
 const ACCOUNT_TYPES = [
   { value: 'checking',  label: 'Conta Corrente' },
@@ -23,30 +24,32 @@ const CARD_BRANDS = [
 
 const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#0891b2','#db2777'];
 
-// Bancos/instituições com logo (Clearbit) e cor da marca
+// Bancos/instituições com logo e cor da marca
+// Usa Google S2 Favicons API (sz=128) — funciona sem autenticação e retorna o ícone real da marca
+const GF = (domain: string) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 const BANK_PRESETS = [
-  { name: 'Nubank',          color: '#8a05be', logo: 'https://logo.clearbit.com/nubank.com.br' },
-  { name: 'Inter',           color: '#ff7000', logo: 'https://logo.clearbit.com/bancointer.com.br' },
-  { name: 'Itaú',            color: '#003d8f', logo: 'https://logo.clearbit.com/itau.com.br' },
-  { name: 'Bradesco',        color: '#cc092f', logo: 'https://logo.clearbit.com/bradesco.com.br' },
-  { name: 'Santander',       color: '#ec0000', logo: 'https://logo.clearbit.com/santander.com.br' },
-  { name: 'Caixa',           color: '#005ca9', logo: 'https://logo.clearbit.com/caixa.gov.br' },
-  { name: 'Banco do Brasil', color: '#f9dd16', logo: 'https://logo.clearbit.com/bb.com.br' },
-  { name: 'C6 Bank',         color: '#242424', logo: 'https://logo.clearbit.com/c6bank.com.br' },
-  { name: 'BTG',             color: '#002060', logo: 'https://logo.clearbit.com/btgpactual.com' },
-  { name: 'XP',              color: '#000000', logo: 'https://logo.clearbit.com/xpi.com.br' },
-  { name: 'Mercado Pago',    color: '#009ee3', logo: 'https://logo.clearbit.com/mercadopago.com.br' },
-  { name: 'PicPay',          color: '#21c25e', logo: 'https://logo.clearbit.com/picpay.com' },
-  { name: 'Sicoob',          color: '#007a3d', logo: 'https://logo.clearbit.com/sicoob.com.br' },
-  { name: 'Sicredi',         color: '#009a44', logo: 'https://logo.clearbit.com/sicredi.com.br' },
-  { name: 'Neon',            color: '#00e5ff', logo: 'https://logo.clearbit.com/neon.com.br' },
+  { name: 'Nubank',          color: '#8a05be', logo: GF('nubank.com.br') },
+  { name: 'Inter',           color: '#ff7000', logo: GF('bancointer.com.br') },
+  { name: 'Itaú',            color: '#003d8f', logo: GF('itau.com.br') },
+  { name: 'Bradesco',        color: '#cc092f', logo: GF('bradesco.com.br') },
+  { name: 'Santander',       color: '#ec0000', logo: GF('santander.com.br') },
+  { name: 'Caixa',           color: '#005ca9', logo: GF('caixa.gov.br') },
+  { name: 'Banco do Brasil', color: '#f9dd16', logo: GF('bb.com.br') },
+  { name: 'C6 Bank',         color: '#242424', logo: GF('c6bank.com.br') },
+  { name: 'BTG',             color: '#002060', logo: GF('btgpactual.com') },
+  { name: 'XP',              color: '#111111', logo: GF('xpi.com.br') },
+  { name: 'Mercado Pago',    color: '#009ee3', logo: GF('mercadopago.com.br') },
+  { name: 'PicPay',          color: '#21c25e', logo: GF('picpay.com') },
+  { name: 'Sicoob',          color: '#007a3d', logo: GF('sicoob.com.br') },
+  { name: 'Sicredi',         color: '#009a44', logo: GF('sicredi.com.br') },
+  { name: 'Neon',            color: '#1b1c8a', logo: GF('neon.com.br') },
   { name: 'Outro',           color: '#6b7280', logo: '' },
 ];
 
 @Component({
   selector: 'app-banking',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MoneyMaskDirective],
   template: `
     <div class="page-header">
       <h1>Contas & Cartões</h1>
@@ -73,12 +76,14 @@ const BANK_PRESETS = [
                           [class.selected]="acc.logo === b.logo"
                           (click)="applyBankPreset(acc, b)"
                           [title]="b.name">
-                    @if (b.logo) {
-                      <img [src]="b.logo" [alt]="b.name" class="preset-logo"
-                           (error)="onLogoError($event, b.color, b.name)" />
-                    } @else {
-                      <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
-                    }
+                    <div class="preset-initial" [style.background]="b.color">
+                      @if (b.logo) {
+                        <img [src]="b.logo" [alt]="b.name" class="preset-logo"
+                             (error)="onLogoError($event, b.color, b.name)" />
+                      } @else {
+                        {{ b.name[0] }}
+                      }
+                    </div>
                     <span class="preset-label">{{ b.name }}</span>
                   </button>
                 }
@@ -100,7 +105,7 @@ const BANK_PRESETS = [
               </div>
               <div class="form-group">
                 <label>Saldo inicial (R$)</label>
-                <input [(ngModel)]="acc.balance" name="balance" type="number" step="0.01" class="input" placeholder="0,00" />
+                <input [(ngModel)]="acc.balance" name="balance" type="text" inputmode="decimal" appMoneyMask class="input" placeholder="0,00" />
               </div>
             </div>
             <div class="form-actions">
@@ -172,12 +177,14 @@ const BANK_PRESETS = [
                           [class.selected]="card.logo === b.logo"
                           (click)="applyBankPreset(card, b)"
                           [title]="b.name">
-                    @if (b.logo) {
-                      <img [src]="b.logo" [alt]="b.name" class="preset-logo"
-                           (error)="onLogoError($event, b.color, b.name)" />
-                    } @else {
-                      <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
-                    }
+                    <div class="preset-initial" [style.background]="b.color">
+                      @if (b.logo) {
+                        <img [src]="b.logo" [alt]="b.name" class="preset-logo"
+                             (error)="onLogoError($event, b.color, b.name)" />
+                      } @else {
+                        {{ b.name[0] }}
+                      }
+                    </div>
                     <span class="preset-label">{{ b.name }}</span>
                   </button>
                 }
@@ -199,7 +206,7 @@ const BANK_PRESETS = [
               </div>
               <div class="form-group">
                 <label>Limite (R$)</label>
-                <input [(ngModel)]="card.limit" name="limit" type="number" step="0.01" class="input" placeholder="0,00" />
+                <input [(ngModel)]="card.limit" name="limit" type="text" inputmode="decimal" appMoneyMask class="input" placeholder="0,00" />
               </div>
               <div class="form-group">
                 <label>Dia de fechamento</label>
@@ -302,8 +309,8 @@ const BANK_PRESETS = [
     }
     .preset-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
     .preset-btn.selected { border-color: #2e7736; background: #f0fdf4; }
-    .preset-logo { width: 36px; height: 36px; border-radius: 50%; object-fit: contain; background: #fff; padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
-    .preset-initial { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; }
+    .preset-logo { width: 22px; height: 22px; object-fit: contain; display: block; }
+    .preset-initial { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; overflow: hidden; }
     .preset-label { font-size: .6rem; color: #6b7280; text-align: center; line-height: 1.2; max-width: 60px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
     /* Card list */

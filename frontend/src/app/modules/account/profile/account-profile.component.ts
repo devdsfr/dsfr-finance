@@ -1,18 +1,36 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ApiService } from '../../../core/services/api.service';
+import { SettingsService, CURRENCIES, CurrencyCode } from '../../../core/services/settings.service';
 
 @Component({
   selector: 'app-account-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <!-- AC-MC-08, AC-MC-09, AC-MC-10 -->
     <div class="profile-page">
       <h1>Minha Conta</h1>
+
+      <!-- Preferences: currency -->
+      <section class="section">
+        <h2>Preferências</h2>
+        <div class="form-row">
+          <div class="pref-field">
+            <label>Moeda de exibição</label>
+            <select class="input" [(ngModel)]="selectedCurrency" (ngModelChange)="onCurrencyChange($event)">
+              @for (c of currencies; track c.value) {
+                <option [value]="c.value">{{ c.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <p class="section__desc">Todos os valores no app passam a ser exibidos nessa moeda.</p>
+      </section>
 
       <!-- MFA Section — AC-MC-10 -->
       <section class="section">
@@ -86,6 +104,34 @@ import { ApiService } from '../../../core/services/api.service';
           }
         </div>
       </section>
+
+      <!-- Privacy & Data — GDPR -->
+      <section class="section">
+        <h2>Privacidade e Dados</h2>
+        <p class="section__desc">
+          Veja como tratamos seus dados em nossa
+          <a routerLink="/legal/privacy" target="_blank">Política de Privacidade</a> e
+          <a routerLink="/legal/terms" target="_blank">Termos de Uso</a>.
+        </p>
+
+        <div class="gdpr-row">
+          <div>
+            <strong>Exportar meus dados</strong>
+            <p>Baixe uma cópia de todos os seus dados (contas, lançamentos, categorias etc.) em formato JSON.</p>
+          </div>
+          <button class="btn btn--outline" (click)="exportData()" [disabled]="exporting()">
+            {{ exporting() ? 'Gerando...' : '⬇ Exportar dados' }}
+          </button>
+        </div>
+
+        <div class="gdpr-row gdpr-row--danger">
+          <div>
+            <strong>Excluir minha conta</strong>
+            <p>Remove permanentemente sua conta e todos os dados associados. Esta ação não pode ser desfeita.</p>
+          </div>
+          <button class="btn btn--danger" (click)="deleteAccount()">🗑 Excluir conta</button>
+        </div>
+      </section>
     </div>
   `,
   styles: [`
@@ -116,12 +162,27 @@ import { ApiService } from '../../../core/services/api.service';
     .btn--primary { background: #6366f1; color: #fff; }
     .btn--danger { background: #fee2e2; color: #dc2626; }
     .btn--sm { padding: .25rem .6rem; font-size: .78rem; }
+    .btn--outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+    .btn--outline:hover { border-color: #6366f1; color: #6366f1; }
+
+    .pref-field { display: flex; flex-direction: column; gap: .3rem; max-width: 280px; }
+    .pref-field label { font-size: .82rem; font-weight: 500; color: #374151; }
+
+    .gdpr-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+      padding: 1rem 0; border-top: 1px solid #f3f4f6; flex-wrap: wrap;
+    }
+    .gdpr-row strong { font-size: .9rem; color: #111; }
+    .gdpr-row p { margin: .2rem 0 0; font-size: .8rem; color: #6b7280; max-width: 420px; }
+    .gdpr-row--danger strong { color: #dc2626; }
+    .section__desc a { color: #6366f1; }
   `]
 })
 export class AccountProfileComponent implements OnInit {
   private auth = inject(AuthService);
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  settings = inject(SettingsService);
 
   user = this.auth.currentUser;
   members = signal<any[]>([]);
@@ -129,8 +190,47 @@ export class AccountProfileComponent implements OnInit {
   mfaCode = '';
   invite = { email: '', role: 'viewer' };
 
+  exporting = signal(false);
+  readonly currencies = CURRENCIES;
+  selectedCurrency: CurrencyCode = 'BRL';
+
   ngOnInit(): void {
     this.api.get<any>('/workspace/members').subscribe(r => this.members.set(r.data ?? []));
+    if (!this.settings.loaded()) this.settings.load();
+    this.selectedCurrency = this.settings.currency();
+  }
+
+  onCurrencyChange(code: CurrencyCode): void {
+    this.settings.setCurrency(code).subscribe({
+      next: () => this.toast.success('Moeda atualizada!'),
+      error: () => this.toast.error('Erro ao atualizar moeda.'),
+    });
+  }
+
+  exportData(): void {
+    this.exporting.set(true);
+    this.api.download('/me/export').subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'dsfr-finance-export.json'; a.click();
+        URL.revokeObjectURL(url);
+        this.exporting.set(false);
+      },
+      error: () => { this.toast.error('Erro ao exportar dados.'); this.exporting.set(false); },
+    });
+  }
+
+  deleteAccount(): void {
+    if (!confirm('Tem certeza que deseja excluir sua conta? Todos os seus dados serão removidos permanentemente. Esta ação não pode ser desfeita.')) return;
+    if (!confirm('Confirme novamente: excluir conta e todos os dados para sempre?')) return;
+    this.api.delete('/me').subscribe({
+      next: () => {
+        this.toast.success('Conta excluída.');
+        this.auth.logout();
+      },
+      error: () => this.toast.error('Erro ao excluir conta.'),
+    });
   }
 
   setupMFA(): void {

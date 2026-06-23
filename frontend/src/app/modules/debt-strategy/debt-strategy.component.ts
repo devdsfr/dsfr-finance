@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PlanService } from '../../core/services/plan.service';
+import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 
 interface Debt {
   id: string; name: string; type: string; system: string;
@@ -58,7 +59,7 @@ function months2text(n: number): string {
 @Component({
   selector: 'app-debt-strategy',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective],
   template: `
     @if (!plan.isPremium()) {
       <div class="upsell-card">
@@ -173,9 +174,8 @@ function months2text(n: number): string {
               <h3>🔢 Simulador de Amortização Acelerada</h3>
               <div class="sim-controls">
                 <div class="sim-field">
-                  <label>Parcela simulada (R$)</label>
-                  <input type="number" [(ngModel)]="simPayment" [min]="d.monthly_payment"
-                         step="100" class="input" />
+                  <label>Parcela simulada</label>
+                  <input type="text" inputmode="decimal" appMoneyMask [(ngModel)]="simPayment" name="simPayment" class="input" />
                 </div>
                 <div class="sim-field">
                   <label>Benchmark de investimento (% a.m.)</label>
@@ -288,14 +288,14 @@ function months2text(n: number): string {
             </div>
             <div class="mform-row">
               <div class="fg">
-                <label>Saldo devedor atual (R$) *</label>
+                <label>Saldo devedor atual *</label>
                 <input [(ngModel)]="form.remaining_balance" name="remaining_balance"
-                       type="number" step="0.01" required class="input" (ngModelChange)="recalcMonths()" />
+                       type="text" inputmode="decimal" appMoneyMask required class="input" (ngModelChange)="recalcMonths()" />
               </div>
               <div class="fg">
-                <label>Valor original (R$)</label>
+                <label>Valor original</label>
                 <input [(ngModel)]="form.original_amount" name="original_amount"
-                       type="number" step="0.01" class="input" placeholder="Opcional" />
+                       type="text" inputmode="decimal" appMoneyMask class="input" placeholder="Opcional" />
               </div>
             </div>
             <div class="mform-row">
@@ -306,9 +306,9 @@ function months2text(n: number): string {
                        (ngModelChange)="recalcMonths()" placeholder="Ex: 1.99" />
               </div>
               <div class="fg">
-                <label>Parcela mensal atual (R$) *</label>
+                <label>Parcela mensal atual *</label>
                 <input [(ngModel)]="form.monthly_payment" name="payment"
-                       type="number" step="0.01" required class="input" (ngModelChange)="recalcMonths()" />
+                       type="text" inputmode="decimal" appMoneyMask required class="input" (ngModelChange)="recalcMonths()" />
               </div>
             </div>
             <div class="mform-row">

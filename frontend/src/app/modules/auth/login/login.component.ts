@@ -3,50 +3,61 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { Lang } from '../../../core/i18n/translations';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="auth-page">
+      <div class="lang-bar">
+        @for (l of i18n.langs; track l.value) {
+          <button [class.active]="i18n.lang() === l.value" (click)="setLang(l.value)">{{ l.flag }}</button>
+        }
+      </div>
       <div class="auth-card">
-        <h1>💰 dsfr-finance</h1>
-        <h2>Entrar</h2>
+        <h1>💰 {{ 'auth.app_name' | translate }}</h1>
+        <h2>{{ 'auth.login_title' | translate }}</h2>
         @if (!needsMFA()) {
           <form (ngSubmit)="login()" class="form">
             <div class="form-group">
-              <label>E-mail</label>
+              <label>{{ 'auth.email' | translate }}</label>
               <input [(ngModel)]="email" name="email" type="email" required class="input" />
             </div>
             <div class="form-group">
-              <label>Senha</label>
+              <label>{{ 'auth.password' | translate }}</label>
               <input [(ngModel)]="password" name="password" type="password" required class="input" />
             </div>
             @if (error()) { <div class="error">{{ error() }}</div> }
             <button type="submit" class="btn btn--primary" [disabled]="loading()">
-              {{ loading() ? 'Entrando...' : 'Entrar' }}
+              {{ loading() ? ('auth.logging_in' | translate) : ('auth.login_button' | translate) }}
             </button>
           </form>
         } @else {
           <!-- AC-MC-10: MFA step -->
           <form (ngSubmit)="loginMFA()" class="form">
-            <p>Insira o código do seu aplicativo autenticador.</p>
+            <p>{{ 'auth.mfa_instructions' | translate }}</p>
             <div class="form-group">
-              <label>Código 2FA</label>
+              <label>{{ 'auth.mfa_code' | translate }}</label>
               <input [(ngModel)]="totpCode" name="totp" maxlength="6" required class="input input--center" />
             </div>
             @if (error()) { <div class="error">{{ error() }}</div> }
-            <button type="submit" class="btn btn--primary">Verificar</button>
-            <button type="button" class="btn btn--ghost" (click)="needsMFA.set(false)">Voltar</button>
+            <button type="submit" class="btn btn--primary">{{ 'auth.verify' | translate }}</button>
+            <button type="button" class="btn btn--ghost" (click)="needsMFA.set(false)">{{ 'common.back' | translate }}</button>
           </form>
         }
-        <a routerLink="/auth/register" class="auth-link">Não tem conta? Cadastre-se</a>
+        <a routerLink="/auth/register" class="auth-link">{{ 'auth.no_account' | translate }}</a>
       </div>
     </div>
   `,
   styles: [`
-    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; }
+    .auth-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; gap: 1rem; }
+    .lang-bar { display: flex; gap: .4rem; }
+    .lang-bar button { background: #fff; border: 2px solid transparent; border-radius: .375rem; padding: .3rem .55rem; font-size: 1.1rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .lang-bar button.active { border-color: #6366f1; }
     .auth-card { background: #fff; border-radius: .75rem; padding: 2rem; width: 100%; max-width: 380px;
                  box-shadow: 0 4px 20px rgba(0,0,0,.08); }
     h1 { font-size: 1.5rem; text-align: center; margin: 0 0 .25rem; }
@@ -65,11 +76,14 @@ import { AuthService } from '../../../core/services/auth.service';
 export class LoginComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
+  i18n = inject(TranslationService);
 
   email = ''; password = ''; totpCode = '';
   loading = signal(false);
   error = signal('');
   needsMFA = signal(false);
+
+  setLang(lang: Lang): void { this.i18n.setLang(lang); }
 
   login(): void {
     this.loading.set(true); this.error.set('');
@@ -78,14 +92,14 @@ export class LoginComponent {
         if (res.mfa_required) { this.needsMFA.set(true); this.loading.set(false); return; }
         this.router.navigate(['/transactions']);
       },
-      error: err => { this.error.set(err.error?.error ?? 'Erro ao entrar'); this.loading.set(false); }
+      error: err => { this.error.set(err.error?.error ?? this.i18n.t('auth.login_error_default')); this.loading.set(false); }
     });
   }
 
   loginMFA(): void {
     this.auth.login(this.email, this.password, this.totpCode).subscribe({
       next: () => this.router.navigate(['/transactions']),
-      error: err => this.error.set(err.error?.error ?? 'Código inválido')
+      error: err => this.error.set(err.error?.error ?? this.i18n.t('auth.mfa_error_default'))
     });
   }
 }

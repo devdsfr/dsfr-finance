@@ -17,6 +17,7 @@ type User struct {
 	MFASecret    *string   `json:"-" db:"mfa_secret"`
 	MFAEnabled   bool      `json:"mfa_enabled" db:"mfa_enabled"`
 	Plan         string    `json:"plan" db:"plan"` // free | premium
+	Currency     string    `json:"currency" db:"currency"` // BRL | EUR | USD | RON
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }

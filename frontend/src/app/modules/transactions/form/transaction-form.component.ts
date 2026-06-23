@@ -6,6 +6,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TagInputComponent } from '../../../shared/components/tag-input/tag-input.component';
 import { FileUploadComponent } from '../../../shared/components/file-upload/file-upload.component';
+import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
 
 interface Category { id: string; name: string; type: string; }
 interface Account { id: string; name: string; }
@@ -14,7 +15,7 @@ interface CreditCard { id: string; name: string; }
 @Component({
   selector: 'app-transaction-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TagInputComponent, FileUploadComponent],
+  imports: [CommonModule, FormsModule, RouterModule, TagInputComponent, FileUploadComponent, MoneyMaskDirective],
   template: `
     <div class="form-page">
       <h1>{{ isEdit ? 'Editar Lançamento' : 'Novo Lançamento' }}</h1>
@@ -35,7 +36,7 @@ interface CreditCard { id: string; name: string; }
           </div>
           <div class="form-group form-group--sm">
             <label>Valor *</label>
-            <input [(ngModel)]="form.amount" name="amount" type="number" step="0.01" required class="input" />
+            <input [(ngModel)]="form.amount" name="amount" type="text" inputmode="decimal" appMoneyMask required class="input" />
           </div>
         </div>
 

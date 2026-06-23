@@ -1,8 +1,15 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { guestGuard } from './core/guards/guest.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  // Public landing page — logged-in users get bounced to /dashboard by guestGuard
+  {
+    path: '',
+    pathMatch: 'full',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./modules/landing/landing.component').then(m => m.LandingComponent)
+  },
 
   // Auth
   {
@@ -15,6 +22,21 @@ export const routes: Routes = [
       {
         path: 'register',
         loadComponent: () => import('./modules/auth/register/register.component').then(m => m.RegisterComponent)
+      }
+    ]
+  },
+
+  // Public legal pages (GDPR) — no auth required
+  {
+    path: 'legal',
+    children: [
+      {
+        path: 'privacy',
+        loadComponent: () => import('./modules/legal/privacy/privacy.component').then(m => m.PrivacyComponent)
+      },
+      {
+        path: 'terms',
+        loadComponent: () => import('./modules/legal/terms/terms.component').then(m => m.TermsComponent)
       }
     ]
   },

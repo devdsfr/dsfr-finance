@@ -4,13 +4,17 @@ import { RouterModule, RouterOutlet, Router, NavigationEnd } from '@angular/rout
 import { AuthService } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
 import { PlanService } from '../core/services/plan.service';
+import { SettingsService } from '../core/services/settings.service';
+import { TranslationService } from '../core/services/translation.service';
+import { Lang } from '../core/i18n/translations';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { ToastComponent } from '../shared/components/toast/toast.component';
 import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterOutlet, ToastComponent],
+  imports: [CommonModule, RouterModule, RouterOutlet, ToastComponent, TranslatePipe],
   template: `
     <div class="app">
       <!-- Top Navigation -->
@@ -27,36 +31,50 @@ import { filter } from 'rxjs/operators';
 
         <!-- Desktop nav -->
         <nav class="topnav__links">
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Visão Geral</a>
-          <a routerLink="/transactions" routerLinkActive="active">Lançamentos</a>
+          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">{{ 'nav.overview' | translate }}</a>
+          <a routerLink="/transactions" routerLinkActive="active">{{ 'nav.transactions' | translate }}</a>
 
           <div class="dropdown" [class.open]="reportsOpen()">
             <button class="dropdown__trigger" (click)="reportsOpen.set(!reportsOpen())"
                     [class.active]="isReportsActive()">
-              Relatórios <span class="caret">▾</span>
+              {{ 'nav.reports' | translate }} <span class="caret">▾</span>
             </button>
             <div class="dropdown__menu" (mouseleave)="reportsOpen.set(false)">
-              <a routerLink="/reports/flow"         routerLinkActive="active" (click)="reportsOpen.set(false)">Entradas x Saídas</a>
-              <a routerLink="/reports/patrimony"    routerLinkActive="active" (click)="reportsOpen.set(false)">Evolução Patrimonial</a>
-              <a routerLink="/reports/categories"   routerLinkActive="active" (click)="reportsOpen.set(false)">Categorias</a>
-              <a routerLink="/reports/tags"         routerLinkActive="active" (click)="reportsOpen.set(false)">Tags</a>
-              <a routerLink="/reports/installments" routerLinkActive="active" (click)="reportsOpen.set(false)">Parcelamentos</a>
-              <a routerLink="/reports/card-invoices" routerLinkActive="active" (click)="reportsOpen.set(false)">Faturas de Cartão</a>
+              <a routerLink="/reports/flow"         routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_flow' | translate }}</a>
+              <a routerLink="/reports/patrimony"    routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_patrimony' | translate }}</a>
+              <a routerLink="/reports/categories"   routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_categories' | translate }}</a>
+              <a routerLink="/reports/tags"         routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_tags' | translate }}</a>
+              <a routerLink="/reports/installments" routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_installments' | translate }}</a>
+              <a routerLink="/reports/card-invoices" routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_card_invoices' | translate }}</a>
             </div>
           </div>
 
-          <a routerLink="/spending-limits" routerLinkActive="active">Limite de Gastos</a>
+          <a routerLink="/spending-limits" routerLinkActive="active">{{ 'nav.spending_limits' | translate }}</a>
           <a routerLink="/debt-strategy"   routerLinkActive="active">
-            Estratégia de Dívidas @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
+            {{ 'nav.debt_strategy' | translate }} @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
           </a>
           <a routerLink="/ai-subscriptions" routerLinkActive="active">
-            Assinaturas de IA @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
+            {{ 'nav.ai_subscriptions' | translate }} @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
           </a>
-          <a routerLink="/banking"         routerLinkActive="active">Conexão Bancária</a>
+          <a routerLink="/banking"         routerLinkActive="active">{{ 'nav.banking' | translate }}</a>
         </nav>
 
         <div class="topnav__right">
-          <a routerLink="/notifications" class="notif-btn" title="Notificações">
+          <!-- Language switcher -->
+          <div class="lang-menu" [class.open]="langMenuOpen()">
+            <button class="lang-menu__trigger" (click)="langMenuOpen.set(!langMenuOpen())" [title]="'common.language' | translate">
+              {{ currentLangFlag() }} <span class="caret">▾</span>
+            </button>
+            <div class="lang-menu__dropdown" (mouseleave)="langMenuOpen.set(false)">
+              @for (l of i18n.langs; track l.value) {
+                <button [class.active]="i18n.lang() === l.value" (click)="setLang(l.value)">
+                  {{ l.flag }} {{ l.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <a routerLink="/notifications" class="notif-btn" [title]="'nav.notifications' | translate">
             🔔
             @if (unreadCount() > 0) {
               <span class="notif-badge">{{ unreadCount() }}</span>
@@ -70,16 +88,16 @@ import { filter } from 'rxjs/operators';
               <span class="caret">▾</span>
             </button>
             <div class="user-menu__dropdown" (mouseleave)="userMenuOpen.set(false)">
-              <a routerLink="/account"     (click)="userMenuOpen.set(false)">Minha Conta</a>
-              <a routerLink="/categories"  (click)="userMenuOpen.set(false)">Categorias</a>
+              <a routerLink="/account"     (click)="userMenuOpen.set(false)">{{ 'nav.my_account' | translate }}</a>
+              <a routerLink="/categories"  (click)="userMenuOpen.set(false)">{{ 'nav.categories' | translate }}</a>
               <a routerLink="/plan"        (click)="userMenuOpen.set(false)">
-                Controle de Acesso
+                {{ 'nav.access_control' | translate }}
                 <span class="plan-pill" [class.plan-pill--premium]="plan.isPremium()">{{ plan.isPremium() ? 'Premium' : 'Free' }}</span>
               </a>
-              <a routerLink="/alert-config"(click)="userMenuOpen.set(false)">Configurar Alertas</a>
-              <a routerLink="/activity"    (click)="userMenuOpen.set(false)">Log de Atividades</a>
+              <a routerLink="/alert-config"(click)="userMenuOpen.set(false)">{{ 'nav.alert_config' | translate }}</a>
+              <a routerLink="/activity"    (click)="userMenuOpen.set(false)">{{ 'nav.activity_log' | translate }}</a>
               <hr/>
-              <button (click)="auth.logout()">Sair</button>
+              <button (click)="auth.logout()">{{ 'nav.logout' | translate }}</button>
             </div>
           </div>
         </div>
@@ -100,76 +118,83 @@ import { filter } from 'rxjs/operators';
           <button class="drawer__close" (click)="drawerOpen.set(false)">✕</button>
         </div>
 
+        <!-- Language switcher (mobile) -->
+        <div class="drawer__langs">
+          @for (l of i18n.langs; track l.value) {
+            <button [class.active]="i18n.lang() === l.value" (click)="setLang(l.value)">{{ l.flag }}</button>
+          }
+        </div>
+
         <!-- Nav links -->
         <div class="drawer__section">
           <a class="drawer__link" routerLink="/dashboard" routerLinkActive="drawer__link--active"
              [routerLinkActiveOptions]="{exact:true}" (click)="drawerOpen.set(false)">
-            🏠 Visão Geral
+            🏠 {{ 'nav.overview' | translate }}
           </a>
           <a class="drawer__link" routerLink="/transactions" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            📋 Lançamentos
+            📋 {{ 'nav.transactions' | translate }}
           </a>
           <a class="drawer__link" routerLink="/spending-limits" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            🎯 Limite de Gastos
+            🎯 {{ 'nav.spending_limits' | translate }}
           </a>
           <a class="drawer__link" routerLink="/debt-strategy" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            📊 Estratégia de Dívidas
+            📊 {{ 'nav.debt_strategy' | translate }}
             @if (!plan.isPremium()) { <span class="drawer__lock">🔒</span> }
           </a>
           <a class="drawer__link" routerLink="/ai-subscriptions" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            🤖 Assinaturas de IA
+            🤖 {{ 'nav.ai_subscriptions' | translate }}
             @if (!plan.isPremium()) { <span class="drawer__lock">🔒</span> }
           </a>
           <a class="drawer__link" routerLink="/banking" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            🏦 Conexão Bancária
+            🏦 {{ 'nav.banking' | translate }}
           </a>
         </div>
 
-        <div class="drawer__label">Relatórios</div>
+        <div class="drawer__label">{{ 'nav.reports' | translate }}</div>
         <div class="drawer__section">
           <a class="drawer__link" routerLink="/reports/flow" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">📈 Entradas x Saídas</a>
+             (click)="drawerOpen.set(false)">📈 {{ 'nav.reports_flow' | translate }}</a>
           <a class="drawer__link" routerLink="/reports/patrimony" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">💹 Evolução Patrimonial</a>
+             (click)="drawerOpen.set(false)">💹 {{ 'nav.reports_patrimony' | translate }}</a>
           <a class="drawer__link" routerLink="/reports/categories" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">🏷️ Categorias</a>
+             (click)="drawerOpen.set(false)">🏷️ {{ 'nav.reports_categories' | translate }}</a>
           <a class="drawer__link" routerLink="/reports/tags" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">🔖 Tags</a>
+             (click)="drawerOpen.set(false)">🔖 {{ 'nav.reports_tags' | translate }}</a>
           <a class="drawer__link" routerLink="/reports/installments" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">📆 Parcelamentos</a>
+             (click)="drawerOpen.set(false)">📆 {{ 'nav.reports_installments' | translate }}</a>
           <a class="drawer__link" routerLink="/reports/card-invoices" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">💳 Faturas de Cartão</a>
+             (click)="drawerOpen.set(false)">💳 {{ 'nav.reports_card_invoices' | translate }}</a>
         </div>
 
-        <div class="drawer__label">Conta</div>
+        <div class="drawer__label">{{ 'nav.my_account' | translate }}</div>
         <div class="drawer__section">
           <a class="drawer__link" routerLink="/notifications" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            🔔 Notificações
+            🔔 {{ 'nav.notifications' | translate }}
             @if (unreadCount() > 0) { <span class="drawer__badge">{{ unreadCount() }}</span> }
           </a>
           <a class="drawer__link" routerLink="/account" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">👤 Minha Conta</a>
+             (click)="drawerOpen.set(false)">👤 {{ 'nav.my_account' | translate }}</a>
           <a class="drawer__link" routerLink="/categories" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">📁 Categorias</a>
+             (click)="drawerOpen.set(false)">📁 {{ 'nav.categories' | translate }}</a>
           <a class="drawer__link" routerLink="/plan" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            🔑 Controle de Acesso
+            🔑 {{ 'nav.access_control' | translate }}
             <span class="plan-pill" [class.plan-pill--premium]="plan.isPremium()">{{ plan.isPremium() ? 'Premium' : 'Free' }}</span>
           </a>
           <a class="drawer__link" routerLink="/alert-config" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">⚙️ Configurar Alertas</a>
+             (click)="drawerOpen.set(false)">⚙️ {{ 'nav.alert_config' | translate }}</a>
           <a class="drawer__link" routerLink="/activity" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">📝 Log de Atividades</a>
+             (click)="drawerOpen.set(false)">📝 {{ 'nav.activity_log' | translate }}</a>
         </div>
 
         <div class="drawer__footer">
-          <button class="drawer__logout" (click)="auth.logout()">🚪 Sair</button>
+          <button class="drawer__logout" (click)="auth.logout()">🚪 {{ 'nav.logout' | translate }}</button>
         </div>
       </nav>
 
@@ -249,6 +274,30 @@ import { filter } from 'rxjs/operators';
       background: #ef4444; color: #fff; border-radius: 9999px;
       font-size: .6rem; padding: .05rem .3rem; font-weight: 700;
     }
+
+    /* Language switcher */
+    .lang-menu { position: relative; }
+    .lang-menu__trigger {
+      background: none; border: none; cursor: pointer; color: #fff;
+      padding: .3rem .5rem; border-radius: .25rem; font-size: .95rem;
+      transition: background .15s;
+    }
+    .lang-menu__trigger:hover { background: rgba(255,255,255,.12); }
+    .lang-menu__dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); right: 0;
+      background: #fff; border-radius: .375rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 150px;
+      padding: .375rem 0; z-index: 400;
+    }
+    .lang-menu.open .lang-menu__dropdown { display: block; }
+    .lang-menu__dropdown button {
+      display: block; width: 100%; text-align: left;
+      padding: .45rem 1rem; color: #374151; font-size: .85rem;
+      background: none; border: none; cursor: pointer;
+    }
+    .lang-menu__dropdown button:hover { background: #f3f4f6; }
+    .lang-menu__dropdown button.active { color: #2e7736; font-weight: 700; }
+
     .user-menu { position: relative; }
     .user-menu__trigger {
       display: flex; align-items: center; gap: .4rem;
@@ -313,6 +362,16 @@ import { filter } from 'rxjs/operators';
       font-size: 1.1rem; cursor: pointer; padding: .25rem; line-height: 1;
     }
 
+    .drawer__langs {
+      display: flex; gap: .4rem; padding: .6rem 1.25rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .drawer__langs button {
+      background: #f3f4f6; border: 2px solid transparent; border-radius: .375rem;
+      padding: .3rem .5rem; font-size: 1rem; cursor: pointer;
+    }
+    .drawer__langs button.active { border-color: #2e7736; background: #f0fdf4; }
+
     .drawer__label {
       font-size: .68rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: .07em; color: #9ca3af; padding: .875rem 1.25rem .35rem;
@@ -356,6 +415,8 @@ import { filter } from 'rxjs/operators';
 export class ShellComponent implements OnInit {
   auth = inject(AuthService);
   plan = inject(PlanService);
+  settings = inject(SettingsService);
+  i18n = inject(TranslationService);
   private api = inject(ApiService);
   private router = inject(Router);
 
@@ -363,6 +424,7 @@ export class ShellComponent implements OnInit {
   reportsOpen  = signal(false);
   userMenuOpen = signal(false);
   drawerOpen   = signal(false);
+  langMenuOpen = signal(false);
 
   @HostListener('document:keydown.escape')
   onEscape() { this.drawerOpen.set(false); }
@@ -376,8 +438,18 @@ export class ShellComponent implements OnInit {
     return this.router.url.includes('/reports');
   }
 
+  currentLangFlag(): string {
+    return this.i18n.langs.find(l => l.value === this.i18n.lang())?.flag ?? '🌐';
+  }
+
+  setLang(lang: Lang): void {
+    this.i18n.setLang(lang);
+    this.langMenuOpen.set(false);
+  }
+
   ngOnInit(): void {
     this.plan.load();
+    this.settings.load();
     this.api.get<any>('/notifications').subscribe(r => {
       const list: any[] = r.data ?? [];
       this.unreadCount.set(list.filter((n: any) => !n.read).length);
@@ -388,6 +460,7 @@ export class ShellComponent implements OnInit {
       this.reportsOpen.set(false);
       this.userMenuOpen.set(false);
       this.drawerOpen.set(false);
+      this.langMenuOpen.set(false);
     });
   }
 }
