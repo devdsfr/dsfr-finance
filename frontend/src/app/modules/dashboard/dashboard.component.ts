@@ -568,3 +568,31 @@ export class DashboardComponent implements OnInit {
       });
       const topCats = [...catMap.values()]
      
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+      const totalExp = topCats.reduce((s, c) => s + c.total, 0) || 1;
+      this.topCategories.set(topCats.map(c => ({ ...c, pct: Math.round((c.total / totalExp) * 100) })));
+
+      // Accounts, cards, categories
+      this.accounts.set(accs.data ?? []);
+      this.cards.set(ccs.data ?? []);
+      this._categories.set(cats.data ?? []);
+
+      // Spending limits — backend returns current_spend and usage_pct already
+      this.spendingLimits.set(limits.data ?? []);
+
+      // Unpaid bills from the wider date range
+      const allBills = billList.filter((t: any) => !t.paid && !t.ignored);
+      this.payableBills.set(
+        allBills.filter((t: any) => t.type === 'expense')
+                .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      );
+      this.receivableBills.set(
+        allBills.filter((t: any) => t.type === 'income')
+                .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      );
+
+      this.loading.set(false);
+    });
+  }
+}
