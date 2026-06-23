@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { TagInputComponent } from '../../../shared/components/tag-input/tag-inpu
 import { FileUploadComponent } from '../../../shared/components/file-upload/file-upload.component';
 import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
 
-interface Category { id: string; name: string; type: string; }
+interface Category { id: string; name: string; type: string; color?: string; icon?: string; }
 interface Account { id: string; name: string; }
 interface CreditCard { id: string; name: string; }
 
@@ -70,12 +70,70 @@ interface CreditCard { id: string; name: string; }
         <div class="form-row">
           <div class="form-group">
             <label>Categoria</label>
-            <select [(ngModel)]="form.category_id" name="category_id" class="input">
-              <option value="">Sem categoria</option>
-              @for (cat of categories(); track cat.id) {
-                <option [value]="cat.id">{{ cat.name }}</option>
+            <div class="cat-select" [class.cat-select--open]="catOpen()" (click)="toggleCat()">
+              <div class="cat-trigger">
+                @if (selectedCategory()) {
+                  <span class="cat-chip" [style.background]="catColor(selectedCategory())">{{ catIcon(selectedCategory()) }}</span>
+                  <span>{{ selectedCategory()!.name }}</span>
+                } @else {
+                  <span class="cat-placeholder">Sem categoria</span>
+                }
+                <span class="cat-chevron">▾</span>
+              </div>
+              @if (catOpen()) {
+                <div class="cat-dropdown" (click)="$event.stopPropagation()">
+                  <input class="cat-search" [(ngModel)]="catSearchVal" name="catSearch"
+                         placeholder="Buscar categoria..." />
+                  <div class="cat-list">
+                    <div class="cat-item" (click)="selectCat('')">
+                      <span class="cat-chip cat-chip--none">—</span>
+                      Sem categoria
+                    </div>
+                    @for (cat of filteredCats(); track cat.id) {
+                      <div class="cat-item" [class.cat-item--active]="form.category_id === cat.id"
+                           (click)="selectCat(cat.id)">
+                        <span class="cat-chip" [style.background]="catColor(cat)">{{ catIcon(cat) }}</span>
+                        {{ cat.name }}
+                      </div>
+                    }
+                  </div>
+                  @if (!newCatMode) {
+                    <div class="cat-footer" (click)="newCatMode = true">
+                      <span class="cat-add-btn">＋ Nova categoria</span>
+                    </div>
+                  } @else {
+                    <div class="cat-new-form">
+                      <div class="cat-new-row">
+                        <div class="cat-new-icons">
+                          @for (opt of catIconOpts; track opt.icon) {
+                            <button type="button" class="cat-icon-btn"
+                                    [class.cat-icon-btn--sel]="newCat.icon === opt.icon"
+                                    [style.background]="newCat.icon === opt.icon ? newCat.color : '#f3f4f6'"
+                                    (click)="newCat.icon = opt.icon">{{ opt.icon }}</button>
+                          }
+                        </div>
+                      </div>
+                      <div class="cat-new-row">
+                        <input class="cat-new-input" [(ngModel)]="newCat.name" name="newCatName"
+                               placeholder="Nome da categoria" />
+                        <div class="cat-colors">
+                          @for (col of catColors; track col) {
+                            <button type="button" class="cat-color-dot"
+                                    [style.background]="col"
+                                    [class.cat-color-dot--sel]="newCat.color === col"
+                                    (click)="newCat.color = col"></button>
+                          }
+                        </div>
+                      </div>
+                      <div class="cat-new-actions">
+                        <button type="button" class="cat-new-cancel" (click)="newCatMode = false">Cancelar</button>
+                        <button type="button" class="cat-new-save" [disabled]="!newCat.name" (click)="createCat()">Criar</button>
+                      </div>
+                    </div>
+                  }
+                </div>
               }
-            </select>
+            </div>
           </div>
         </div>
 
@@ -157,6 +215,69 @@ interface CreditCard { id: string; name: string; }
     .btn--primary { background: #6366f1; color: #fff; }
     .btn--ghost { background: none; color: #374151; }
     label { font-size: .875rem; font-weight: 500; color: #374151; }
+
+    /* Category custom dropdown */
+    .cat-select {
+      position: relative; border: 1px solid #d1d5db; border-radius: .375rem;
+      background: #fff; cursor: pointer; user-select: none;
+    }
+    .cat-select--open { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.15); }
+    .cat-trigger {
+      display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem;
+      font-size: .875rem; min-height: 38px;
+    }
+    .cat-chevron { margin-left: auto; color: #9ca3af; font-size: .75rem; }
+    .cat-placeholder { color: #9ca3af; }
+    .cat-chip {
+      width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
+      align-items: center; justify-content: center; font-size: .9rem;
+      flex-shrink: 0; line-height: 1;
+    }
+    .cat-chip--none { background: #f3f4f6; color: #9ca3af; }
+    .cat-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: .5rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12); overflow: hidden;
+    }
+    .cat-search {
+      width: 100%; padding: .5rem .75rem; border: none; border-bottom: 1px solid #f3f4f6;
+      font-size: .875rem; outline: none; box-sizing: border-box;
+    }
+    .cat-list { max-height: 260px; overflow-y: auto; }
+    .cat-item {
+      display: flex; align-items: center; gap: .625rem; padding: .45rem .75rem;
+      font-size: .875rem; cursor: pointer; transition: background .1s;
+    }
+    .cat-item:hover { background: #f9fafb; }
+    .cat-item--active { background: #eff6ff; font-weight: 600; }
+    .cat-footer { border-top: 1px solid #f3f4f6; padding: .5rem .75rem; }
+    .cat-add-btn {
+      display: inline-flex; align-items: center; gap: .25rem;
+      font-size: .8rem; color: #6366f1; cursor: pointer; font-weight: 600;
+    }
+    .cat-add-btn:hover { color: #4f46e5; }
+    .cat-new-form { border-top: 1px solid #f3f4f6; padding: .75rem; display: flex; flex-direction: column; gap: .5rem; }
+    .cat-new-row { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .cat-new-icons { display: flex; gap: .25rem; flex-wrap: wrap; }
+    .cat-icon-btn {
+      width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer; font-size: .95rem; display: flex; align-items: center; justify-content: center;
+    }
+    .cat-icon-btn--sel { border-color: #6366f1; }
+    .cat-new-input {
+      flex: 1; min-width: 120px; padding: .35rem .6rem; border: 1px solid #d1d5db;
+      border-radius: .375rem; font-size: .85rem; outline: none;
+    }
+    .cat-new-input:focus { border-color: #6366f1; }
+    .cat-colors { display: flex; gap: .3rem; flex-wrap: wrap; }
+    .cat-color-dot {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+    }
+    .cat-color-dot--sel { border-color: #111; box-shadow: 0 0 0 2px #fff inset; }
+    .cat-new-actions { display: flex; justify-content: flex-end; gap: .5rem; }
+    .cat-new-cancel { background: none; border: 1px solid #d1d5db; border-radius: .375rem; padding: .3rem .75rem; font-size: .8rem; cursor: pointer; }
+    .cat-new-save { background: #6366f1; color: #fff; border: none; border-radius: .375rem; padding: .3rem .75rem; font-size: .8rem; cursor: pointer; font-weight: 600; }
+    .cat-new-save:disabled { opacity: .5; cursor: default; }
   `]
 })
 export class TransactionFormComponent implements OnInit {
@@ -185,6 +306,106 @@ export class TransactionFormComponent implements OnInit {
 
   get installmentAmount(): number {
     return this.form.amount ? this.form.amount / (this.form.installments || 1) : 0;
+  }
+
+  catOpen    = signal(false);
+  newCatMode = false;
+  newCat: any = { name: '', color: '#6366f1', icon: '●' };
+
+  catIconOpts = [
+    { icon: '🍽️' }, { icon: '🛒' }, { icon: '🏠' }, { icon: '🚌' }, { icon: '💊' },
+    { icon: '🎮' }, { icon: '💼' }, { icon: '✈️' }, { icon: '📱' }, { icon: '💳' },
+    { icon: '🎓' }, { icon: '🐾' }, { icon: '👔' }, { icon: '🎁' }, { icon: '📈' },
+    { icon: '☰' },
+  ];
+
+  catColors = [
+    '#ef4444','#f97316','#f59e0b','#22c55e','#16a34a',
+    '#3b82f6','#6366f1','#8b5cf6','#ec4899','#6b7280','#111827',
+  ];
+  catSearchVal = '';
+
+  filteredCats = computed(() => {
+    const q = this.catSearchVal.toLowerCase().trim();
+    return q ? this.categories().filter(c => c.name.toLowerCase().includes(q)) : this.categories();
+  });
+
+  selectedCategory = computed(() =>
+    this.categories().find(c => c.id === this.form.category_id) ?? null
+  );
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: MouseEvent) {
+    const el = (e.target as HTMLElement).closest('.cat-select');
+    if (!el) this.catOpen.set(false);
+  }
+
+  toggleCat() { this.catOpen.update(v => !v); }
+
+  selectCat(id: string) {
+    this.form.category_id = id;
+    this.catSearchVal = '';
+    this.catOpen.set(false);
+    this.newCatMode = false;
+  }
+
+  createCat() {
+    if (!this.newCat.name) return;
+    this.api.post<any>('/categories', {
+      name: this.newCat.name, color: this.newCat.color,
+      icon: this.newCat.icon, type: 'expense'
+    }).subscribe(r => {
+      // Reload categories then select the new one
+      this.api.get<any>('/categories').subscribe(res => {
+        this.categories.set(res.data ?? []);
+        const created = (res.data ?? []).find((c: any) => c.name === this.newCat.name);
+        if (created) this.form.category_id = created.id;
+        this.newCatMode = false;
+        this.newCat = { name: '', color: '#6366f1', icon: '●' };
+        this.catOpen.set(false);
+      });
+    });
+  }
+
+  private readonly CAT_META: Record<string, { icon: string; color: string }> = {
+    'alimentação':        { icon: '🍽️', color: '#ef4444' },
+    'assinaturas':        { icon: '📱', color: '#8b5cf6' },
+    'bares':              { icon: '🍷', color: '#7c3aed' },
+    'cartão de crédito':  { icon: '💳', color: '#f59e0b' },
+    'casa':               { icon: '🏠', color: '#3b82f6' },
+    'compras':            { icon: '🛍️', color: '#ec4899' },
+    'cuidados pessoais':  { icon: '💆', color: '#f472b6' },
+    'dívidas':            { icon: '💰', color: '#dc2626' },
+    'educação':           { icon: '🎓', color: '#1e40af' },
+    'família':            { icon: '👨‍👩‍👧', color: '#22c55e' },
+    'impostos':           { icon: '📋', color: '#f87171' },
+    'investimentos':      { icon: '📈', color: '#a855f7' },
+    'lazer':              { icon: '🎮', color: '#16a34a' },
+    'mercado':            { icon: '🛒', color: '#f97316' },
+    'outros':             { icon: '☰', color: '#6b7280' },
+    'pets':               { icon: '🐾', color: '#d97706' },
+    'presentes':          { icon: '🎁', color: '#6366f1' },
+    'roupas':             { icon: '👔', color: '#fb923c' },
+    'saúde':              { icon: '➕', color: '#3b82f6' },
+    'trabalho':           { icon: '💼', color: '#2563eb' },
+    'transporte':         { icon: '🚌', color: '#38bdf8' },
+    'viagem':             { icon: '✈️', color: '#f87171' },
+  };
+
+  catIcon(cat: any): string {
+    if (!cat) return '●';
+    if (cat.icon) return cat.icon;
+    const n = (cat.name ?? '').toLowerCase();
+    for (const [k, v] of Object.entries(this.CAT_META)) if (n.includes(k)) return v.icon;
+    return '●';
+  }
+
+  catColor(cat: any): string {
+    if (!cat) return '#6b7280';
+    if (cat.color) return cat.color;
+    const n = (cat.name ?? '').toLowerCase();
+    for (const [k, v] of Object.entries(this.CAT_META)) if (n.includes(k)) return v.color;
+    return '#6b7280';
   }
 
   ngOnInit(): void {

@@ -81,7 +81,14 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
             }
             @for (acc of accounts(); track acc.id) {
               <div class="acc-row">
-                <div class="acc-icon">{{ acc.name[0] }}</div>
+                @if (acc.logo) {
+                  <div class="acc-icon acc-icon--img" [style.border-color]="acc.color ?? '#111'">
+                    <img [src]="acc.logo" [alt]="acc.name" class="acc-logo"
+                         (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.style.background=acc.color??'#111'; $any($event.target).parentElement.textContent=acc.name[0]" />
+                  </div>
+                } @else {
+                  <div class="acc-icon" [style.background]="acc.color ?? '#111'">{{ acc.name[0] }}</div>
+                }
                 <div class="acc-info">
                   <span class="acc-name">{{ acc.name }}</span>
                   <span class="acc-type">{{ acc.type }}</span>
@@ -197,7 +204,14 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               <p class="section-label">{{ 'dashboard.my_cards' | translate }}</p>
               @for (card of cards(); track card.id) {
                 <div class="card-row">
-                  <div class="card-icon" [style.background]="card.color ?? '#6366f1'">{{ card.name[0] }}</div>
+                  @if (card.logo) {
+                    <div class="card-icon card-icon--img" [style.border-color]="card.color ?? '#6366f1'">
+                      <img [src]="card.logo" [alt]="card.name" class="card-logo"
+                           (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.style.background=card.color??'#6366f1'; $any($event.target).parentElement.textContent=card.name[0]" />
+                    </div>
+                  } @else {
+                    <div class="card-icon" [style.background]="card.color ?? '#6366f1'">{{ card.name[0] }}</div>
+                  }
                   <div class="card-info">
                     <span class="card-name">{{ card.name }}</span>
                     <span class="card-sub">{{ 'dashboard.manual_card' | translate }}</span>
@@ -358,6 +372,8 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       color: #fff; display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: .9rem; flex-shrink: 0;
     }
+    .acc-icon--img { background: #fff !important; border: 2px solid #e5e7eb; overflow: hidden; }
+    .acc-logo { width: 70%; height: 70%; object-fit: contain; display: block; }
     .acc-info { flex: 1; display: flex; flex-direction: column; }
     .acc-name { font-size: .875rem; font-weight: 600; color: #111; }
     .acc-type { font-size: .72rem; color: #9ca3af; }
@@ -397,6 +413,8 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       align-items: center; justify-content: center;
       color: #fff; font-weight: 700; font-size: 1rem; flex-shrink: 0;
     }
+    .card-icon--img { background: #fff !important; border: 2px solid #e5e7eb; overflow: hidden; }
+    .card-logo { width: 70%; height: 70%; object-fit: contain; display: block; }
     .card-info { flex: 1; display: flex; flex-direction: column; }
     .card-name { font-size: .875rem; font-weight: 600; color: #111; }
     .card-sub { font-size: .72rem; color: #9ca3af; }
@@ -528,6 +546,52 @@ export class DashboardComponent implements OnInit {
     return 'Limite geral';
   }
 
+  private inferLogo(name: string, logo: string): string {
+    if (logo) return logo;
+    const n = name.toLowerCase();
+    if (n.includes('nubank'))          return 'https://cdn.simpleicons.org/nubank/8a05be';
+    if (n.includes('inter'))           return 'https://cdn.simpleicons.org/bancointer/ff7000';
+    if (n.includes('itaú') || n.includes('itau')) return 'https://cdn.simpleicons.org/itau/003d8f';
+    if (n.includes('bradesco'))        return 'https://cdn.simpleicons.org/bradesco/cc092f';
+    if (n.includes('santander'))       return 'https://cdn.simpleicons.org/santander/ec0000';
+    if (n.includes('caixa'))           return 'https://www.google.com/s2/favicons?domain=caixa.gov.br&sz=64';
+    if (n.includes('brasil') || n.includes(' bb')) return 'https://cdn.simpleicons.org/bancodobrasil/000000';
+    if (n.includes('c6'))              return 'https://www.google.com/s2/favicons?domain=c6bank.com.br&sz=64';
+    if (n.includes('btg'))             return 'https://www.google.com/s2/favicons?domain=btgpactual.com&sz=64';
+    if (n.includes('xp'))              return 'https://www.google.com/s2/favicons?domain=xpi.com.br&sz=64';
+    if (n.includes('mercado pago') || n.includes('mercadopago')) return 'https://cdn.simpleicons.org/mercadopago/009ee3';
+    if (n.includes('picpay'))          return 'https://cdn.simpleicons.org/picpay/21c25e';
+    if (n.includes('sicoob'))          return 'https://www.google.com/s2/favicons?domain=sicoob.com.br&sz=64';
+    if (n.includes('sicredi'))         return 'https://www.google.com/s2/favicons?domain=sicredi.com.br&sz=64';
+    if (n.includes('neon'))            return 'https://www.google.com/s2/favicons?domain=neon.com.br&sz=64';
+    if (n.includes('carrefour'))       return 'https://www.google.com/s2/favicons?domain=carrefour.com.br&sz=64';
+    if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'https://www.google.com/s2/favicons?domain=mercadolivre.com.br&sz=64';
+    return '';
+  }
+  private normalizeLogo(logo: string): string {
+    if (!logo) return '';
+    const GF = (d: string) => `https://www.google.com/s2/favicons?domain=${d}&sz=64`;
+    const SI = (slug: string, color: string) => `https://cdn.simpleicons.org/${slug}/${color}`;
+    const MAP: Record<string,string> = {
+      'nubank.com.br':      SI('nubank','8a05be'),
+      'bancointer.com.br':  SI('bancointer','ff7000'),
+      'itau.com.br':        SI('itau','003d8f'),
+      'bradesco.com.br':    SI('bradesco','cc092f'),
+      'santander.com.br':   SI('santander','ec0000'),
+      'caixa.gov.br':       GF('caixa.gov.br'),
+      'bb.com.br':          SI('bancodobrasil','000000'),
+      'mercadopago.com.br': SI('mercadopago','009ee3'),
+      'picpay.com':         SI('picpay','21c25e'),
+    };
+    let m = logo.match(/logo\.clearbit\.com\/([^?/]+)/);
+    if (m) return MAP[m[1]] ?? GF(m[1]);
+    m = logo.match(/https?:\/\/([^/]+)\/apple-touch-icon/);
+    if (m) { const d = m[1].replace(/^www\./, ''); return MAP[d] ?? GF(d); }
+    m = logo.match(/favicons\?domain=([^&]+)/);
+    if (m) return MAP[m[1]] ?? GF(m[1]);
+    return logo;
+  }
+
   ngOnInit() {
     const now  = new Date();
     const year = now.getFullYear();
@@ -574,8 +638,8 @@ export class DashboardComponent implements OnInit {
       this.topCategories.set(topCats.map(c => ({ ...c, pct: Math.round((c.total / totalExp) * 100) })));
 
       // Accounts, cards, categories
-      this.accounts.set(accs.data ?? []);
-      this.cards.set(ccs.data ?? []);
+      this.accounts.set((accs.data ?? []).map((a: any) => ({ ...a, logo: this.inferLogo(a.name, this.normalizeLogo(a.logo)) })));
+      this.cards.set((ccs.data ?? []).map((c: any) => ({ ...c, logo: this.inferLogo(c.name, this.normalizeLogo(c.logo)) })));
       this._categories.set(cats.data ?? []);
 
       // Spending limits — backend returns current_spend and usage_pct already

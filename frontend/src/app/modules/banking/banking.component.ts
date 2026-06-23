@@ -24,26 +24,51 @@ const CARD_BRANDS = [
 
 const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#0891b2','#db2777'];
 
-// Bancos/instituições com logo e cor da marca
-// Usa Google S2 Favicons API (sz=128) — funciona sem autenticação e retorna o ícone real da marca
-const GF = (domain: string) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+// Logos bancários: Simple Icons CDN (vector SVG, sem API key)
+// onLogoError faz fallback automático para Google Favicon se slug inválido
+const SI = (slug: string, color = '000000') =>
+  `https://cdn.simpleicons.org/${slug}/${color}`;
+const GF = (domain: string) =>
+  `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+// Mapa domain→logo para normalizar URLs antigas salvas no BD
+const DOMAIN_TO_LOGO: Record<string, string> = {
+  'nubank.com.br':         SI('nubank',        '8a05be'),
+  'bancointer.com.br':     SI('bancointer',    'ff7000'),
+  'itau.com.br':           SI('itau',          '003d8f'),
+  'bradesco.com.br':       SI('bradesco',      'cc092f'),
+  'santander.com.br':      SI('santander',     'ec0000'),
+  'caixa.gov.br':          GF('caixa.gov.br'),
+  'bb.com.br':             SI('bancodobrasil', '000000'),
+  'c6bank.com.br':         GF('c6bank.com.br'),
+  'btgpactual.com':        GF('btgpactual.com'),
+  'xpi.com.br':            GF('xpi.com.br'),
+  'mercadopago.com.br':    SI('mercadopago',   '009ee3'),
+  'picpay.com':            SI('picpay',        '21c25e'),
+  'sicoob.com.br':         GF('sicoob.com.br'),
+  'sicredi.com.br':        GF('sicredi.com.br'),
+  'neon.com.br':           GF('neon.com.br'),
+};
+
+// logo: Simple Icons (vector, alta resolução)
+// fallback: Google Favicon (raster, caso o slug SI seja inválido)
 const BANK_PRESETS = [
-  { name: 'Nubank',          color: '#8a05be', logo: GF('nubank.com.br') },
-  { name: 'Inter',           color: '#ff7000', logo: GF('bancointer.com.br') },
-  { name: 'Itaú',            color: '#003d8f', logo: GF('itau.com.br') },
-  { name: 'Bradesco',        color: '#cc092f', logo: GF('bradesco.com.br') },
-  { name: 'Santander',       color: '#ec0000', logo: GF('santander.com.br') },
-  { name: 'Caixa',           color: '#005ca9', logo: GF('caixa.gov.br') },
-  { name: 'Banco do Brasil', color: '#f9dd16', logo: GF('bb.com.br') },
-  { name: 'C6 Bank',         color: '#242424', logo: GF('c6bank.com.br') },
-  { name: 'BTG',             color: '#002060', logo: GF('btgpactual.com') },
-  { name: 'XP',              color: '#111111', logo: GF('xpi.com.br') },
-  { name: 'Mercado Pago',    color: '#009ee3', logo: GF('mercadopago.com.br') },
-  { name: 'PicPay',          color: '#21c25e', logo: GF('picpay.com') },
-  { name: 'Sicoob',          color: '#007a3d', logo: GF('sicoob.com.br') },
-  { name: 'Sicredi',         color: '#009a44', logo: GF('sicredi.com.br') },
-  { name: 'Neon',            color: '#1b1c8a', logo: GF('neon.com.br') },
-  { name: 'Outro',           color: '#6b7280', logo: '' },
+  { name: 'Nubank',          color: '#8a05be', logo: SI('nubank','8a05be'),          fallback: GF('nubank.com.br') },
+  { name: 'Inter',           color: '#ff7000', logo: SI('bancointer','ff7000'),       fallback: GF('bancointer.com.br') },
+  { name: 'Itaú',            color: '#003d8f', logo: SI('itau','003d8f'),             fallback: GF('itau.com.br') },
+  { name: 'Bradesco',        color: '#cc092f', logo: SI('bradesco','cc092f'),         fallback: GF('bradesco.com.br') },
+  { name: 'Santander',       color: '#ec0000', logo: SI('santander','ec0000'),        fallback: GF('santander.com.br') },
+  { name: 'Caixa',           color: '#005ca9', logo: GF('caixa.gov.br'),              fallback: '' },
+  { name: 'Banco do Brasil', color: '#f9dd16', logo: SI('bancodobrasil','000000'),    fallback: GF('bb.com.br') },
+  { name: 'C6 Bank',         color: '#242424', logo: GF('c6bank.com.br'),             fallback: '' },
+  { name: 'BTG',             color: '#002060', logo: GF('btgpactual.com'),            fallback: '' },
+  { name: 'XP',              color: '#111111', logo: GF('xpi.com.br'),               fallback: '' },
+  { name: 'Mercado Pago',    color: '#009ee3', logo: SI('mercadopago','009ee3'),      fallback: GF('mercadopago.com.br') },
+  { name: 'PicPay',          color: '#21c25e', logo: SI('picpay','21c25e'),           fallback: GF('picpay.com') },
+  { name: 'Sicoob',          color: '#007a3d', logo: GF('sicoob.com.br'),             fallback: '' },
+  { name: 'Sicredi',         color: '#009a44', logo: GF('sicredi.com.br'),            fallback: '' },
+  { name: 'Neon',            color: '#1b1c8a', logo: GF('neon.com.br'),              fallback: '' },
+  { name: 'Outro',           color: '#6b7280', logo: '',                              fallback: '' },
 ];
 
 @Component({
@@ -76,14 +101,14 @@ const BANK_PRESETS = [
                           [class.selected]="acc.logo === b.logo"
                           (click)="applyBankPreset(acc, b)"
                           [title]="b.name">
-                    <div class="preset-initial" [style.background]="b.color">
-                      @if (b.logo) {
+                    @if (b.logo) {
+                      <div class="preset-icon-wrap">
                         <img [src]="b.logo" [alt]="b.name" class="preset-logo"
-                             (error)="onLogoError($event, b.color, b.name)" />
-                      } @else {
-                        {{ b.name[0] }}
-                      }
-                    </div>
+                             (error)="onLogoError($event, b.color, b.name, b.fallback)" />
+                      </div>
+                    } @else {
+                      <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
+                    }
                     <span class="preset-label">{{ b.name }}</span>
                   </button>
                 }
@@ -133,7 +158,7 @@ const BANK_PRESETS = [
             <div class="item-card">
               <div class="item-card__top">
                 @if (a.logo) {
-                  <div class="item-icon" [style.background]="a.color ?? '#111'">
+                  <div class="item-icon" [style.border-color]="a.color ?? '#111'">
                     <img [src]="a.logo" [alt]="a.name" class="icon-logo"
                          (error)="onLogoError($event, a.color ?? '#111', a.name)" />
                   </div>
@@ -177,14 +202,14 @@ const BANK_PRESETS = [
                           [class.selected]="card.logo === b.logo"
                           (click)="applyBankPreset(card, b)"
                           [title]="b.name">
-                    <div class="preset-initial" [style.background]="b.color">
-                      @if (b.logo) {
+                    @if (b.logo) {
+                      <div class="preset-icon-wrap">
                         <img [src]="b.logo" [alt]="b.name" class="preset-logo"
-                             (error)="onLogoError($event, b.color, b.name)" />
-                      } @else {
-                        {{ b.name[0] }}
-                      }
-                    </div>
+                             (error)="onLogoError($event, b.color, b.name, b.fallback)" />
+                      </div>
+                    } @else {
+                      <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
+                    }
                     <span class="preset-label">{{ b.name }}</span>
                   </button>
                 }
@@ -242,7 +267,7 @@ const BANK_PRESETS = [
             <div class="item-card">
               <div class="item-card__top">
                 @if (c.logo) {
-                  <div class="item-icon item-icon--card" [style.background]="c.color ?? '#6366f1'">
+                  <div class="item-icon item-icon--card" [style.border-color]="c.color ?? '#6366f1'">
                     <img [src]="c.logo" [alt]="c.name" class="icon-logo"
                          (error)="onLogoError($event, c.color ?? '#6366f1', c.name)" />
                   </div>
@@ -309,8 +334,14 @@ const BANK_PRESETS = [
     }
     .preset-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
     .preset-btn.selected { border-color: #2e7736; background: #f0fdf4; }
-    .preset-logo { width: 22px; height: 22px; object-fit: contain; display: block; }
-    .preset-initial { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; overflow: hidden; }
+    .preset-icon-wrap {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #fff; border: 1px solid #e5e7eb;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .preset-logo { width: 32px; height: 32px; object-fit: contain; display: block; }
+    .preset-initial { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; }
     .preset-label { font-size: .6rem; color: #6b7280; text-align: center; line-height: 1.2; max-width: 60px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
     /* Card list */
@@ -326,10 +357,12 @@ const BANK_PRESETS = [
       width: 44px; height: 44px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       color: #fff; font-weight: 700; font-size: 1.2rem; flex-shrink: 0;
-      overflow: hidden;
+      overflow: hidden; background: #fff;
+      border: 2.5px solid #e5e7eb;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
     }
     .item-icon--card { border-radius: .5rem; }
-    .icon-logo { width: 100%; height: 100%; object-fit: contain; padding: 4px; background: transparent; }
+    .icon-logo { width: 70%; height: 70%; object-fit: contain; display: block; }
     .item-info { display: flex; flex-direction: column; }
     .item-name { font-size: .95rem; font-weight: 700; color: #111; }
     .item-sub { font-size: .75rem; color: #9ca3af; }
@@ -379,14 +412,61 @@ export class BankingComponent implements OnInit {
     this.loadCards();
   }
 
+  private inferLogo(name: string, logo: string): string {
+    if (logo) return logo;
+    const n = name.toLowerCase();
+    if (n.includes('nubank'))          return 'https://cdn.simpleicons.org/nubank/8a05be';
+    if (n.includes('inter'))           return 'https://cdn.simpleicons.org/bancointer/ff7000';
+    if (n.includes('itaú') || n.includes('itau')) return 'https://cdn.simpleicons.org/itau/003d8f';
+    if (n.includes('bradesco'))        return 'https://cdn.simpleicons.org/bradesco/cc092f';
+    if (n.includes('santander'))       return 'https://cdn.simpleicons.org/santander/ec0000';
+    if (n.includes('caixa'))           return 'https://www.google.com/s2/favicons?domain=caixa.gov.br&sz=64';
+    if (n.includes('brasil') || n.includes(' bb')) return 'https://cdn.simpleicons.org/bancodobrasil/000000';
+    if (n.includes('c6'))              return 'https://www.google.com/s2/favicons?domain=c6bank.com.br&sz=64';
+    if (n.includes('btg'))             return 'https://www.google.com/s2/favicons?domain=btgpactual.com&sz=64';
+    if (n.includes('xp'))              return 'https://www.google.com/s2/favicons?domain=xpi.com.br&sz=64';
+    if (n.includes('mercado pago') || n.includes('mercadopago')) return 'https://cdn.simpleicons.org/mercadopago/009ee3';
+    if (n.includes('picpay'))          return 'https://cdn.simpleicons.org/picpay/21c25e';
+    if (n.includes('sicoob'))          return 'https://www.google.com/s2/favicons?domain=sicoob.com.br&sz=64';
+    if (n.includes('sicredi'))         return 'https://www.google.com/s2/favicons?domain=sicredi.com.br&sz=64';
+    if (n.includes('neon'))            return 'https://www.google.com/s2/favicons?domain=neon.com.br&sz=64';
+    if (n.includes('carrefour'))       return 'https://www.google.com/s2/favicons?domain=carrefour.com.br&sz=64';
+    if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'https://www.google.com/s2/favicons?domain=mercadolivre.com.br&sz=64';
+    return '';
+  }
+  normalizeLogo(logo: string): string {
+    if (!logo) return '';
+    // Old Clearbit: logo.clearbit.com/domain
+    let m = logo.match(/logo\.clearbit\.com\/([^?/]+)/);
+    if (m) return DOMAIN_TO_LOGO[m[1]] ?? GF(m[1]);
+    // Old Apple Touch Icon: domain/apple-touch-icon.png
+    m = logo.match(/https?:\/\/([^/]+)\/apple-touch-icon/);
+    if (m) {
+      const domain = m[1].replace(/^www\./, '');
+      return DOMAIN_TO_LOGO[domain] ?? GF(domain);
+    }
+    // Old Google favicon sz=128/256 → upgrade to SI if available
+    m = logo.match(/favicons\?domain=([^&]+)/);
+    if (m) return DOMAIN_TO_LOGO[m[1]] ?? GF(m[1]);
+    return logo;
+  }
+
   loadAccounts() {
     this.loadingAccs.set(true);
-    this.api.get<any>('/accounts').subscribe(r => { this.accounts.set(r.data ?? []); this.loadingAccs.set(false); });
+    this.api.get<any>('/accounts').subscribe(r => {
+      const data = (r.data ?? []).map((a: any) => ({ ...a, logo: this.inferLogo(a.name, this.normalizeLogo(a.logo)) }));
+      this.accounts.set(data);
+      this.loadingAccs.set(false);
+    });
   }
 
   loadCards() {
     this.loadingCards.set(true);
-    this.api.get<any>('/credit-cards').subscribe(r => { this.cards.set(r.data ?? []); this.loadingCards.set(false); });
+    this.api.get<any>('/credit-cards').subscribe(r => {
+      const data = (r.data ?? []).map((c: any) => ({ ...c, logo: this.inferLogo(c.name, this.normalizeLogo(c.logo)) }));
+      this.cards.set(data);
+      this.loadingCards.set(false);
+    });
   }
 
   applyBankPreset(obj: any, bank: typeof BANK_PRESETS[0]) {
@@ -395,11 +475,19 @@ export class BankingComponent implements OnInit {
     obj.logo  = bank.logo;
   }
 
-  onLogoError(event: Event, color: string, name: string) {
+  onLogoError(event: Event, color: string, name: string, fallback?: string) {
     const img = event.target as HTMLImageElement;
+    // First failure: try GF fallback if available and not yet tried
+    if (fallback && !img.dataset['triedFallback']) {
+      img.dataset['triedFallback'] = '1';
+      img.src = fallback;
+      return;
+    }
+    // Final fallback: show initial letter on brand-color circle
     const parent = img.parentElement!;
     img.style.display = 'none';
     parent.style.background = color;
+    parent.style.border = 'none';
     parent.textContent = name[0];
     parent.style.color = '#fff';
     parent.style.fontWeight = '700';
