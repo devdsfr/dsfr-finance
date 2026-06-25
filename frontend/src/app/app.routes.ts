@@ -130,6 +130,14 @@ export const routes: Routes = [
       {
         path: 'plan',
         loadComponent: () => import('./modules/plan/plan.component').then(m => m.PlanComponent)
+      },
+      {
+        path: 'open-finance',
+        loadComponent: () => import('./modules/open-finance/open-finance.component').then(m => m.OpenFinanceComponent)
+      },
+      {
+        path: 'patrimony-evolution',
+        loadComponent: () => import('./modules/patrimony-evolution/patrimony-evolution.component').then(m => m.PatrimonyEvolutionComponent)
       }
     ]
   },

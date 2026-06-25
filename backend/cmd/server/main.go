@@ -62,6 +62,7 @@ func main() {
 	aiSubH := handlers.NewAISubscriptionHandler(db, aiUsageSvc)
 	planH := handlers.NewPlanHandler(db)
 	settingsH := handlers.NewSettingsHandler(db)
+	patrimonySnapH := handlers.NewPatrimonySnapshotHandler(db)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -182,6 +183,11 @@ func main() {
 		auth.PUT("/me/settings", settingsH.UpdateSettings)
 		auth.GET("/me/export", settingsH.ExportData)
 		auth.DELETE("/me", settingsH.DeleteAccount)
+
+		// Patrimony snapshots
+		auth.GET("/patrimony-snapshots", patrimonySnapH.List)
+		auth.POST("/patrimony-snapshots", patrimonySnapH.Upsert)
+		auth.DELETE("/patrimony-snapshots/:month", patrimonySnapH.Delete)
 	}
 
 	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })

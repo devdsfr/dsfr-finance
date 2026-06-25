@@ -17,18 +17,106 @@ Sistema de gestão financeira pessoal — backend em **Go** e frontend em **Angu
 
 ---
 
-## Início rápido
+## 🚀 Como rodar localmente
+
+### Pré-requisitos
+
+- **Docker Desktop** instalado e rodando
+- **Node.js** 20+ e npm
+- **Go** 1.22+ (opcional, se quiser rodar o backend fora do Docker)
+
+### Passo a passo
+
+#### 1. Clone o repositório
 
 ```bash
 git clone <repo>
 cd dsfr-finance
-cp backend/.env.example backend/.env
-docker compose up --build
 ```
 
-- **API**: http://localhost:8080
-- **Frontend**: http://localhost:4200
-- **PgAdmin**: http://localhost:5050
+#### 2. Configure o ambiente do backend
+
+Crie o arquivo `.env` no diretório `backend/`:
+
+```bash
+# Windows PowerShell
+New-Item -Path "backend\.env" -ItemType File -Force
+```
+
+Adicione o seguinte conteúdo ao `backend/.env`:
+
+```env
+PORT=8080
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/finance?sslmode=disable
+JWT_SECRET=local-dev-secret-key-change-in-production-min-32-chars
+STORAGE_ENDPOINT=localhost:9000
+STORAGE_BUCKET=finance
+STORAGE_ACCESS_KEY=minioadmin
+STORAGE_SECRET_KEY=minioadmin
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=no-reply@finance.local
+SPENDING_ALERT_PCT=80
+APP_ENV=development
+CORS_ORIGINS=http://localhost:4200
+```
+
+#### 3. Suba os serviços com Docker
+
+```bash
+docker-compose up -d
+```
+
+Isso irá iniciar:
+- PostgreSQL (banco de dados)
+- Backend Go (API)
+- MinIO (armazenamento de arquivos)
+- MailHog (servidor SMTP para testes)
+- PgAdmin (interface web para o banco)
+
+#### 4. Instale as dependências do frontend
+
+```bash
+cd frontend
+npm install --legacy-peer-deps
+```
+
+#### 5. Rode o frontend em modo desenvolvimento
+
+```bash
+npm start
+```
+
+O frontend estará disponível em **http://localhost:4200**
+
+### 🌐 URLs dos serviços
+
+| Serviço      | URL                          | Credenciais              |
+|--------------|------------------------------|--------------------------|
+| Frontend     | http://localhost:4200        | -                        |
+| Backend API  | http://localhost:8080/api/v1 | -                        |
+| PgAdmin      | http://localhost:5050        | admin@finance.local/admin |
+| MinIO Console| http://localhost:9001        | minioadmin/minioadmin    |
+| MailHog UI   | http://localhost:8025        | -                        |
+
+### 📝 Primeiro acesso
+
+1. Acesse http://localhost:4200
+2. Clique em **"Cadastre-se"**
+3. Crie uma nova conta
+4. Faça login com as credenciais criadas
+
+### 🛑 Parar os serviços
+
+```bash
+# Parar todos os containers
+docker-compose down
+
+# Parar e remover volumes (limpa o banco de dados)
+docker-compose down -v
+```
 
 ---
 

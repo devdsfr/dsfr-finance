@@ -49,6 +49,7 @@ import { filter } from 'rxjs/operators';
             </div>
           </div>
 
+          <a routerLink="/patrimony-evolution" routerLinkActive="active">Patrimônio</a>
           <a routerLink="/spending-limits" routerLinkActive="active">{{ 'nav.spending_limits' | translate }}</a>
           <a routerLink="/debt-strategy"   routerLinkActive="active">
             {{ 'nav.debt_strategy' | translate }} @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
@@ -56,7 +57,7 @@ import { filter } from 'rxjs/operators';
           <a routerLink="/ai-subscriptions" routerLinkActive="active">
             {{ 'nav.ai_subscriptions' | translate }} @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
           </a>
-          <a routerLink="/banking"         routerLinkActive="active">{{ 'nav.banking' | translate }}</a>
+          <a routerLink="/open-finance"     routerLinkActive="active">Open Finance</a>
         </nav>
 
         <div class="topnav__right">
@@ -90,6 +91,7 @@ import { filter } from 'rxjs/operators';
             <div class="user-menu__dropdown" (mouseleave)="userMenuOpen.set(false)">
               <a routerLink="/account"     (click)="userMenuOpen.set(false)">{{ 'nav.my_account' | translate }}</a>
               <a routerLink="/categories"  (click)="userMenuOpen.set(false)">{{ 'nav.categories' | translate }}</a>
+              <a routerLink="/banking"    (click)="userMenuOpen.set(false)">Contas & Cartões</a>
               <a routerLink="/plan"        (click)="userMenuOpen.set(false)">
                 {{ 'nav.access_control' | translate }}
                 <span class="plan-pill" [class.plan-pill--premium]="plan.isPremium()">{{ plan.isPremium() ? 'Premium' : 'Free' }}</span>
@@ -135,6 +137,10 @@ import { filter } from 'rxjs/operators';
              (click)="drawerOpen.set(false)">
             📋 {{ 'nav.transactions' | translate }}
           </a>
+          <a class="drawer__link" routerLink="/patrimony-evolution" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            📊 Patrimônio
+          </a>
           <a class="drawer__link" routerLink="/spending-limits" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
             🎯 {{ 'nav.spending_limits' | translate }}
@@ -149,9 +155,9 @@ import { filter } from 'rxjs/operators';
             🤖 {{ 'nav.ai_subscriptions' | translate }}
             @if (!plan.isPremium()) { <span class="drawer__lock">🔒</span> }
           </a>
-          <a class="drawer__link" routerLink="/banking" routerLinkActive="drawer__link--active"
+          <a class="drawer__link" routerLink="/open-finance" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
-            🏦 {{ 'nav.banking' | translate }}
+            🏦 Open Finance
           </a>
         </div>
 
@@ -182,6 +188,8 @@ import { filter } from 'rxjs/operators';
              (click)="drawerOpen.set(false)">👤 {{ 'nav.my_account' | translate }}</a>
           <a class="drawer__link" routerLink="/categories" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">📁 {{ 'nav.categories' | translate }}</a>
+          <a class="drawer__link" routerLink="/banking" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">🏦 Contas & Cartões</a>
           <a class="drawer__link" routerLink="/plan" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
             🔑 {{ 'nav.access_control' | translate }}
