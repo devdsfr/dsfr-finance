@@ -21,7 +21,8 @@ func NewPatrimonySnapshotHandler(db *sql.DB) *PatrimonySnapshotHandler {
 func (h *PatrimonySnapshotHandler) List(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
 	rows, err := h.db.QueryContext(c, `
-		SELECT id, month, total, invested, profit, capital_gains, dividends, income_12m, notes
+		SELECT id, month, total, invested, profit, capital_gains, dividends,
+		       income_12m, variation_pct, variation_val, rentability, notes
 		FROM patrimony_snapshots
 		WHERE workspace_id = $1
 		ORDER BY month ASC`, wsID)
@@ -35,12 +36,16 @@ func (h *PatrimonySnapshotHandler) List(c *gin.Context) {
 	for rows.Next() {
 		var id, month, notes string
 		var total, invested, profit, capitalGains, dividends, income12m float64
-		rows.Scan(&id, &month, &total, &invested, &profit, &capitalGains, &dividends, &income12m, &notes)
+		var variationPct, variationVal, rentability float64
+		rows.Scan(&id, &month, &total, &invested, &profit, &capitalGains,
+			&dividends, &income12m, &variationPct, &variationVal, &rentability, &notes)
 		data = append(data, gin.H{
 			"id": id, "month": month,
 			"total": total, "invested": invested, "profit": profit,
 			"capital_gains": capitalGains, "dividends": dividends,
-			"income_12m": income12m, "notes": notes,
+			"income_12m": income12m, "variation_pct": variationPct,
+			"variation_val": variationVal, "rentability": rentability,
+			"notes": notes,
 		})
 	}
 	if data == nil {
@@ -59,6 +64,9 @@ func (h *PatrimonySnapshotHandler) Upsert(c *gin.Context) {
 		CapitalGains float64 `json:"capital_gains"`
 		Dividends    float64 `json:"dividends"`
 		Income12m    float64 `json:"income_12m"`
+		VariationPct float64 `json:"variation_pct"`
+		VariationVal float64 `json:"variation_val"`
+		Rentability  float64 `json:"rentability"`
 		Notes        string  `json:"notes"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -73,13 +81,16 @@ func (h *PatrimonySnapshotHandler) Upsert(c *gin.Context) {
 	id := uuid.New().String()
 	_, err := h.db.ExecContext(c, `
 		INSERT INTO patrimony_snapshots
-		  (id, workspace_id, month, total, invested, profit, capital_gains, dividends, income_12m, notes, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW())
+		  (id, workspace_id, month, total, invested, profit, capital_gains, dividends,
+		   income_12m, variation_pct, variation_val, rentability, notes, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW(),NOW())
 		ON CONFLICT (workspace_id, month) DO UPDATE SET
-		  total=$4, invested=$5, profit=$6, capital_gains=$7,
-		  dividends=$8, income_12m=$9, notes=$10, updated_at=NOW()`,
+		  total=$4, invested=$5, profit=$6, capital_gains=$7, dividends=$8,
+		  income_12m=$9, variation_pct=$10, variation_val=$11, rentability=$12,
+		  notes=$13, updated_at=NOW()`,
 		id, wsID, body.Month, body.Total, body.Invested, body.Profit,
-		body.CapitalGains, body.Dividends, body.Income12m, body.Notes)
+		body.CapitalGains, body.Dividends, body.Income12m,
+		body.VariationPct, body.VariationVal, body.Rentability, body.Notes)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

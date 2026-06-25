@@ -6,20 +6,24 @@ import { ToastService } from '../../core/services/toast.service';
 
 interface Snapshot {
   id?: string;
-  month: string;            // YYYY-MM
+  month: string;
   total: number;
   invested: number;
   profit: number;
   capital_gains: number;
   dividends: number;
   income_12m: number;
+  variation_pct: number;
+  variation_val: number;
+  rentability: number;
   notes: string;
 }
 
 const EMPTY = (): Snapshot => ({
   month: new Date().toISOString().slice(0, 7),
   total: 0, invested: 0, profit: 0,
-  capital_gains: 0, dividends: 0, income_12m: 0, notes: ''
+  capital_gains: 0, dividends: 0, income_12m: 0,
+  variation_pct: 0, variation_val: 0, rentability: 0, notes: ''
 });
 
 @Component({
@@ -67,6 +71,18 @@ const EMPTY = (): Snapshot => ({
       <div class="card">
         <span class="card-label">Proventos 12M</span>
         <span class="card-value card-value--sm">{{ latest()!.income_12m | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Variação mensal</span>
+        <span class="card-value card-value--sm" [class.card-value--green]="latest()!.variation_pct >= 0"
+              [class.card-value--red]="latest()!.variation_pct < 0">
+          {{ latest()!.variation_pct >= 0 ? '+' : '' }}{{ latest()!.variation_pct | number:'1.2-2' }}%
+        </span>
+        <span class="card-sub">{{ latest()!.variation_val | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Rentabilidade total</span>
+        <span class="card-value card-value--sm card-value--green">{{ latest()!.rentability | number:'1.2-2' }}%</span>
       </div>
     </div>
   }
@@ -185,6 +201,20 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
               <input type="number" step="0.01" [(ngModel)]="form.income_12m" name="income_12m" class="input" />
             </div>
           </div>
+          <div class="form-row">
+            <div class="fg">
+              <label>Variação % mensal</label>
+              <input type="number" step="0.01" [(ngModel)]="form.variation_pct" name="variation_pct" class="input" placeholder="1.98" />
+            </div>
+            <div class="fg">
+              <label>Variação R$ mensal</label>
+              <input type="number" step="0.01" [(ngModel)]="form.variation_val" name="variation_val" class="input" />
+            </div>
+            <div class="fg">
+              <label>Rentabilidade %</label>
+              <input type="number" step="0.01" [(ngModel)]="form.rentability" name="rentability" class="input" placeholder="10.93" />
+            </div>
+          </div>
           <div class="fg">
             <label>Observações</label>
             <input type="text" [(ngModel)]="form.notes" name="notes" class="input"
@@ -213,7 +243,9 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
             <th>Investido</th>
             <th>Lucro</th>
             <th>Dividendos</th>
-            <th>Var.</th>
+            <th>Var. %</th>
+            <th>Var. R$</th>
+            <th>Rentab.</th>
             <th></th>
           </tr>
         </thead>
@@ -226,12 +258,14 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
               <td class="td-green">{{ s.profit | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
               <td class="td-green">{{ s.dividends | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
               <td>
-                @if (monthGrowth(i) !== null) {
-                  <span [class.pos]="monthGrowth(i)! >= 0" [class.neg]="monthGrowth(i)! < 0">
-                    {{ monthGrowth(i)! >= 0 ? '+' : '' }}{{ monthGrowth(i)! | number:'1.2-2' }}%
-                  </span>
-                } @else { <span class="dash">—</span> }
+                <span [class.pos]="s.variation_pct >= 0" [class.neg]="s.variation_pct < 0">
+                  {{ s.variation_pct >= 0 ? '+' : '' }}{{ s.variation_pct | number:'1.2-2' }}%
+                </span>
               </td>
+              <td [class.pos]="s.variation_val >= 0" [class.neg]="s.variation_val < 0">
+                {{ s.variation_val | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+              </td>
+              <td class="td-green">{{ s.rentability | number:'1.2-2' }}%</td>
               <td>
                 <button class="edit-btn" title="Editar" (click)="editSnap(s)">✏️</button>
                 <button class="del-btn" title="Excluir" (click)="deleteSnap(s.month)">🗑</button>
@@ -270,6 +304,8 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     .card--main .card-value { font-size: 1.75rem; color: #fff; }
     .card-value--sm { font-size: 1.05rem; }
     .card-value--green { color: #16a34a; }
+    .card-value--red   { color: #ef4444; }
+    .card-sub { font-size: .8rem; color: #6b7280; }
     .card-badge { padding: .2rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 700; margin-left: auto; }
     .card-badge--pos { background: rgba(255,255,255,.2); color: #bbf7d0; }
     .card-badge--neg { background: rgba(239,68,68,.2); color: #fca5a5; }
@@ -395,6 +431,15 @@ export class PatrimonyEvolutionComponent implements OnInit {
     this.form.capital_gains = num(/[Gg]anho de [Cc]apital\s*R\$\s*([\d.,]+)/);
     this.form.dividends     = num(/[Dd]ividendos [Rr]ecebidos\s*R\$\s*([\d.,]+)/);
     this.form.income_12m    = num(/[Pp]roventos [Rr]ecebidos.*?R\$\s*([\d.,]+)/);
+    // Variação e rentabilidade — percentual puro (sem R$)
+    const pctMatch = (pat: RegExp): number => {
+      const m = t.match(pat);
+      if (!m) return 0;
+      return parseFloat(m[1].replace(',', '.'));
+    };
+    this.form.variation_pct = pctMatch(/[Vv]aria[çc][aã]o[\s\S]*?([\d]+[.,][\d]+)\s*%/);
+    this.form.variation_val = num(/[Vv]aria[çc][aã]o[\s\S]*?%[\s\S]*?R\$\s*([\d.,]+)/);
+    this.form.rentability   = pctMatch(/[Rr]entabilidade[\s\S]*?([\d]+[.,][\d]+)\s*%/);
     this.toast.success('Dados preenchidos! Confirme o mês e salve.');
   }
 
