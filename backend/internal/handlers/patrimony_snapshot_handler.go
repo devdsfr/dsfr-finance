@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"dsfr-finance/internal/middleware"
+	"github.com/dsfr/finance/internal/middleware"
 )
 
 type PatrimonySnapshotHandler struct {
