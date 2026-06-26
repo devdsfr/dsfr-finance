@@ -1,0 +1,21 @@
+basePath: /api/v1
+host: localhost:8080
+info:
+  contact:
+    email: admin@dsfr.com
+    name: API Support
+  description: API de gestão financeira pessoal
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: DSFR Finance API
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    description: Digite "Bearer" seguido do token JWT
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

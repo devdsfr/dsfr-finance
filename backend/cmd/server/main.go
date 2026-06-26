@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	_ "github.com/dsfr/finance/docs"
 	"github.com/dsfr/finance/internal/config"
 	"github.com/dsfr/finance/internal/database"
 	"github.com/dsfr/finance/internal/handlers"
@@ -13,7 +14,28 @@ import (
 	"github.com/dsfr/finance/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title DSFR Finance API
+// @version 1.0
+// @description API de gestão financeira pessoal
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email admin@dsfr.com
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Digite "Bearer" seguido do token JWT
 
 func main() {
 	cfg := config.Load()
@@ -191,6 +213,9 @@ func main() {
 	}
 
 	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	log.Printf("server listening on :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)

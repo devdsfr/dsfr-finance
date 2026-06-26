@@ -1,0 +1,28 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API de gestão financeira pessoal",
+        "title": "DSFR Finance API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "admin@dsfr.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {},
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Digite \"Bearer\" seguido do token JWT",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
