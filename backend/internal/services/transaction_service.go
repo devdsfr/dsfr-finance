@@ -145,11 +145,22 @@ func (s *TransactionService) MarkPaid(workspaceID, userID, txID string) (*models
 	if err != nil || tx == nil {
 		return nil, fmt.Errorf("transaction not found")
 	}
+	if tx.Paid {
+		return tx, nil // already paid, nothing to do
+	}
 	now := time.Now()
 	tx.Paid = true
 	tx.PaidAt = &now
 	if err := s.repo.Update(tx); err != nil {
 		return nil, err
+	}
+	// Adjust account balance: income adds, expense subtracts
+	if tx.AccountID != nil && *tx.AccountID != "" {
+		delta := tx.Amount
+		if tx.Type == "expense" {
+			delta = -tx.Amount
+		}
+		_ = s.repo.AdjustAccountBalance(*tx.AccountID, delta)
 	}
 	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)
 	return tx, nil
@@ -160,10 +171,21 @@ func (s *TransactionService) MarkUnpaid(workspaceID, userID, txID string) (*mode
 	if err != nil || tx == nil {
 		return nil, fmt.Errorf("transaction not found")
 	}
+	if !tx.Paid {
+		return tx, nil // already unpaid
+	}
 	tx.Paid = false
 	tx.PaidAt = nil
 	if err := s.repo.Update(tx); err != nil {
 		return nil, err
+	}
+	// Reverse the balance adjustment
+	if tx.AccountID != nil && *tx.AccountID != "" {
+		delta := -tx.Amount
+		if tx.Type == "expense" {
+			delta = tx.Amount
+		}
+		_ = s.repo.AdjustAccountBalance(*tx.AccountID, delta)
 	}
 	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)
 	return tx, nil

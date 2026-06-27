@@ -206,6 +206,15 @@ func (r *TransactionRepository) Delete(id, workspaceID string) error {
 	return err
 }
 
+// AdjustAccountBalance adds delta to the account's stored balance (positive = add, negative = subtract)
+func (r *TransactionRepository) AdjustAccountBalance(accountID string, delta float64) error {
+	_, err := r.db.Exec(
+		`UPDATE accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2`,
+		delta, accountID,
+	)
+	return err
+}
+
 // MarkAllPaid marks all overdue unpaid transactions as paid (AC-UX-01)
 func (r *TransactionRepository) MarkAllPaid(workspaceID string) (int64, error) {
 	now := time.Now()
