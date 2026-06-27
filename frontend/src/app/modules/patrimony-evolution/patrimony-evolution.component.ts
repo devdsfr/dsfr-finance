@@ -187,7 +187,7 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
               <input type="text" [(ngModel)]="form.wallet_name" name="wallet_name" class="input"
                      placeholder="Ex: Daniel, Filho Pedro, Principal..." list="wallet-list" />
               <datalist id="wallet-list">
-                @for (w of wallets(); track w) { <option [value]="w"/> }
+                @for (w of wallets(); track w) { <option [value]="w">{{ w }}</option> }
               </datalist>
             </div>
             <div class="fg">

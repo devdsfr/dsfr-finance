@@ -6,6 +6,14 @@ ALTER TABLE patrimony_snapshots
 ALTER TABLE patrimony_snapshots
   DROP CONSTRAINT IF EXISTS patrimony_snapshots_workspace_id_month_key;
 
-ALTER TABLE patrimony_snapshots
-  ADD CONSTRAINT IF NOT EXISTS patrimony_snapshots_workspace_month_wallet_key
-  UNIQUE (workspace_id, month, wallet_name);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'patrimony_snapshots_workspace_month_wallet_key'
+  ) THEN
+    ALTER TABLE patrimony_snapshots
+      ADD CONSTRAINT patrimony_snapshots_workspace_month_wallet_key
+      UNIQUE (workspace_id, month, wallet_name);
+  END IF;
+END $$;
