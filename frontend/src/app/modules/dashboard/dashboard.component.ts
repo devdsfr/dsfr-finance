@@ -333,6 +333,77 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
           }
         </div>
       </div>
+
+      <!-- ── Evolução de Patrimônio (multi-carteira) ──────────────── -->
+      @if (!loading() && patrimonySnapshots().length > 0) {
+        <div class="card mt patrimony-card">
+          <div class="patrimony-header">
+            <p class="section-label" style="margin-top:0">Evolução do Patrimônio</p>
+            <a routerLink="/patrimony" class="manage-link" style="margin-top:0">Ver detalhes →</a>
+          </div>
+
+          <!-- Legend -->
+          <div class="pat-legend">
+            @for (w of patWalletLines(); track w.name) {
+              <span class="pat-legend-item">
+                <span class="pat-legend-dot" [style.background]="w.color"></span>{{ w.name }}
+              </span>
+            }
+          </div>
+
+          <!-- Chart -->
+          <div class="patrimony-chart">
+            <svg [attr.viewBox]="'0 0 ' + chartW + ' ' + chartH" preserveAspectRatio="none" class="pat-svg">
+              <!-- Grid lines -->
+              @for (y of chartYLines(); track y.v) {
+                <line [attr.x1]="padL" [attr.x2]="chartW - padR"
+                      [attr.y1]="y.py" [attr.y2]="y.py"
+                      stroke="#f3f4f6" stroke-width="1"/>
+                <text [attr.x]="padL - 6" [attr.y]="y.py + 4"
+                      text-anchor="end" font-size="10" fill="#9ca3af">{{ y.label }}</text>
+              }
+              <!-- X labels -->
+              @for (m of patAllMonths(); track m.month; let i = $index) {
+                <text [attr.x]="patXPos(i)" [attr.y]="chartH - 2"
+                      text-anchor="middle" font-size="9" fill="#9ca3af">{{ m.label }}</text>
+              }
+              <!-- One line + area per wallet -->
+              @for (w of patWalletLines(); track w.name) {
+                <path [attr.d]="w.areaPath" [attr.fill]="w.color" fill-opacity="0.07" stroke="none"/>
+                <path [attr.d]="w.linePath" fill="none" [attr.stroke]="w.color" stroke-width="2" stroke-linejoin="round"/>
+                @for (pt of w.points; track pt.month) {
+                  <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5"
+                          fill="#fff" [attr.stroke]="w.color" stroke-width="2"/>
+                }
+              }
+            </svg>
+          </div>
+
+          <!-- Wallet cards -->
+          <div class="pat-wallet-grid">
+            @for (w of patWalletCards(); track w.name) {
+              <div class="pat-wcard">
+                <span class="pat-wcard__name">
+                  <span class="pat-wcard__dot" [style.background]="w.color"></span>{{ w.name }}
+                </span>
+                <span class="pat-wcard__total">{{ w.latest | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</span>
+                <span class="pat-wcard__delta" [class.pos]="w.deltaPct >= 0" [class.neg-val]="w.deltaPct < 0">
+                  {{ w.deltaPct >= 0 ? '▲' : '▼' }} {{ w.deltaPct | number:'1.1-1' }}%
+                </span>
+              </div>
+            }
+            <!-- Consolidated -->
+            @if (patWalletCards().length > 1) {
+              <div class="pat-wcard pat-wcard--total">
+                <span class="pat-wcard__name">
+                  <span class="pat-wcard__dot" style="background:#6b7280"></span>Total consolidado
+                </span>
+                <span class="pat-wcard__total">{{ patConsolidated() | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -488,6 +559,24 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .result-val { font-size: 1.15rem; font-weight: 700; color: #16a34a; }
     .result-row.negative .result-val { color: #dc2626; }
 
+    /* Patrimônio chart */
+    .patrimony-card { margin-top: 1.25rem; }
+    .patrimony-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
+    .pat-legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .pat-legend-item { display: flex; align-items: center; gap: .35rem; font-size: .78rem; color: #374151; }
+    .pat-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .patrimony-chart { width: 100%; height: 160px; }
+    .pat-svg { width: 100%; height: 100%; overflow: visible; }
+    .pat-wallet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: .5rem; margin-top: 1rem; padding-top: .75rem; border-top: 1px solid #f3f4f6; }
+    .pat-wcard { background: #f8fafc; border-radius: .375rem; padding: .6rem .75rem; display: flex; flex-direction: column; gap: .15rem; }
+    .pat-wcard--total { background: #f0fdf4; border: 1px solid #dcfce7; }
+    .pat-wcard__name { display: flex; align-items: center; gap: .35rem; font-size: .72rem; color: #6b7280; }
+    .pat-wcard__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pat-wcard__total { font-size: .97rem; font-weight: 700; color: #111; }
+    .pat-wcard__delta { font-size: .72rem; font-weight: 600; }
+    .pos { color: #16a34a; }
+    .neg-val { color: #dc2626; }
+
     /* Skeleton */
     @keyframes shimmer {
       0% { background-position: -400px 0; }
@@ -521,6 +610,11 @@ export class DashboardComponent implements OnInit {
         this.markingPaid.delete(bill.id);
         const msg = bill.type === 'income' ? 'marcado como recebido!' : 'marcado como pago!';
         this.toast.success(`"${bill.description}" ${msg}`);
+        // Recarrega saldo das contas para refletir no Saldo Geral
+        this.api.get<any>('/accounts').subscribe(res => {
+          const raw: any[] = res.data ?? [];
+          this.accounts.set(raw.map((a: any) => ({ ...a, logo: this.inferLogo(a.name, this.normalizeLogo(a.logo)) })));
+        });
       },
       error: () => {
         this.markingPaid.delete(bill.id);
@@ -546,6 +640,85 @@ export class DashboardComponent implements OnInit {
 
   totalBalance     = computed(() => this.accounts().reduce((s, a) => s + (a.balance ?? 0), 0));
   totalCardExpense = computed(() => this.cards().reduce((s, c) => s + (c.current_invoice ?? 0), 0));
+
+  // Patrimony chart (multi-wallet)
+  patrimonySnapshots = signal<any[]>([]);
+  readonly chartW = 800; readonly chartH = 140; readonly padL = 60; readonly padR = 20; readonly padT = 12; readonly padB = 22;
+  private readonly PAT_COLORS = ['#2563eb','#16a34a','#d97706','#9333ea','#e11d48','#0891b2','#ca8a04','#16a34a'];
+
+  // All unique months sorted across all wallets
+  patAllMonths = computed(() => {
+    const months = [...new Set(this.patrimonySnapshots().map((s: any) => s.month))].sort();
+    return months.map(m => ({ month: m, label: m.slice(5,7) + '/' + m.slice(2,4) }));
+  });
+
+  // Shared Y bounds across all wallets
+  private patYBounds = computed(() => {
+    const vals = this.patrimonySnapshots().map((s: any) => s.total);
+    if (!vals.length) return { min: 0, max: 1 };
+    const min = Math.min(...vals) * 0.97;
+    const max = Math.max(...vals) * 1.03;
+    return { min, max: max === min ? min + 1 : max };
+  });
+
+  patXPos(i: number): number {
+    const n = this.patAllMonths().length;
+    const W = this.chartW - this.padL - this.padR;
+    return this.padL + (n <= 1 ? W / 2 : (i / (n - 1)) * W);
+  }
+
+  private patYPos(val: number): number {
+    const { min, max } = this.patYBounds();
+    const H = this.chartH - this.padT - this.padB;
+    return this.padT + H - ((val - min) / (max - min)) * H;
+  }
+
+  // One entry per wallet with computed line/area paths and points
+  patWalletLines = computed(() => {
+    const months = this.patAllMonths();
+    const all = this.patrimonySnapshots();
+    const walletNames = [...new Set(all.map((s: any) => s.wallet_name))].sort();
+    return walletNames.map((name, ci) => {
+      const color = this.PAT_COLORS[ci % this.PAT_COLORS.length];
+      const byMonth = new Map(all.filter((s: any) => s.wallet_name === name).map((s: any) => [s.month, s.total]));
+      const pts = months
+        .map((m, i) => byMonth.has(m.month) ? { x: this.patXPos(i), y: this.patYPos(byMonth.get(m.month)!), month: m.month } : null)
+        .filter(Boolean) as { x: number; y: number; month: string }[];
+      if (!pts.length) return null;
+      const linePath = pts.map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`)).join(' ');
+      const bottom = this.chartH - this.padB;
+      const areaPath = `${linePath} L${pts[pts.length-1].x},${bottom} L${pts[0].x},${bottom} Z`;
+      return { name, color, points: pts, linePath, areaPath };
+    }).filter(Boolean);
+  });
+
+  // Summary cards per wallet
+  patWalletCards = computed(() => {
+    const all = this.patrimonySnapshots();
+    const walletNames = [...new Set(all.map((s: any) => s.wallet_name))].sort();
+    return walletNames.map((name, ci) => {
+      const data = all.filter((s: any) => s.wallet_name === name).sort((a: any, b: any) => a.month.localeCompare(b.month));
+      const latest = data.length ? data[data.length - 1].total : 0;
+      const first = data.length ? data[0].total : 0;
+      const deltaPct = first > 0 ? ((latest - first) / first) * 100 : 0;
+      return { name, color: this.PAT_COLORS[ci % this.PAT_COLORS.length], latest, deltaPct };
+    });
+  });
+
+  patConsolidated = computed(() =>
+    this.patWalletCards().reduce((s: number, w: any) => s + w.latest, 0)
+  );
+
+  chartYLines = computed(() => {
+    const { min, max } = this.patYBounds();
+    const H = this.chartH - this.padT - this.padB;
+    const fmt = (v: number) => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'k' : v.toFixed(0);
+    return [0, 0.5, 1].map(t => ({
+      v: min + t * (max - min),
+      py: this.padT + H - t * H,
+      label: fmt(min + t * (max - min))
+    }));
+  });
 
   // Recomputed automatically whenever the language changes — uses Intl so
   // we don't need a hardcoded month-name array per language.
@@ -669,7 +842,8 @@ export class DashboardComponent implements OnInit {
       ccs:    this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
       limits: this.api.get<any>('/spending-limits').pipe(catchError(() => of({ data: [] }))),
       cats:   this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
-    }).subscribe(({ txs, bills, accs, ccs, limits, cats }) => {
+      patrimony: this.api.get<any>('/patrimony-snapshots').pipe(catchError(() => of({ data: [] }))),
+    }).subscribe(({ txs, bills, accs, ccs, limits, cats, patrimony }) => {
       const list: any[]     = txs.data ?? [];
       const billList: any[] = bills.data ?? [];
 
@@ -701,6 +875,9 @@ export class DashboardComponent implements OnInit {
 
       // Spending limits — backend returns current_spend and usage_pct already
       this.spendingLimits.set(limits.data ?? []);
+
+      // Patrimony snapshots for chart
+      this.patrimonySnapshots.set(patrimony.data ?? []);
 
       // Unpaid bills from the wider date range
       const allBills = billList.filter((t: any) => !t.paid && !t.ignored);

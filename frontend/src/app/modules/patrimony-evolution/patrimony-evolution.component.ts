@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 interface Snapshot {
   id?: string;
   month: string;
+  wallet_name: string;
   total: number;
   invested: number;
   profit: number;
@@ -19,8 +20,9 @@ interface Snapshot {
   notes: string;
 }
 
-const EMPTY = (): Snapshot => ({
+const EMPTY = (wallet = 'Principal'): Snapshot => ({
   month: new Date().toISOString().slice(0, 7),
+  wallet_name: wallet,
   total: 0, invested: 0, profit: 0,
   capital_gains: 0, dividends: 0, income_12m: 0,
   variation_pct: 0, variation_val: 0, rentability: 0, notes: ''
@@ -39,6 +41,20 @@ const EMPTY = (): Snapshot => ({
     </div>
     <button class="btn btn--primary" (click)="openForm()">+ Registrar mês</button>
   </div>
+
+  <!-- ── Wallet tabs ── -->
+  @if (wallets().length > 0) {
+    <div class="wallet-tabs">
+      <button class="wallet-tab" [class.active]="activeWallet() === '__all__'" (click)="activeWallet.set('__all__')">
+        Todas as carteiras
+      </button>
+      @for (w of wallets(); track w) {
+        <button class="wallet-tab" [class.active]="activeWallet() === w" (click)="activeWallet.set(w)">
+          {{ w }}
+        </button>
+      }
+    </div>
+  }
 
   <!-- ── Summary cards (latest snapshot) ── -->
   @if (latest()) {
@@ -88,7 +104,7 @@ const EMPTY = (): Snapshot => ({
   }
 
   <!-- ── Chart ── -->
-  @if (snapshots().length >= 2) {
+  @if (filtered().length >= 2) {
     <div class="chart-card">
       <div class="chart-header">
         <span class="chart-title">Evolução do Patrimônio</span>
@@ -107,7 +123,7 @@ const EMPTY = (): Snapshot => ({
                 font-size="10" fill="#9ca3af">{{ y.label }}</text>
         }
         <!-- X axis labels -->
-        @for (s of snapshots(); track s.month; let i = $index) {
+        @for (s of filtered(); track s.month; let i = $index) {
           <text [attr.x]="xPos(i)" [attr.y]="svgH - PAD_B + 14"
                 text-anchor="middle" font-size="10" fill="#9ca3af">{{ fmtMonth(s.month) }}</text>
         }
@@ -124,13 +140,13 @@ const EMPTY = (): Snapshot => ({
         <polyline [attr.points]="linePoints('profit')"   fill="none" stroke="#86efac" stroke-width="1.5" stroke-linejoin="round" stroke-dasharray="4 3"/>
         <polyline [attr.points]="linePoints('total')"    fill="none" stroke="#2e7736" stroke-width="2.5" stroke-linejoin="round"/>
         <!-- Dots total -->
-        @for (s of snapshots(); track s.month; let i = $index) {
+        @for (s of filtered(); track s.month; let i = $index) {
           <circle [attr.cx]="xPos(i)" [attr.cy]="yPos(s.total)" r="4"
                   fill="#fff" stroke="#2e7736" stroke-width="2"/>
         }
       </svg>
     </div>
-  } @else if (snapshots().length === 1) {
+  } @else if (filtered().length === 1) {
     <div class="chart-card chart-card--empty">
       <p>Adicione pelo menos 2 meses para ver o gráfico de evolução 📈</p>
     </div>
@@ -166,6 +182,14 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
 
         <form (ngSubmit)="save()" class="modal-form">
           <div class="form-row">
+            <div class="fg">
+              <label>Nome da carteira</label>
+              <input type="text" [(ngModel)]="form.wallet_name" name="wallet_name" class="input"
+                     placeholder="Ex: Daniel, Filho Pedro, Principal..." list="wallet-list" />
+              <datalist id="wallet-list">
+                @for (w of wallets(); track w) { <option [value]="w"/> }
+              </datalist>
+            </div>
             <div class="fg">
               <label>Mês de referência</label>
               <input type="month" [(ngModel)]="form.month" name="month" class="input" required />
@@ -232,13 +256,14 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
   }
 
   <!-- ── History table ── -->
-  @if (snapshots().length > 0) {
+  @if (filtered().length > 0) {
     <div class="history-card">
       <h3>Histórico</h3>
       <table class="hist-table">
         <thead>
           <tr>
             <th>Mês</th>
+            @if (activeWallet() === '__all__') { <th>Carteira</th> }
             <th>Patrimônio</th>
             <th>Investido</th>
             <th>Lucro</th>
@@ -250,9 +275,12 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
           </tr>
         </thead>
         <tbody>
-          @for (s of snapshotsDesc(); track s.month; let i = $index) {
+          @for (s of filteredDesc(); track s.month + s.wallet_name; let i = $index) {
             <tr>
               <td class="td-month">{{ fmtMonthLong(s.month) }}</td>
+              @if (activeWallet() === '__all__') {
+                <td><span class="wallet-badge">{{ s.wallet_name }}</span></td>
+              }
               <td>{{ s.total | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
               <td>{{ s.invested | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
               <td class="td-green">{{ s.profit | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
@@ -268,7 +296,7 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
               <td class="td-green">{{ s.rentability | number:'1.2-2' }}%</td>
               <td>
                 <button class="edit-btn" title="Editar" (click)="editSnap(s)">✏️</button>
-                <button class="del-btn" title="Excluir" (click)="deleteSnap(s.month)">🗑</button>
+                <button class="del-btn" title="Excluir" (click)="deleteSnap(s.month, s.wallet_name)">🗑</button>
               </td>
             </tr>
           }
@@ -293,6 +321,21 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     .btn--ghost { background: none; color: #374151; border: 1px solid #d1d5db; }
     .btn--outline { background: #fff; color: #2e7736; border: 1.5px solid #2e7736; }
     .btn--sm { padding: .3rem .75rem; font-size: .8rem; }
+
+    /* Wallet tabs */
+    .wallet-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .wallet-tab {
+      padding: .35rem .9rem; border-radius: 999px; font-size: .82rem; font-weight: 600;
+      border: 1.5px solid #d1d5db; background: #fff; color: #374151; cursor: pointer;
+      transition: all .12s;
+    }
+    .wallet-tab:hover { border-color: #2e7736; color: #2e7736; }
+    .wallet-tab.active { background: #2e7736; color: #fff; border-color: #2e7736; }
+    .wallet-badge {
+      display: inline-block; padding: .15rem .5rem; border-radius: 999px;
+      background: #f0fdf4; color: #166534; font-size: .72rem; font-weight: 600;
+      border: 1px solid #bbf7d0;
+    }
 
     /* Cards */
     .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .875rem; margin-bottom: 1.25rem; }
@@ -374,6 +417,7 @@ export class PatrimonyEvolutionComponent implements OnInit {
   saving   = signal(false);
   showForm = signal(false);
   snapshots = signal<Snapshot[]>([]);
+  activeWallet = signal<string>('__all__');
   form: Snapshot = EMPTY();
   pasteText = '';
 
@@ -382,13 +426,24 @@ export class PatrimonyEvolutionComponent implements OnInit {
   readonly svgW  = 800; readonly svgH  = 220;
 
   // Derived
+  wallets = computed(() => [...new Set(this.snapshots().map(s => s.wallet_name))].sort());
+
+  filtered = computed(() => {
+    const w = this.activeWallet();
+    const all = this.snapshots();
+    if (w === '__all__') return all;
+    return all.filter(s => s.wallet_name === w);
+  });
+
+  filteredDesc = computed(() => [...this.filtered()].reverse());
+
   latest = computed(() => {
-    const s = this.snapshots();
+    const s = this.filtered();
     return s.length ? s[s.length - 1] : null;
   });
 
   growth = computed(() => {
-    const s = this.snapshots();
+    const s = this.filtered();
     if (s.length < 2) return null;
     const prev = s[s.length - 2].total;
     const curr = s[s.length - 1].total;
@@ -409,7 +464,12 @@ export class PatrimonyEvolutionComponent implements OnInit {
     });
   }
 
-  openForm() { this.form = EMPTY(); this.pasteText = ''; this.showForm.set(true); }
+  openForm() {
+    const w = this.activeWallet() === '__all__' ? 'Principal' : this.activeWallet();
+    this.form = EMPTY(w);
+    this.pasteText = '';
+    this.showForm.set(true);
+  }
   closeForm() { this.showForm.set(false); this.pasteText = ''; }
 
   editSnap(s: Snapshot) {
@@ -459,9 +519,9 @@ export class PatrimonyEvolutionComponent implements OnInit {
     });
   }
 
-  deleteSnap(month: string) {
-    if (!confirm(`Excluir registro de ${this.fmtMonthLong(month)}?`)) return;
-    this.api.delete<any>(`/patrimony-snapshots/${month}`).subscribe(() => {
+  deleteSnap(month: string, wallet: string) {
+    if (!confirm(`Excluir registro de ${this.fmtMonthLong(month)} (${wallet})?`)) return;
+    this.api.delete<any>(`/patrimony-snapshots/${month}?wallet=${encodeURIComponent(wallet)}`).subscribe(() => {
       this.toast.success('Removido');
       this.load();
     });
@@ -469,7 +529,7 @@ export class PatrimonyEvolutionComponent implements OnInit {
 
   // ── Chart helpers ──────────────────────────────────────────────────────────
   private chartBounds() {
-    const s = this.snapshots();
+    const s = this.filtered();
     const vals = s.map(x => x.total);
     const min = Math.min(...vals) * 0.97;
     const max = Math.max(...vals) * 1.03;
@@ -477,7 +537,7 @@ export class PatrimonyEvolutionComponent implements OnInit {
   }
 
   xPos(i: number): number {
-    const n = this.snapshots().length;
+    const n = this.filtered().length;
     const w = this.svgW - this.PAD_L - this.PAD_R;
     return this.PAD_L + (n === 1 ? w / 2 : (i / (n - 1)) * w);
   }
@@ -489,14 +549,14 @@ export class PatrimonyEvolutionComponent implements OnInit {
   }
 
   linePoints(key: keyof Snapshot): string {
-    return this.snapshots()
+    return this.filtered()
       .map((s, i) => `${this.xPos(i)},${this.yPos(s[key] as number)}`)
       .join(' ');
   }
 
   areaPoints(): string {
-    const pts = this.snapshots().map((s, i) => `${this.xPos(i)},${this.yPos(s.total)}`).join(' ');
-    const n = this.snapshots().length;
+    const pts = this.filtered().map((s, i) => `${this.xPos(i)},${this.yPos(s.total)}`).join(' ');
+    const n = this.filtered().length;
     const base = this.svgH - this.PAD_B;
     return `${this.PAD_L},${base} ${pts} ${this.xPos(n - 1)},${base}`;
   }

@@ -90,7 +90,7 @@ export class LoginComponent {
     this.auth.login(this.email, this.password).subscribe({
       next: res => {
         if (res.mfa_required) { this.needsMFA.set(true); this.loading.set(false); return; }
-        this.router.navigate(['/transactions']);
+        this.router.navigate(['/dashboard']);
       },
       error: err => { this.error.set(err.error?.error ?? this.i18n.t('auth.login_error_default')); this.loading.set(false); }
     });
@@ -98,7 +98,7 @@ export class LoginComponent {
 
   loginMFA(): void {
     this.auth.login(this.email, this.password, this.totpCode).subscribe({
-      next: () => this.router.navigate(['/transactions']),
+      next: () => this.router.navigate(['/dashboard']),
       error: err => this.error.set(err.error?.error ?? this.i18n.t('auth.mfa_error_default'))
     });
   }
