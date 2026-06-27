@@ -33,42 +33,41 @@ const GF = (domain: string) =>
 
 // Mapa domain→logo para normalizar URLs antigas salvas no BD
 const DOMAIN_TO_LOGO: Record<string, string> = {
-  'nubank.com.br':         SI('nubank',        '8a05be'),
-  'bancointer.com.br':     SI('bancointer',    'ff7000'),
-  'itau.com.br':           SI('itau',          '003d8f'),
-  'bradesco.com.br':       SI('bradesco',      'cc092f'),
-  'santander.com.br':      SI('santander',     'ec0000'),
+  'nubank.com.br':         SI('nubank',      '8a05be'),
+  'bancointer.com.br':     GF('inter.co'),
+  'inter.co':              GF('inter.co'),
+  'itau.com.br':           GF('itau.com.br'),
+  'bradesco.com.br':       GF('bradesco.com.br'),
+  'santander.com.br':      GF('santander.com.br'),
   'caixa.gov.br':          GF('caixa.gov.br'),
-  'bb.com.br':             SI('bancodobrasil', '000000'),
+  'bb.com.br':             GF('bb.com.br'),
   'c6bank.com.br':         GF('c6bank.com.br'),
   'btgpactual.com':        GF('btgpactual.com'),
   'xpi.com.br':            GF('xpi.com.br'),
-  'mercadopago.com.br':    SI('mercadopago',   '009ee3'),
-  'picpay.com':            SI('picpay',        '21c25e'),
+  'mercadopago.com.br':    SI('mercadopago', '009ee3'),
+  'picpay.com':            SI('picpay',      '21c25e'),
   'sicoob.com.br':         GF('sicoob.com.br'),
   'sicredi.com.br':        GF('sicredi.com.br'),
   'neon.com.br':           GF('neon.com.br'),
 };
 
-// logo: Simple Icons (vector, alta resolução)
-// fallback: Google Favicon (raster, caso o slug SI seja inválido)
 const BANK_PRESETS = [
-  { name: 'Nubank',          color: '#8a05be', logo: SI('nubank','8a05be'),          fallback: GF('nubank.com.br') },
-  { name: 'Inter',           color: '#ff7000', logo: SI('bancointer','ff7000'),       fallback: GF('bancointer.com.br') },
-  { name: 'Itaú',            color: '#003d8f', logo: SI('itau','003d8f'),             fallback: GF('itau.com.br') },
-  { name: 'Bradesco',        color: '#cc092f', logo: SI('bradesco','cc092f'),         fallback: GF('bradesco.com.br') },
-  { name: 'Santander',       color: '#ec0000', logo: SI('santander','ec0000'),        fallback: GF('santander.com.br') },
-  { name: 'Caixa',           color: '#005ca9', logo: GF('caixa.gov.br'),              fallback: '' },
-  { name: 'Banco do Brasil', color: '#f9dd16', logo: SI('bancodobrasil','000000'),    fallback: GF('bb.com.br') },
-  { name: 'C6 Bank',         color: '#242424', logo: GF('c6bank.com.br'),             fallback: '' },
-  { name: 'BTG',             color: '#002060', logo: GF('btgpactual.com'),            fallback: '' },
-  { name: 'XP',              color: '#111111', logo: GF('xpi.com.br'),               fallback: '' },
-  { name: 'Mercado Pago',    color: '#009ee3', logo: SI('mercadopago','009ee3'),      fallback: GF('mercadopago.com.br') },
-  { name: 'PicPay',          color: '#21c25e', logo: SI('picpay','21c25e'),           fallback: GF('picpay.com') },
-  { name: 'Sicoob',          color: '#007a3d', logo: GF('sicoob.com.br'),             fallback: '' },
-  { name: 'Sicredi',         color: '#009a44', logo: GF('sicredi.com.br'),            fallback: '' },
-  { name: 'Neon',            color: '#1b1c8a', logo: GF('neon.com.br'),              fallback: '' },
-  { name: 'Outro',           color: '#6b7280', logo: '',                              fallback: '' },
+  { name: 'Nubank',          color: '#8a05be', logo: SI('nubank','8a05be'),       fallback: GF('nubank.com.br') },
+  { name: 'Inter',           color: '#ff7000', logo: GF('inter.co'),              fallback: '' },
+  { name: 'Itaú',            color: '#003d8f', logo: GF('itau.com.br'),           fallback: '' },
+  { name: 'Bradesco',        color: '#cc092f', logo: GF('bradesco.com.br'),       fallback: '' },
+  { name: 'Santander',       color: '#ec0000', logo: GF('santander.com.br'),      fallback: '' },
+  { name: 'Caixa',           color: '#005ca9', logo: GF('caixa.gov.br'),          fallback: '' },
+  { name: 'Banco do Brasil', color: '#f9dd16', logo: GF('bb.com.br'),             fallback: '' },
+  { name: 'C6 Bank',         color: '#242424', logo: GF('c6bank.com.br'),         fallback: '' },
+  { name: 'BTG',             color: '#002060', logo: GF('btgpactual.com'),        fallback: '' },
+  { name: 'XP',              color: '#111111', logo: GF('xpi.com.br'),            fallback: '' },
+  { name: 'Mercado Pago',    color: '#009ee3', logo: SI('mercadopago','009ee3'),  fallback: GF('mercadopago.com.br') },
+  { name: 'PicPay',          color: '#21c25e', logo: SI('picpay','21c25e'),       fallback: GF('picpay.com') },
+  { name: 'Sicoob',          color: '#007a3d', logo: GF('sicoob.com.br'),         fallback: '' },
+  { name: 'Sicredi',         color: '#009a44', logo: GF('sicredi.com.br'),        fallback: '' },
+  { name: 'Neon',            color: '#1b1c8a', logo: GF('neon.com.br'),           fallback: '' },
+  { name: 'Outro',           color: '#6b7280', logo: '',                          fallback: '' },
 ];
 
 @Component({
@@ -415,23 +414,23 @@ export class BankingComponent implements OnInit {
   private inferLogo(name: string, logo: string): string {
     if (logo) return logo;
     const n = name.toLowerCase();
-    if (n.includes('nubank'))          return 'https://cdn.simpleicons.org/nubank/8a05be';
-    if (n.includes('inter'))           return 'https://cdn.simpleicons.org/bancointer/ff7000';
-    if (n.includes('itaú') || n.includes('itau')) return 'https://cdn.simpleicons.org/itau/003d8f';
-    if (n.includes('bradesco'))        return 'https://cdn.simpleicons.org/bradesco/cc092f';
-    if (n.includes('santander'))       return 'https://cdn.simpleicons.org/santander/ec0000';
-    if (n.includes('caixa'))           return 'https://www.google.com/s2/favicons?domain=caixa.gov.br&sz=64';
-    if (n.includes('brasil') || n.includes(' bb')) return 'https://cdn.simpleicons.org/bancodobrasil/000000';
-    if (n.includes('c6'))              return 'https://www.google.com/s2/favicons?domain=c6bank.com.br&sz=64';
-    if (n.includes('btg'))             return 'https://www.google.com/s2/favicons?domain=btgpactual.com&sz=64';
-    if (n.includes('xp'))              return 'https://www.google.com/s2/favicons?domain=xpi.com.br&sz=64';
-    if (n.includes('mercado pago') || n.includes('mercadopago')) return 'https://cdn.simpleicons.org/mercadopago/009ee3';
-    if (n.includes('picpay'))          return 'https://cdn.simpleicons.org/picpay/21c25e';
-    if (n.includes('sicoob'))          return 'https://www.google.com/s2/favicons?domain=sicoob.com.br&sz=64';
-    if (n.includes('sicredi'))         return 'https://www.google.com/s2/favicons?domain=sicredi.com.br&sz=64';
-    if (n.includes('neon'))            return 'https://www.google.com/s2/favicons?domain=neon.com.br&sz=64';
-    if (n.includes('carrefour'))       return 'https://www.google.com/s2/favicons?domain=carrefour.com.br&sz=64';
-    if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'https://www.google.com/s2/favicons?domain=mercadolivre.com.br&sz=64';
+    if (n.includes('nubank'))                                       return SI('nubank','8a05be');
+    if (n.includes('inter'))                                        return GF('inter.co');
+    if (n.includes('itaú') || n.includes('itau'))                  return GF('itau.com.br');
+    if (n.includes('bradesco'))                                     return GF('bradesco.com.br');
+    if (n.includes('santander'))                                    return GF('santander.com.br');
+    if (n.includes('caixa'))                                        return GF('caixa.gov.br');
+    if (n.includes('brasil') || n.includes(' bb'))                  return GF('bb.com.br');
+    if (n.includes('c6'))                                           return GF('c6bank.com.br');
+    if (n.includes('btg'))                                          return GF('btgpactual.com');
+    if (n.includes('xp'))                                           return GF('xpi.com.br');
+    if (n.includes('mercado pago') || n.includes('mercadopago'))    return SI('mercadopago','009ee3');
+    if (n.includes('picpay'))                                       return SI('picpay','21c25e');
+    if (n.includes('sicoob'))                                       return GF('sicoob.com.br');
+    if (n.includes('sicredi'))                                      return GF('sicredi.com.br');
+    if (n.includes('neon'))                                         return GF('neon.com.br');
+    if (n.includes('carrefour'))                                    return GF('carrefour.com.br');
+    if (n.includes('mercado livre') || n.includes('mercadolivre')) return GF('mercadolivre.com.br');
     return '';
   }
   normalizeLogo(logo: string): string {

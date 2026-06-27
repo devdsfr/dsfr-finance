@@ -116,10 +116,15 @@ interface DayGroup {
                 {{ tx.type === 'expense' ? '-' : '+' }}{{ tx.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
               </span>
 
+              @if (!tx.ignored) {
+                <button class="pay-toggle" [class.pay-toggle--paid]="tx.paid"
+                  (click)="togglePaid(tx)"
+                  [title]="tx.paid ? 'Clique para marcar como não pago' : 'Clique para marcar como pago'">
+                  {{ tx.paid ? '✓' : '👍' }}
+                </button>
+              }
+
               <div class="tx-actions">
-                @if (!tx.paid && !tx.ignored) {
-                  <button class="act act--pay" (click)="markPaid(tx)" title="Marcar como pago">&#10003;</button>
-                }
                 <a [routerLink]="['/transactions', tx.id, 'edit']" class="act" title="Editar">&#9998;</a>
                 <button class="act" (click)="duplicate(tx)" title="Duplicar">&#10697;</button>
                 <button class="act act--del" (click)="deleteTx(tx)" title="Excluir">&#10005;</button>
@@ -242,6 +247,21 @@ interface DayGroup {
     .act--pay:hover { background: #dcfce7; color: #16a34a; }
     .act--del:hover { background: #fee2e2; color: #dc2626; }
 
+    .pay-toggle {
+      font-size: .85rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer;
+      border-radius: 50%; width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; opacity: 0.25; transition: opacity .15s, transform .1s;
+      padding: 0;
+    }
+    .tx-row:hover .pay-toggle { opacity: 1; }
+    .pay-toggle:hover { transform: scale(1.15); }
+    .pay-toggle--paid {
+      opacity: 1 !important; background: #dcfce7; border-color: #16a34a;
+      color: #16a34a; font-size: 1rem; font-weight: 700;
+    }
+    .pay-toggle--paid:hover { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
+
     .empty-state { padding: 3rem; text-align: center; color: #9ca3af; font-size: .875rem; }
 
     @keyframes shimmer {
@@ -299,7 +319,7 @@ export class TransactionListComponent implements OnInit {
   filterType = '';
   filterPaid = '';
 
-  private readonly MONTHS = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho',
+  private readonly MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
   monthLabel = computed(() => `${this.MONTHS[this.month()-1]} ${this.year()}`);
@@ -368,6 +388,24 @@ export class TransactionListComponent implements OnInit {
     this.month.set(m);
     this.year.set(y);
     this.load();
+  }
+
+  togglePaid(tx: Transaction): void {
+    if (tx.paid) {
+      this.api.patch<any>(`/transactions/${tx.id}/unpay`).subscribe(res => {
+        tx.paid = false;
+        this.toast.success(res.toast ?? 'Marcado como não pago.');
+        this.overdueCount.update(c => c + 1);
+        this.calcBalance();
+      });
+    } else {
+      this.api.patch<any>(`/transactions/${tx.id}/pay`).subscribe(res => {
+        tx.paid = true;
+        this.toast.success(res.toast ?? 'Marcado como pago!');
+        this.overdueCount.update(c => Math.max(0, c - 1));
+        this.calcBalance();
+      });
+    }
   }
 
   markPaid(tx: Transaction): void {

@@ -155,6 +155,20 @@ func (s *TransactionService) MarkPaid(workspaceID, userID, txID string) (*models
 	return tx, nil
 }
 
+func (s *TransactionService) MarkUnpaid(workspaceID, userID, txID string) (*models.Transaction, error) {
+	tx, err := s.repo.GetByID(txID, workspaceID)
+	if err != nil || tx == nil {
+		return nil, fmt.Errorf("transaction not found")
+	}
+	tx.Paid = false
+	tx.PaidAt = nil
+	if err := s.repo.Update(tx); err != nil {
+		return nil, err
+	}
+	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)
+	return tx, nil
+}
+
 // Duplicate creates a copy of an existing transaction (AC-UX-06)
 func (s *TransactionService) Duplicate(workspaceID, userID, txID string) (*models.Transaction, error) {
 	src, err := s.repo.GetByID(txID, workspaceID)

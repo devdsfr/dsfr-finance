@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
@@ -109,26 +110,40 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               @if (overduePayable().length > 0) {
                 <div class="bill-banner bill-banner--danger">{{ 'dashboard.payable_overdue' | translate }}</div>
                 @for (bill of overduePayable().slice(0, 4); track bill.id) {
-                  <div class="bill-row">
+                  <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#ef4444'">{{ (bill.description ?? 'B')[0] }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
                     <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
+                    @if (!bill.paid) {
+                      <button class="pay-btn" title="Clique para marcar como pago"
+                              [disabled]="markingPaid.has(bill.id)"
+                              (click)="markPaid(bill)">👍</button>
+                    } @else {
+                      <span class="pay-done">✓</span>
+                    }
                   </div>
                 }
               }
               @if (upcomingPayable().length > 0) {
                 <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
                 @for (bill of upcomingPayable().slice(0, 4); track bill.id) {
-                  <div class="bill-row">
+                  <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#6b7280'">{{ (bill.description ?? 'B')[0] }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
                     <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
+                    @if (!bill.paid) {
+                      <button class="pay-btn" title="Clique para marcar como pago"
+                              [disabled]="markingPaid.has(bill.id)"
+                              (click)="markPaid(bill)">👍</button>
+                    } @else {
+                      <span class="pay-done">✓</span>
+                    }
                   </div>
                 }
               }
@@ -143,26 +158,40 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               @if (overdueReceivable().length > 0) {
                 <div class="bill-banner bill-banner--warning">{{ 'dashboard.receivable_overdue' | translate }}</div>
                 @for (bill of overdueReceivable().slice(0, 4); track bill.id) {
-                  <div class="bill-row">
+                  <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#16a34a'">{{ (bill.description ?? 'R')[0] }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
                     <span class="bill-amt bill-amt--income">{{ bill.amount | appCurrency }}</span>
+                    @if (!bill.paid) {
+                      <button class="pay-btn" title="Clique para marcar como recebido"
+                              [disabled]="markingPaid.has(bill.id)"
+                              (click)="markPaid(bill)">👍</button>
+                    } @else {
+                      <span class="pay-done">✓</span>
+                    }
                   </div>
                 }
               }
               @if (upcomingReceivable().length > 0) {
                 <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
                 @for (bill of upcomingReceivable().slice(0, 4); track bill.id) {
-                  <div class="bill-row">
+                  <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="bill.category?.color ?? '#16a34a'">{{ (bill.description ?? 'R')[0] }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
                     </div>
                     <span class="bill-amt bill-amt--income">{{ bill.amount | appCurrency }}</span>
+                    @if (!bill.paid) {
+                      <button class="pay-btn" title="Clique para marcar como recebido"
+                              [disabled]="markingPaid.has(bill.id)"
+                              (click)="markPaid(bill)">👍</button>
+                    } @else {
+                      <span class="pay-done">✓</span>
+                    }
                   </div>
                 }
               }
@@ -395,6 +424,11 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .bill-banner--danger  { background: #fef2f2; color: #dc2626; }
     .bill-banner--warning { background: #fef9c3; color: #b45309; }
     .bill-row { display: flex; align-items: center; gap: .75rem; padding: .55rem 0; border-top: 1px solid #f3f4f6; }
+    .bill-row--paid { opacity: .5; }
+    .pay-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0 .25rem; opacity: .35; transition: opacity .15s, transform .1s; flex-shrink: 0; }
+    .pay-btn:hover { opacity: 1; transform: scale(1.2); }
+    .pay-btn:disabled { cursor: default; opacity: .2; }
+    .pay-done { color: #16a34a; font-size: .85rem; font-weight: 700; flex-shrink: 0; }
     .bill-icon {
       width: 32px; height: 32px; border-radius: 50%; display: flex;
       align-items: center; justify-content: center;
@@ -471,9 +505,29 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
   `]
 })
 export class DashboardComponent implements OnInit {
-  private api  = inject(ApiService);
-  private auth = inject(AuthService);
-  private i18n = inject(TranslationService);
+  private api   = inject(ApiService);
+  private auth  = inject(AuthService);
+  private i18n  = inject(TranslationService);
+  private toast = inject(ToastService);
+
+  markingPaid = new Set<string>();
+
+  markPaid(bill: any) {
+    if (this.markingPaid.has(bill.id)) return;
+    this.markingPaid.add(bill.id);
+    this.api.patch<any>(`/transactions/${bill.id}/pay`, {}).subscribe({
+      next: () => {
+        bill.paid = true;
+        this.markingPaid.delete(bill.id);
+        const msg = bill.type === 'income' ? 'marcado como recebido!' : 'marcado como pago!';
+        this.toast.success(`"${bill.description}" ${msg}`);
+      },
+      error: () => {
+        this.markingPaid.delete(bill.id);
+        this.toast.error('Erro ao marcar como pago');
+      }
+    });
+  }
 
   readonly C = 2 * Math.PI * 38; // SVG donut circumference ≈ 238.76
 
@@ -549,22 +603,24 @@ export class DashboardComponent implements OnInit {
   private inferLogo(name: string, logo: string): string {
     if (logo) return logo;
     const n = name.toLowerCase();
-    if (n.includes('nubank'))          return 'https://cdn.simpleicons.org/nubank/8a05be';
-    if (n.includes('inter'))           return 'https://cdn.simpleicons.org/bancointer/ff7000';
-    if (n.includes('itaú') || n.includes('itau')) return 'https://cdn.simpleicons.org/itau/003d8f';
-    if (n.includes('bradesco'))        return 'https://cdn.simpleicons.org/bradesco/cc092f';
-    if (n.includes('santander'))       return 'https://cdn.simpleicons.org/santander/ec0000';
-    if (n.includes('caixa'))           return 'https://www.google.com/s2/favicons?domain=caixa.gov.br&sz=64';
-    if (n.includes('brasil') || n.includes(' bb')) return 'https://cdn.simpleicons.org/bancodobrasil/000000';
-    if (n.includes('c6'))              return 'https://www.google.com/s2/favicons?domain=c6bank.com.br&sz=64';
-    if (n.includes('btg'))             return 'https://www.google.com/s2/favicons?domain=btgpactual.com&sz=64';
-    if (n.includes('xp'))              return 'https://www.google.com/s2/favicons?domain=xpi.com.br&sz=64';
-    if (n.includes('mercado pago') || n.includes('mercadopago')) return 'https://cdn.simpleicons.org/mercadopago/009ee3';
-    if (n.includes('picpay'))          return 'https://cdn.simpleicons.org/picpay/21c25e';
-    if (n.includes('sicoob'))          return 'https://www.google.com/s2/favicons?domain=sicoob.com.br&sz=64';
-    if (n.includes('sicredi'))         return 'https://www.google.com/s2/favicons?domain=sicredi.com.br&sz=64';
-    if (n.includes('neon'))            return 'https://www.google.com/s2/favicons?domain=neon.com.br&sz=64';
-    if (n.includes('carrefour'))       return 'https://www.google.com/s2/favicons?domain=carrefour.com.br&sz=64';
+    const SI = (s: string, c: string) => `https://cdn.simpleicons.org/${s}/${c}`;
+    const GF = (d: string) => `https://www.google.com/s2/favicons?domain=${d}&sz=64`;
+    if (n.includes('nubank'))                                      return SI('nubank','8a05be');
+    if (n.includes('inter'))                                       return GF('inter.co');
+    if (n.includes('itaú') || n.includes('itau'))                 return GF('itau.com.br');
+    if (n.includes('bradesco'))                                    return GF('bradesco.com.br');
+    if (n.includes('santander'))                                   return GF('santander.com.br');
+    if (n.includes('caixa'))                                       return GF('caixa.gov.br');
+    if (n.includes('brasil') || n.includes(' bb'))                 return GF('bb.com.br');
+    if (n.includes('c6'))                                          return GF('c6bank.com.br');
+    if (n.includes('btg'))                                         return GF('btgpactual.com');
+    if (n.includes('xp'))                                          return GF('xpi.com.br');
+    if (n.includes('mercado pago') || n.includes('mercadopago'))   return SI('mercadopago','009ee3');
+    if (n.includes('picpay'))                                      return SI('picpay','21c25e');
+    if (n.includes('sicoob'))                                      return GF('sicoob.com.br');
+    if (n.includes('sicredi'))                                     return GF('sicredi.com.br');
+    if (n.includes('neon'))                                        return GF('neon.com.br');
+    if (n.includes('carrefour'))                                   return GF('carrefour.com.br');
     if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'https://www.google.com/s2/favicons?domain=mercadolivre.com.br&sz=64';
     return '';
   }
@@ -574,12 +630,13 @@ export class DashboardComponent implements OnInit {
     const SI = (slug: string, color: string) => `https://cdn.simpleicons.org/${slug}/${color}`;
     const MAP: Record<string,string> = {
       'nubank.com.br':      SI('nubank','8a05be'),
-      'bancointer.com.br':  SI('bancointer','ff7000'),
-      'itau.com.br':        SI('itau','003d8f'),
-      'bradesco.com.br':    SI('bradesco','cc092f'),
-      'santander.com.br':   SI('santander','ec0000'),
+      'bancointer.com.br':  GF('inter.co'),
+      'inter.co':           GF('inter.co'),
+      'itau.com.br':        GF('itau.com.br'),
+      'bradesco.com.br':    GF('bradesco.com.br'),
+      'santander.com.br':   GF('santander.com.br'),
       'caixa.gov.br':       GF('caixa.gov.br'),
-      'bb.com.br':          SI('bancodobrasil','000000'),
+      'bb.com.br':          GF('bb.com.br'),
       'mercadopago.com.br': SI('mercadopago','009ee3'),
       'picpay.com':         SI('picpay','21c25e'),
     };

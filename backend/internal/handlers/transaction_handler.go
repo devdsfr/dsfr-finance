@@ -151,6 +151,18 @@ func (h *TransactionHandler) MarkPaid(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": tx, "toast": "Lançamento marcado como pago!"})
 }
 
+// MarkUnpaid removes the paid status from a transaction
+func (h *TransactionHandler) MarkUnpaid(c *gin.Context) {
+	wsID := middleware.GetWorkspaceID(c)
+	userID := middleware.GetUserID(c)
+	tx, err := h.svc.MarkUnpaid(wsID, userID, c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": tx, "toast": "Lançamento marcado como não pago."})
+}
+
 // MarkAllPaid marks all overdue as paid (AC-UX-01)
 func (h *TransactionHandler) MarkAllPaid(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)

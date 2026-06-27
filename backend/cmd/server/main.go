@@ -123,6 +123,7 @@ func main() {
 		auth.PUT("/transactions/:id", txH.Update)
 		auth.DELETE("/transactions/:id", txH.Delete)
 		auth.PATCH("/transactions/:id/pay", txH.MarkPaid)
+		auth.PATCH("/transactions/:id/unpay", txH.MarkUnpaid)
 		auth.POST("/transactions/:id/duplicate", txH.Duplicate)
 		auth.POST("/transactions/mark-all-paid", txH.MarkAllPaid)
 		auth.POST("/transactions/ignore-all", txH.IgnoreAll)
