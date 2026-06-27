@@ -13,6 +13,14 @@ type AccountHandler struct{ db *sql.DB }
 
 func NewAccountHandler(db *sql.DB) *AccountHandler { return &AccountHandler{db: db} }
 
+// List godoc
+// @Summary Listar contas
+// @Description Retorna todas as contas do workspace
+// @Tags accounts
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /accounts [get]
 func (h *AccountHandler) List(c *gin.Context) {
 	rows, err := h.db.QueryContext(c, `SELECT id, name, type, balance, currency, created_at FROM accounts WHERE workspace_id = $1 ORDER BY name`, middleware.GetWorkspaceID(c))
 	if err != nil {
@@ -34,6 +42,15 @@ func (h *AccountHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": data})
 }
 
+// Create godoc
+// @Summary Criar conta
+// @Description Cria uma nova conta bancária
+// @Tags accounts
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 201 {object} map[string]interface{}
+// @Router /accounts [post]
 func (h *AccountHandler) Create(c *gin.Context) {
 	var body struct {
 		Name     string  `json:"name"`

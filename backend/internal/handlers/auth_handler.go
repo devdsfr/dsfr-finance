@@ -16,6 +16,17 @@ func NewAuthHandler(svc *services.AuthService) *AuthHandler {
 	return &AuthHandler{svc}
 }
 
+// Register godoc
+// @Summary Registrar novo usuário
+// @Description Cria uma nova conta de usuário
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body services.RegisterRequest true "Dados de registro"
+// @Success 201 {object} map[string]interface{} "user e token"
+// @Failure 400 {object} map[string]string "Erro de validação"
+// @Failure 409 {object} map[string]string "Usuário já existe"
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req services.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -30,6 +41,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"user": user, "token": token})
 }
 
+// Login godoc
+// @Summary Fazer login
+// @Description Autentica um usuário e retorna um token JWT
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body services.LoginRequest true "Credenciais de login"
+// @Success 200 {object} map[string]interface{} "user e token"
+// @Failure 400 {object} map[string]string "Erro de validação"
+// @Failure 401 {object} map[string]string "Credenciais inválidas"
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req services.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

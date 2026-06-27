@@ -13,6 +13,14 @@ type CategoryHandler struct{ db *sql.DB }
 
 func NewCategoryHandler(db *sql.DB) *CategoryHandler { return &CategoryHandler{db: db} }
 
+// List godoc
+// @Summary Listar categorias
+// @Description Retorna todas as categorias do workspace
+// @Tags categories
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /categories [get]
 func (h *CategoryHandler) List(c *gin.Context) {
 	rows, err := h.db.QueryContext(c, `SELECT id, name, color, icon, type FROM categories WHERE workspace_id=$1 ORDER BY name`, middleware.GetWorkspaceID(c))
 	if err != nil {

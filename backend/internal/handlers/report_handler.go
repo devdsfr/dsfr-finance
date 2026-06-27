@@ -19,7 +19,15 @@ func NewReportHandler(repo *repositories.ReportRepository) *ReportHandler {
 	return &ReportHandler{repo}
 }
 
-// MonthlyFlow — income vs expense per month
+// MonthlyFlow godoc
+// @Summary Relatório de fluxo mensal
+// @Description Retorna receitas vs despesas por mês
+// @Tags reports
+// @Security BearerAuth
+// @Produce json
+// @Param month query string false "Mês específico (YYYY-MM)"
+// @Success 200 {object} map[string]interface{}
+// @Router /reports/flow [get]
 func (h *ReportHandler) MonthlyFlow(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
 	// Support ?month=YYYY-MM as shorthand for a single month

@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 0.0.0.0 --port 4200",
+    "start": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
     "build": "ng build --configuration production",
     "test": "ng test",
-    "serve:ssr": "node dist/dsfr-finance/server/server.mjs"
+    "serve:ssr": "node dist/dsfr-finance/server/server.mjs",
+    "start:local": "ng serve --host 0.0.0.0 --port 4200"
   },
   "dependencies": {
     "@angular/common": "^17.3.0",

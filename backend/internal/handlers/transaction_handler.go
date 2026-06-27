@@ -19,6 +19,23 @@ func NewTransactionHandler(svc *services.TransactionService, repo *repositories.
 	return &TransactionHandler{svc, repo}
 }
 
+// List godoc
+// @Summary Listar transações
+// @Description Retorna lista paginada de transações com filtros
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param account_id query string false "ID da conta"
+// @Param category_id query string false "ID da categoria"
+// @Param type query string false "Tipo (expense, income, transfer)"
+// @Param paid query boolean false "Filtrar por pago/não pago"
+// @Param page query int false "Página" default(1)
+// @Param limit query int false "Itens por página" default(20)
+// @Success 200 {object} map[string]interface{} "transactions e total"
+// @Failure 401 {object} map[string]string "Não autorizado"
+// @Failure 500 {object} map[string]string "Erro interno"
+// @Router /transactions [get]
 func (h *TransactionHandler) List(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
 	paid := parseBoolPtr(c.Query("paid"))
@@ -62,10 +79,10 @@ func (h *TransactionHandler) List(c *gin.Context) {
 	overdue, _ := h.repo.CountOverdue(wsID)
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":         txs,
-		"total":        total,
-		"page":         page,
-		"limit":        limit,
+		"data":          txs,
+		"total":         total,
+		"page":          page,
+		"limit":         limit,
 		"overdue_count": overdue, // AC-UX-01 / AC-UX-02 banner data
 	})
 }

@@ -13,6 +13,14 @@ type CreditCardHandler struct{ db *sql.DB }
 
 func NewCreditCardHandler(db *sql.DB) *CreditCardHandler { return &CreditCardHandler{db: db} }
 
+// List godoc
+// @Summary Listar cartões de crédito
+// @Description Retorna todos os cartões de crédito do workspace
+// @Tags credit-cards
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /credit-cards [get]
 func (h *CreditCardHandler) List(c *gin.Context) {
 	rows, err := h.db.QueryContext(c, `SELECT id, name, limit_amount, closing_day, due_day, created_at FROM credit_cards WHERE workspace_id=$1 ORDER BY name`, middleware.GetWorkspaceID(c))
 	if err != nil {
