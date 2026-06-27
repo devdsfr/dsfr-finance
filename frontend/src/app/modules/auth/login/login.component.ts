@@ -19,7 +19,14 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
         }
       </div>
       <div class="auth-card">
-        <h1>💰 {{ 'auth.app_name' | translate }}</h1>
+        <div class="login-brand">
+          <svg width="48" height="48" viewBox="0 0 32 32">
+            <rect width="32" height="32" rx="8" fill="#2e7736"/>
+            <polyline points="5,22 11,14 17,18 27,8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="27" cy="8" r="2.5" fill="#7dd87f"/>
+          </svg>
+          <span class="login-brand__name"><strong>DSFR</strong> finance</span>
+        </div>
         <h2>{{ 'auth.login_title' | translate }}</h2>
         @if (!needsMFA()) {
           <form (ngSubmit)="login()" class="form">
@@ -60,6 +67,9 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
     .lang-bar button.active { border-color: #6366f1; }
     .auth-card { background: #fff; border-radius: .75rem; padding: 2rem; width: 100%; max-width: 380px;
                  box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+    .login-brand { display: flex; align-items: center; justify-content: center; gap: .6rem; margin-bottom: 1.25rem; }
+    .login-brand__name { font-size: 1.4rem; color: #1a3d22; }
+    .login-brand__name strong { font-weight: 700; letter-spacing: .03em; }
     h1 { font-size: 1.5rem; text-align: center; margin: 0 0 .25rem; }
     h2 { font-size: 1.1rem; text-align: center; color: #6b7280; margin: 0 0 1.5rem; font-weight: 400; }
     .form { display: flex; flex-direction: column; gap: .875rem; }

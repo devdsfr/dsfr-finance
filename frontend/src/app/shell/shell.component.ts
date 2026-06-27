@@ -25,8 +25,12 @@ import { filter } from 'rxjs/operators';
         </button>
 
         <div class="topnav__brand">
-          <span class="brand-icon">💰</span>
-          <span class="brand-name">dsfr finance</span>
+          <svg width="28" height="28" viewBox="0 0 32 32" style="flex-shrink:0">
+            <rect width="32" height="32" rx="7" fill="#2e7736"/>
+            <polyline points="5,22 11,14 17,18 27,8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="27" cy="8" r="2.5" fill="#7dd87f"/>
+          </svg>
+          <span class="brand-name"><strong>DSFR</strong> finance</span>
         </div>
 
         <!-- Desktop nav -->
@@ -115,7 +119,7 @@ import { filter } from 'rxjs/operators';
           <span class="avatar drawer__avatar">{{ initials() }}</span>
           <div>
             <div class="drawer__name">{{ auth.currentUser()?.name }}</div>
-            <div class="drawer__email">dsfr finance</div>
+            <div class="drawer__email"><strong>DSFR</strong> finance</div>
           </div>
           <button class="drawer__close" (click)="drawerOpen.set(false)">✕</button>
         </div>
@@ -240,9 +244,10 @@ import { filter } from 'rxjs/operators';
 
     .topnav__brand {
       display: flex; align-items: center; gap: .5rem;
-      font-weight: 700; font-size: 1rem; white-space: nowrap;
+      font-size: 1rem; white-space: nowrap; color: #fff;
     }
-    .brand-icon { font-size: 1.2rem; }
+    .brand-name strong { font-weight: 700; letter-spacing: .03em; }
+    .brand-name { font-weight: 400; font-size: 1rem; }
 
     .topnav__links {
       display: flex; align-items: center; gap: .25rem; flex: 1;

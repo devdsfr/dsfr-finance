@@ -215,6 +215,13 @@ func (r *TransactionRepository) AdjustAccountBalance(accountID string, delta flo
 	return err
 }
 
+// GetFirstAccountID returns the first account id in the workspace (fallback for transactions without account_id)
+func (r *TransactionRepository) GetFirstAccountID(workspaceID string) string {
+	var id string
+	_ = r.db.QueryRow(`SELECT id FROM accounts WHERE workspace_id=$1 ORDER BY created_at ASC LIMIT 1`, workspaceID).Scan(&id)
+	return id
+}
+
 // MarkAllPaid marks all overdue unpaid transactions as paid (AC-UX-01)
 func (r *TransactionRepository) MarkAllPaid(workspaceID string) (int64, error) {
 	now := time.Now()
