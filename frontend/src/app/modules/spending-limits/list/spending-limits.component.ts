@@ -244,7 +244,7 @@ export class SpendingLimitsComponent implements OnInit {
   confirmItem = signal<{ msg: string; action: () => void } | null>(null);
 
   delete(l: any): void {
-    this.confirmItem.set({ msg: `Tem certeza que deseja excluir o limite <strong>${this.limitLabel(l)}</strong>?`, action: () => {
+    this.confirmItem.set({ msg: `Tem certeza que deseja excluir o limite <strong>${this.limitTitle(l)}</strong>?`, action: () => {
       this.api.delete(`/spending-limits/${l.id}`).subscribe(() => {
         this.toast.success('Limite excluído.');
         this.load();

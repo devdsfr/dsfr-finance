@@ -923,8 +923,15 @@ export class DashboardComponent implements OnInit {
     return this.i18n.t('dashboard.greeting_evening');
   }
 
-  limitName(l: any): string {
-    billCat(bill: any): any {
+  limitName(lim: any): string {
+    const cat = this._categories().find((c: any) => c.id === lim.category_id);
+    if (cat) return cat.name;
+    const acc = this.accounts().find((a: any) => a.id === lim.account_id);
+    if (acc) return acc.name;
+    return 'Limite global';
+  }
+
+  billCat(bill: any): any {
     return this._categories().find((c: any) => c.id === bill.category_id) ?? null;
   }
 
@@ -936,147 +943,7 @@ export class DashboardComponent implements OnInit {
 
   billColor(bill: any, fallback: string): string {
     const cat = this.billCat(bill);
-    if (cat?.icon) return '#f3f4f6'; // neutral bg when showing emoji
+    if (cat?.icon) return '#f3f4f6';
     return cat?.color ?? fallback;
-  }
-
-  if (l.category_id) return this._categories().find((c: any) => c.id === l.category_id)?.name ?? 'Categoria';
-    if (l.account_id)  return this.accounts().find(a => a.id === l.account_id)?.name ?? 'Conta';
-    if (l.credit_card_id) return this.cards().find(c => c.id === l.credit_card_id)?.name ?? 'Cartão';
-    return 'Limite geral';
-  }
-
-  private inferLogo(name: string, logo: string): string {
-    if (logo) return logo;
-    const n = name.toLowerCase();
-    const SI = (s: string, c: string) => `https://cdn.simpleicons.org/${s}/${c}`;
-    const GF = (d: string) => `https://www.google.com/s2/favicons?domain=${d}&sz=64`;
-    if (n.includes('nubank'))                                      return SI('nubank','8a05be');
-    if (n.includes('inter'))                                       return GF('inter.co');
-    if (n.includes('itaú') || n.includes('itau'))                 return GF('itau.com.br');
-    if (n.includes('bradesco'))                                    return GF('bradesco.com.br');
-    if (n.includes('santander'))                                   return GF('santander.com.br');
-    if (n.includes('caixa'))                                       return GF('caixa.gov.br');
-    if (n.includes('brasil') || n.includes(' bb'))                 return GF('bb.com.br');
-    if (n.includes('c6'))                                          return GF('c6bank.com.br');
-    if (n.includes('btg'))                                         return GF('btgpactual.com');
-    if (n.includes('xp'))                                          return GF('xpi.com.br');
-    if (n.includes('mercado pago') || n.includes('mercadopago'))   return SI('mercadopago','009ee3');
-    if (n.includes('picpay'))                                      return SI('picpay','21c25e');
-    if (n.includes('sicoob'))                                      return GF('sicoob.com.br');
-    if (n.includes('sicredi'))                                     return GF('sicredi.com.br');
-    if (n.includes('neon'))                                        return GF('neon.com.br');
-    if (n.includes('carrefour'))                                   return GF('carrefour.com.br');
-    if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'https://www.google.com/s2/favicons?domain=mercadolivre.com.br&sz=64';
-    return '';
-  }
-  private normalizeLogo(logo: string): string {
-    if (!logo) return '';
-    const GF = (d: string) => `https://www.google.com/s2/favicons?domain=${d}&sz=64`;
-    const SI = (slug: string, color: string) => `https://cdn.simpleicons.org/${slug}/${color}`;
-    const MAP: Record<string,string> = {
-      'nubank.com.br':      SI('nubank','8a05be'),
-      'bancointer.com.br':  GF('inter.co'),
-      'inter.co':           GF('inter.co'),
-      'itau.com.br':        GF('itau.com.br'),
-      'bradesco.com.br':    GF('bradesco.com.br'),
-      'santander.com.br':   GF('santander.com.br'),
-      'caixa.gov.br':       GF('caixa.gov.br'),
-      'bb.com.br':          GF('bb.com.br'),
-      'mercadopago.com.br': SI('mercadopago','009ee3'),
-      'picpay.com':         SI('picpay','21c25e'),
-    };
-    let m = logo.match(/logo\.clearbit\.com\/([^?/]+)/);
-    if (m) return MAP[m[1]] ?? GF(m[1]);
-    m = logo.match(/https?:\/\/([^/]+)\/apple-touch-icon/);
-    if (m) { const d = m[1].replace(/^www\./, ''); return MAP[d] ?? GF(d); }
-    m = logo.match(/favicons\?domain=([^&]+)/);
-    if (m) return MAP[m[1]] ?? GF(m[1]);
-    return logo;
-  }
-
-  ngOnInit() {
-    const now  = new Date();
-    const year = now.getFullYear();
-    const mon  = now.getMonth() + 1;
-
-    // Current month for income/expense/category totals
-    const from = `${year}-${String(mon).padStart(2,'0')}-01`;
-    const to   = new Date(year, mon, 0).toISOString().slice(0, 10);
-
-    // Wider range for unpaid bills (3 months back to 2 months ahead)
-    const billFrom = new Date(year, mon - 4, 1).toISOString().slice(0, 10);
-    const billTo   = new Date(year, mon + 2, 0).toISOString().slice(0, 10);
-
-    forkJoin({
-      txs:    this.api.get<any>('/transactions', { date_from: from, date_to: to, limit: 500 }).pipe(catchError(() => of({ data: [] }))),
-      bills:  this.api.get<any>('/transactions', { date_from: billFrom, date_to: billTo, limit: 500 }).pipe(catchError(() => of({ data: [] }))),
-      accs:   this.api.get<any>('/accounts').pipe(catchError(() => of({ data: [] }))),
-      ccs:    this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
-      limits: this.api.get<any>('/spending-limits').pipe(catchError(() => of({ data: [] }))),
-      cats:   this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
-      patrimony: this.api.get<any>('/patrimony-snapshots').pipe(catchError(() => of({ data: [] }))),
-      flow: this.api.get<any>('/reports/flow', {
-        from: new Date(year, mon - 7, 1).toISOString().slice(0, 10),
-        to:   new Date(year, mon, 0).toISOString().slice(0, 10),
-      }).pipe(catchError(() => of({ data: [] }))),
-    }).subscribe(({ txs, bills, accs, ccs, limits, cats, patrimony, flow }) => {
-      const list: any[]     = txs.data ?? [];
-      const billList: any[] = bills.data ?? [];
-
-      // Income / expense for current month
-      const inc = list.filter(t => t.type === 'income'  && !t.ignored).reduce((s: number, t: any) => s + t.amount, 0);
-      const exp = list.filter(t => t.type === 'expense' && !t.ignored).reduce((s: number, t: any) => s + t.amount, 0);
-      this.income.set(inc);
-      this.expense.set(exp);
-
-      // Top categories from current month expenses
-      const catMap = new Map<string, { category: string; color: string; total: number }>();
-      list.filter(t => t.type === 'expense' && !t.ignored).forEach(t => {
-        const cat   = t.category?.name ?? 'Sem categoria';
-        const color = t.category?.color ?? '#6b7280';
-        if (!catMap.has(cat)) catMap.set(cat, { category: cat, color, total: 0 });
-        catMap.get(cat)!.total += t.amount;
-      });
-      const topCats = [...catMap.values()]
-     
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 5);
-      const totalExp = topCats.reduce((s, c) => s + c.total, 0) || 1;
-      this.topCategories.set(topCats.map(c => ({ ...c, pct: Math.round((c.total / totalExp) * 100) })));
-
-      // Accounts, cards, categories
-      this.accounts.set((accs.data ?? []).map((a: any) => ({ ...a, logo: this.inferLogo(a.name, this.normalizeLogo(a.logo)) })));
-      this.cards.set((ccs.data ?? []).map((c: any) => ({ ...c, logo: this.inferLogo(c.name, this.normalizeLogo(c.logo)) })));
-      this._categories.set(cats.data ?? []);
-
-      // Spending limits — backend returns current_spend and usage_pct already
-      this.spendingLimits.set(limits.data ?? []);
-
-      // Patrimony snapshots for chart
-      this.patrimonySnapshots.set(patrimony.data ?? []);
-
-      // Monthly flow — last 6 months
-      this.monthlyFlow.set((flow.data ?? []).slice(-6));
-
-      // Unpaid bills from the wider date range
-      const allBills = billList.filter((t: any) => !t.paid && !t.ignored);
-      this.payableBills.set(
-        allBills.filter((t: any) => t.type === 'expense')
-                .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      );
-      this.receivableBills.set(
-        allBills.filter((t: any) => t.type === 'income')
-                .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      );
-
-      this.loading.set(false);
-
-      // Mark first visit done so overlay won't show on subsequent navigations
-      if (this.firstVisit()) {
-        sessionStorage.setItem('dash_visited', '1');
-        this.firstVisit.set(false);
-      }
-    });
   }
 }
