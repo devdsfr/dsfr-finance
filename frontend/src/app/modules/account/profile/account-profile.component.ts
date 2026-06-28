@@ -6,11 +6,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ApiService } from '../../../core/services/api.service';
 import { SettingsService, CURRENCIES, CurrencyCode } from '../../../core/services/settings.service';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-account-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ConfirmModalComponent],
   template: `
     <!-- AC-MC-08, AC-MC-09, AC-MC-10 -->
     <div class="profile-page">
@@ -133,6 +134,16 @@ import { SettingsService, CURRENCIES, CurrencyCode } from '../../../core/service
         </div>
       </section>
     </div>
+
+    <app-confirm-modal
+      [visible]="!!confirmItem()"
+      [title]="confirmItem()?.title || 'Confirmar ação'"
+      [message]="confirmItem() ? confirmItem()!.msg : ''"
+      [subMessage]="confirmItem()?.sub || 'Essa ação não pode ser desfeita.'"
+      [confirmLabel]="confirmItem()?.label || 'Confirmar'"
+      (confirmed)="doConfirm()"
+      (cancelled)="confirmItem.set(null)">
+    </app-confirm-modal>
   `,
   styles: [`
     .profile-page { max-width: 720px; }
@@ -221,16 +232,27 @@ export class AccountProfileComponent implements OnInit {
     });
   }
 
+  confirmItem = signal<{ title: string; msg: string; sub?: string; label?: string; action: () => void } | null>(null);
+
   deleteAccount(): void {
-    if (!confirm('Tem certeza que deseja excluir sua conta? Todos os seus dados serão removidos permanentemente. Esta ação não pode ser desfeita.')) return;
-    if (!confirm('Confirme novamente: excluir conta e todos os dados para sempre?')) return;
-    this.api.delete('/me').subscribe({
-      next: () => {
-        this.toast.success('Conta excluída.');
-        this.auth.logout();
-      },
-      error: () => this.toast.error('Erro ao excluir conta.'),
+    this.confirmItem.set({
+      title: 'Excluir conta',
+      msg: 'Tem certeza que deseja excluir sua conta? <strong>Todos os seus dados serão removidos permanentemente.</strong>',
+      sub: 'Essa ação não pode ser desfeita.',
+      label: 'Excluir conta',
+      action: () => {
+        this.api.delete('/me').subscribe({
+          next: () => { this.toast.success('Conta excluída.'); this.auth.logout(); },
+          error: () => this.toast.error('Erro ao excluir conta.'),
+        });
+      }
     });
+  }
+
+  doConfirm() {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
   }
 
   setupMFA(): void {
@@ -250,11 +272,16 @@ export class AccountProfileComponent implements OnInit {
   }
 
   disableMFA(): void {
-    if (!confirm('Desativar 2FA?')) return;
-    this.auth.disableMFA().subscribe(() => {
-      this.toast.success('2FA desativado.');
-      const u = this.user();
-      if (u) this.auth.currentUser.set({ ...u, mfa_enabled: false });
+    this.confirmItem.set({
+      title: 'Desativar 2FA',
+      msg: 'Tem certeza que deseja desativar a autenticação de dois fatores?',
+      sub: 'Sua conta ficará menos segura sem o 2FA.',
+      label: 'Desativar',
+      action: () => this.auth.disableMFA().subscribe(() => {
+        this.toast.success('2FA desativado.');
+        const u = this.user();
+        if (u) this.auth.currentUser.set({ ...u, mfa_enabled: false });
+      })
     });
   }
 

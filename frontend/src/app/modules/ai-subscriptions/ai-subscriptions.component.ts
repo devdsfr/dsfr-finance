@@ -6,6 +6,7 @@ import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PlanService } from '../../core/services/plan.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 const AI_PRESETS = [
   { name: 'ChatGPT Plus',   provider: 'openai',     color: '#10a37f', logo: 'https://logo.clearbit.com/openai.com' },
@@ -28,7 +29,7 @@ const PROVIDERS = [
 @Component({
   selector: 'app-ai-subscriptions',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent],
   template: `
     <div class="page-header">
       <h1>Assinaturas de IA</h1>
@@ -192,6 +193,13 @@ const PROVIDERS = [
         </div>
       }
     }
+
+    <app-confirm-modal
+      [visible]="!!confirmItem()"
+      [message]="confirmItem() ? confirmItem()!.msg : ''"
+      (confirmed)="doDelete()"
+      (cancelled)="confirmItem.set(null)">
+    </app-confirm-modal>
   `,
   styles: [`
     .page-header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
@@ -370,12 +378,21 @@ export class AiSubscriptionsComponent implements OnInit {
     }
   }
 
+  confirmItem = signal<{ msg: string; action: () => void } | null>(null);
+
   remove(it: any) {
-    if (!confirm(`Excluir a assinatura "${it.name}"?`)) return;
-    this.api.delete(`/ai-subscriptions/${it.id}`).subscribe({
-      next: () => { this.toast.show('Assinatura excluída.', 'success'); this.load(); },
-      error: () => this.toast.show('Erro ao excluir.', 'error'),
-    });
+    this.confirmItem.set({ msg: `Tem certeza que deseja excluir a assinatura <strong>${it.name}</strong>?`, action: () => {
+      this.api.delete(`/ai-subscriptions/${it.id}`).subscribe({
+        next: () => { this.toast.show('Assinatura excluída.', 'success'); this.load(); },
+        error: () => this.toast.show('Erro ao excluir.', 'error'),
+      });
+    }});
+  }
+
+  doDelete() {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
   }
 
   sync(it: any) {

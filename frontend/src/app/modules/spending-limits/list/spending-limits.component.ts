@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-spending-limits',
   standalone: true,
-  imports: [CommonModule, FormsModule, MoneyMaskDirective],
+  imports: [CommonModule, FormsModule, MoneyMaskDirective, ConfirmModalComponent],
   template: `
     <!-- AC-LG-07..11 -->
     <div class="page-header">
@@ -138,6 +139,13 @@ import { MoneyMaskDirective } from '../../../shared/directives/money-mask.direct
         <div class="empty">Nenhum limite configurado.</div>
       }
     </div>
+
+    <app-confirm-modal
+      [visible]="!!confirmItem()"
+      [message]="confirmItem() ? confirmItem()!.msg : ''"
+      (confirmed)="doDelete()"
+      (cancelled)="confirmItem.set(null)">
+    </app-confirm-modal>
   `,
   styles: [`
     .page-header { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
@@ -233,12 +241,21 @@ export class SpendingLimitsComponent implements OnInit {
 
   cancelForm(): void { this.showForm = false; this.editing = null; }
 
+  confirmItem = signal<{ msg: string; action: () => void } | null>(null);
+
   delete(l: any): void {
-    if (!confirm('Excluir este limite?')) return;
-    this.api.delete(`/spending-limits/${l.id}`).subscribe(() => {
-      this.toast.success('Limite excluído.');
-      this.load();
-    });
+    this.confirmItem.set({ msg: `Tem certeza que deseja excluir o limite <strong>${l.category_name || 'selecionado'}</strong>?`, action: () => {
+      this.api.delete(`/spending-limits/${l.id}`).subscribe(() => {
+        this.toast.success('Limite excluído.');
+        this.load();
+      });
+    }});
+  }
+
+  doDelete() {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
   }
   barWidth(l: any): number {
     const pct = +(l.usage_pct ?? 0);

@@ -6,6 +6,7 @@ import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PlanService } from '../../core/services/plan.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 interface Debt {
   id: string; name: string; type: string; system: string;
@@ -59,7 +60,7 @@ function months2text(n: number): string {
 @Component({
   selector: 'app-debt-strategy',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent],
   template: `
     @if (!plan.isPremium()) {
       <div class="upsell-card">
@@ -342,6 +343,13 @@ function months2text(n: number): string {
       </div>
     }
     }
+
+    <app-confirm-modal
+      [visible]="!!confirmItem()"
+      [message]="confirmItem() ? confirmItem()!.msg : ''"
+      (confirmed)="doDelete()"
+      (cancelled)="confirmItem.set(null)">
+    </app-confirm-modal>
   `,
   styles: [`
     .upsell-card {
@@ -670,13 +678,22 @@ export class DebtStrategyComponent implements OnInit {
     });
   }
 
+  confirmItem = signal<{ msg: string; action: () => void } | null>(null);
+
   remove(d: Debt) {
-    if (!confirm(`Excluir "${d.name}"?`)) return;
-    this.api.delete(`/debts/${d.id}`).subscribe(() => {
-      this.toast.success('Dívida excluída');
-      if (this.selected()?.id === d.id) this.selected.set(null);
-      this.load();
-    });
+    this.confirmItem.set({ msg: `Tem certeza que deseja excluir a dívida <strong>${d.name}</strong>?`, action: () => {
+      this.api.delete(`/debts/${d.id}`).subscribe(() => {
+        this.toast.success('Dívida excluída');
+        if (this.selected()?.id === d.id) this.selected.set(null);
+        this.load();
+      });
+    }});
+  }
+
+  doDelete() {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────

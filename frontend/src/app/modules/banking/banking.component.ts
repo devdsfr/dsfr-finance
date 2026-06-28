@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 const ACCOUNT_TYPES = [
   { value: 'checking',  label: 'Conta Corrente' },
@@ -73,7 +74,7 @@ const BANK_PRESETS = [
 @Component({
   selector: 'app-banking',
   standalone: true,
-  imports: [CommonModule, FormsModule, MoneyMaskDirective],
+  imports: [CommonModule, FormsModule, MoneyMaskDirective, ConfirmModalComponent],
   template: `
     <div class="page-header">
       <h1>Contas & Cartões</h1>
@@ -406,6 +407,8 @@ export class BankingComponent implements OnInit {
   readonly cardBrands = CARD_BRANDS;
   readonly bankPresets = BANK_PRESETS;
 
+  confirmItem = signal<{ msg: string; action: () => void } | null>(null);
+
   ngOnInit() {
     this.loadAccounts();
     this.loadCards();
@@ -514,11 +517,12 @@ export class BankingComponent implements OnInit {
     });
   }
   deleteAcc(a: any) {
-    if (!confirm(`Excluir a conta "${a.name}"?`)) return;
-    this.api.delete(`/accounts/${a.id}`).subscribe({
-      next: () => { this.toast.show('Conta excluída.', 'success'); this.loadAccounts(); },
-      error: () => this.toast.show('Erro ao excluir.', 'error'),
-    });
+    this.confirmItem.set({ msg: `Tem certeza que deseja excluir a conta <strong>${a.name}</strong>?`, action: () => {
+      this.api.delete(`/accounts/${a.id}`).subscribe({
+        next: () => { this.toast.show('Conta excluída.', 'success'); this.loadAccounts(); },
+        error: () => this.toast.show('Erro ao excluir.', 'error'),
+      });
+    }});
   }
   accTypeLabel(v: string) { return ACCOUNT_TYPES.find(t => t.value === v)?.label ?? v; }
 
@@ -540,11 +544,18 @@ export class BankingComponent implements OnInit {
     });
   }
   deleteCard(c: any) {
-    if (!confirm(`Excluir o cartão "${c.name}"?`)) return;
-    this.api.delete(`/credit-cards/${c.id}`).subscribe({
-      next: () => { this.toast.show('Cartão excluído.', 'success'); this.loadCards(); },
-      error: () => this.toast.show('Erro ao excluir.', 'error'),
-    });
+    this.confirmItem.set({ msg: `Tem certeza que deseja excluir o cartão <strong>${c.name}</strong>?`, action: () => {
+      this.api.delete(`/credit-cards/${c.id}`).subscribe({
+        next: () => { this.toast.show('Cartão excluído.', 'success'); this.loadCards(); },
+        error: () => this.toast.show('Erro ao excluir.', 'error'),
+      });
+    }});
+  }
+  doDelete() {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
   }
   brandLabel(v: string) { return CARD_BRANDS.find(b => b.value === v)?.label ?? v; }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
