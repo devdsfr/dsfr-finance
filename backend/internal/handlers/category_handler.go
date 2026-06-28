@@ -77,6 +77,26 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 }
 
 func (h *CategoryHandler) Delete(c *gin.Context) {
-	h.db.ExecContext(c, `DELETE FROM categories WHERE id=$1 AND workspace_id=$2`, c.Param("id"), middleware.GetWorkspaceID(c))
+	wsID := middleware.GetWorkspaceID(c)
+	id := c.Param("id")
+
+	// Remove FK references before deleting (no ON DELETE SET NULL in schema)
+	for _, q := range []string{
+		`UPDATE transactions    SET category_id = NULL WHERE category_id = $1 AND workspace_id = $2`,
+		`UPDATE spending_limits SET category_id = NULL WHERE category_id = $1 AND workspace_id = $2`,
+		`UPDATE categories      SET parent_id   = NULL WHERE parent_id   = $1 AND workspace_id = $2`,
+	} {
+		if _, err := h.db.ExecContext(c, q, id, wsID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	if _, err := h.db.ExecContext(c,
+		`DELETE FROM categories WHERE id=$1 AND workspace_id=$2`, id, wsID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

@@ -320,10 +320,35 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
             </div>
           }
 
-          <!-- Resultado do mês -->
+          <!-- Resultado do mês — visualização mensal -->
           @if (!loading()) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">{{ 'dashboard.month_result' | translate }}</p>
+              <div class="flow-header">
+                <p class="section-label" style="margin-top:0">{{ 'dashboard.month_result' | translate }}</p>
+                <div class="flow-legend">
+                  <span class="flow-legend-dot flow-legend-dot--in"></span><span>Receitas</span>
+                  <span class="flow-legend-dot flow-legend-dot--ex"></span><span>Despesas</span>
+                </div>
+              </div>
+
+              @if (monthlyFlow().length > 0) {
+                <div class="flow-chart">
+                  @for (m of monthlyFlow(); track m.month) {
+                    <div class="flow-col">
+                      <div class="flow-bars">
+                        <div class="flow-bar flow-bar--in"
+                             [style.height]="flowBarH(m.income) + '%'"
+                             [title]="m.income | appCurrency"></div>
+                        <div class="flow-bar flow-bar--ex"
+                             [style.height]="flowBarH(m.expense) + '%'"
+                             [title]="m.expense | appCurrency"></div>
+                      </div>
+                      <span class="flow-month-label">{{ flowMonthLabel(m.month) }}</span>
+                    </div>
+                  }
+                </div>
+              }
+
               <div class="result-row" [class.negative]="balance() < 0">
                 <span>{{ balance() < 0 ? ('dashboard.deficit' | translate) : ('dashboard.balance' | translate) }}</span>
                 <span class="result-val">{{ balance() | appCurrency }}</span>
@@ -555,6 +580,18 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .lim-pct--over { color: #dc2626; }
 
     /* Result */
+    .flow-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+    .flow-legend { display: flex; align-items: center; gap: .5rem; font-size: .72rem; color: #6b7280; }
+    .flow-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .flow-legend-dot--in { background: #16a34a; }
+    .flow-legend-dot--ex { background: #ef4444; }
+    .flow-chart { display: flex; align-items: flex-end; gap: .3rem; height: 80px; margin-bottom: .75rem; }
+    .flow-col { display: flex; flex-direction: column; align-items: center; flex: 1; gap: .25rem; height: 100%; }
+    .flow-bars { display: flex; align-items: flex-end; gap: 2px; flex: 1; width: 100%; }
+    .flow-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 2px; transition: height .3s ease; }
+    .flow-bar--in { background: #16a34a; }
+    .flow-bar--ex { background: #ef4444; opacity: .85; }
+    .flow-month-label { font-size: .65rem; color: #9ca3af; white-space: nowrap; }
     .result-row { display: flex; justify-content: space-between; align-items: center; padding: .75rem 0; border-top: 1px solid #f3f4f6; }
     .result-val { font-size: 1.15rem; font-weight: 700; color: #16a34a; }
     .result-row.negative .result-val { color: #dc2626; }
@@ -630,6 +667,17 @@ export class DashboardComponent implements OnInit {
   expense = signal(0);
   balance = computed(() => this.income() - this.expense());
 
+  flowBarH(val: number): number {
+    const max = Math.max(...this.monthlyFlow().map(m => Math.max(m.income, m.expense)), 1);
+    return Math.round((val / max) * 100);
+  }
+
+  flowMonthLabel(month: string): string {
+    const [y, m] = month.split('-');
+    const d = new Date(+y, +m - 1, 1);
+    return d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+  }
+
   accounts        = signal<any[]>([]);
   cards           = signal<any[]>([]);
   payableBills    = signal<any[]>([]);
@@ -643,6 +691,7 @@ export class DashboardComponent implements OnInit {
 
   // Patrimony chart (multi-wallet)
   patrimonySnapshots = signal<any[]>([]);
+  monthlyFlow = signal<any[]>([]);
   readonly chartW = 800; readonly chartH = 140; readonly padL = 60; readonly padR = 20; readonly padT = 12; readonly padB = 22;
   private readonly PAT_COLORS = ['#2563eb','#16a34a','#d97706','#9333ea','#e11d48','#0891b2','#ca8a04','#16a34a'];
 
@@ -843,7 +892,11 @@ export class DashboardComponent implements OnInit {
       limits: this.api.get<any>('/spending-limits').pipe(catchError(() => of({ data: [] }))),
       cats:   this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
       patrimony: this.api.get<any>('/patrimony-snapshots').pipe(catchError(() => of({ data: [] }))),
-    }).subscribe(({ txs, bills, accs, ccs, limits, cats, patrimony }) => {
+      flow: this.api.get<any>('/reports/flow', {
+        from: new Date(year, mon - 7, 1).toISOString().slice(0, 10),
+        to:   new Date(year, mon, 0).toISOString().slice(0, 10),
+      }).pipe(catchError(() => of({ data: [] }))),
+    }).subscribe(({ txs, bills, accs, ccs, limits, cats, patrimony, flow }) => {
       const list: any[]     = txs.data ?? [];
       const billList: any[] = bills.data ?? [];
 
@@ -878,6 +931,9 @@ export class DashboardComponent implements OnInit {
 
       // Patrimony snapshots for chart
       this.patrimonySnapshots.set(patrimony.data ?? []);
+
+      // Monthly flow — last 6 months
+      this.monthlyFlow.set((flow.data ?? []).slice(-6));
 
       // Unpaid bills from the wider date range
       const allBills = billList.filter((t: any) => !t.paid && !t.ignored);
