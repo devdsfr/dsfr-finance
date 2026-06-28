@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 interface Category { id: string; name: string; color: string; icon: string; type: string; }
 
 @Component({
   selector: 'app-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent],
   template: `
     <div class="cat-page">
 
@@ -48,7 +49,8 @@ interface Category { id: string; name: string; color: string; icon: string; type
               <span class="cat-name">{{ cat.name }}</span>
               <div class="cat-actions">
                 <button class="act-link" (click)="edit(cat)">editar</button>
-                <button class="act-link act-link--red" (click)="askArchive(cat)">arquivar</button>
+                <button class="act-link act-link--orange" (click)="askArchive(cat)">arquivar</button>
+                <button class="act-link act-link--red" (click)="askDelete(cat)">excluir</button>
               </div>
             </div>
           }
@@ -116,6 +118,14 @@ interface Category { id: string; name: string; color: string; icon: string; type
       </div>
     }
 
+    <!-- ── Delete Confirm Modal ── -->
+    <app-confirm-modal
+      [visible]="!!deleteTarget"
+      [message]="deleteTarget ? 'Tem certeza que deseja excluir permanentemente a categoria <strong>' + deleteTarget.name + '</strong>? Os lançamentos vinculados perderão a categoria.' : ''"
+      (confirmed)="confirmDelete()"
+      (cancelled)="deleteTarget = null">
+    </app-confirm-modal>
+
     <!-- ── Archive Confirm Modal ── -->
     @if (archiveTarget) {
       <div class="overlay" (click)="archiveTarget = null">
@@ -171,6 +181,7 @@ interface Category { id: string; name: string; color: string; icon: string; type
     .cat-actions { display: flex; gap: .875rem; }
     .act-link { font-size: .8rem; color: #3b82f6; background: none; border: none; cursor: pointer; font-weight: 500; padding: 0; }
     .act-link:hover { text-decoration: underline; }
+    .act-link--orange { color: #f97316; }
     .act-link--red { color: #ef4444; }
     .cat-empty { padding: 2.5rem; text-align: center; color: #9ca3af; font-size: .9rem; }
     .skel { display: block; background: #f3f4f6; border-radius: .375rem; animation: pulse 1.5s infinite; }
@@ -327,6 +338,22 @@ export class CategoriesComponent implements OnInit {
     this.archiveTarget = null;
     this.api.delete(`/categories/${cat.id}`).subscribe(() => {
       this.toast.success('Categoria arquivada.');
+      this.load();
+    });
+  }
+
+  deleteTarget: Category | null = null;
+
+  askDelete(cat: Category) {
+    this.deleteTarget = cat;
+  }
+
+  confirmDelete() {
+    if (!this.deleteTarget) return;
+    const cat = this.deleteTarget;
+    this.deleteTarget = null;
+    this.api.delete(`/categories/${cat.id}`).subscribe(() => {
+      this.toast.success('Categoria excluída.');
       this.load();
     });
   }

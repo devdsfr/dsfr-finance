@@ -10,7 +10,7 @@ import { MoneyMaskDirective } from '../../../shared/directives/money-mask.direct
 
 interface Category { id: string; name: string; type: string; color?: string; icon?: string; }
 interface Account  { id: string; name: string; logo?: string; color?: string; }
-interface CreditCard { id: string; name: string; }
+interface CreditCard { id: string; name: string; logo?: string; color?: string; brand?: string; }
 
 @Component({
   selector: 'app-transaction-form',
@@ -63,7 +63,11 @@ interface CreditCard { id: string; name: string; }
           <div class="chip-row" (click)="toggleAcc()">
             @if (selectedAccount) {
               <span class="chip chip--account">
-                <span class="chip-dot" [style.background]="selectedAccount.color || '#6366f1'"></span>
+                @if (selectedAccount.logo) {
+                  <img class="chip-logo" [src]="selectedAccount.logo" [alt]="selectedAccount.name" (error)="onAccLogoError($event, selectedAccount)" />
+                } @else {
+                  <span class="chip-dot" [style.background]="selectedAccount.color || '#6366f1'"></span>
+                }
                 {{ selectedAccount.name }}
                 <button type="button" class="chip-x"
                         (click)="$event.stopPropagation(); form.account_id = ''">×</button>
@@ -71,7 +75,11 @@ interface CreditCard { id: string; name: string; }
             }
             @if (form.type === 'expense' && selectedCard) {
               <span class="chip chip--card">
-                <span class="chip-dot" style="background:#f59e0b"></span>
+                @if (selectedCard.logo) {
+                  <img class="chip-logo" [src]="selectedCard.logo" [alt]="selectedCard.name" (error)="onCardLogoError($event, selectedCard)" />
+                } @else {
+                  <span class="chip-dot" [style.background]="selectedCard.color || '#f59e0b'"></span>
+                }
                 {{ selectedCard.name }}
                 <button type="button" class="chip-x"
                         (click)="$event.stopPropagation(); form.credit_card_id = ''">×</button>
@@ -88,7 +96,11 @@ interface CreditCard { id: string; name: string; }
                 @for (a of accounts(); track a.id) {
                   <div class="acc-item" [class.acc-item--active]="form.account_id === a.id"
                        (click)="form.account_id = a.id; accOpen.set(false)">
-                    <span class="acc-dot" [style.background]="a.color || '#6366f1'"></span>
+                    @if (a.logo) {
+                      <img class="acc-logo" [src]="a.logo" [alt]="a.name" (error)="onAccLogoError($event, a)" />
+                    } @else {
+                      <span class="acc-dot" [style.background]="a.color || '#6366f1'"></span>
+                    }
                     {{ a.name }}
                   </div>
                 }
@@ -98,7 +110,11 @@ interface CreditCard { id: string; name: string; }
                 @for (c of cards(); track c.id) {
                   <div class="acc-item" [class.acc-item--active]="form.credit_card_id === c.id"
                        (click)="form.credit_card_id = c.id; accOpen.set(false)">
-                    <span class="acc-dot" style="background:#f59e0b"></span>
+                    @if (c.logo) {
+                      <img class="acc-logo" [src]="c.logo" [alt]="c.name" (error)="onCardLogoError($event, c)" />
+                    } @else {
+                      <span class="acc-dot" [style.background]="c.color || '#f59e0b'"></span>
+                    }
                     {{ c.name }}
                   </div>
                 }
@@ -110,7 +126,7 @@ interface CreditCard { id: string; name: string; }
           <div class="cat-select" [class.cat-select--open]="catOpen()" (click)="toggleCat()">
             <div class="cat-trigger">
               @if (selectedCategory()) {
-                <span class="cat-chip" [style.background]="catColor(selectedCategory())">{{ catIcon(selectedCategory()) }}</span>
+                <span class="cat-chip">{{ catIcon(selectedCategory()) }}</span>
                 <span>{{ selectedCategory()!.name }}</span>
               } @else {
                 <span class="cat-placeholder">Buscar a categoria..</span>
@@ -129,7 +145,7 @@ interface CreditCard { id: string; name: string; }
                   @for (cat of filteredCats(); track cat.id) {
                     <div class="cat-item" [class.cat-item--active]="form.category_id === cat.id"
                          (click)="selectCat(cat.id)">
-                      <span class="cat-chip" [style.background]="catColor(cat)">{{ catIcon(cat) }}</span>
+                      <span class="cat-chip">{{ catIcon(cat) }}</span>
                       {{ cat.name }}
                     </div>
                   }
@@ -345,6 +361,7 @@ interface CreditCard { id: string; name: string; }
     .chip--account { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
     .chip--card    { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
     .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .chip-logo { width: 18px; height: 18px; border-radius: 50%; object-fit: contain; flex-shrink: 0; background: #f3f4f6; }
     .chip-x {
       background: none; border: none; cursor: pointer; padding: 0;
       font-size: .95rem; color: inherit; opacity: .6; line-height: 1;
@@ -369,6 +386,7 @@ interface CreditCard { id: string; name: string; }
     .acc-item:hover { background: #f9fafb; }
     .acc-item--active { background: #f0fdf4; font-weight: 600; }
     .acc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .acc-logo { width: 22px; height: 22px; border-radius: 50%; object-fit: contain; flex-shrink: 0; background: #f3f4f6; border: 1px solid #e5e7eb; }
 
     /* ── Category ── */
     .cat-select {
@@ -385,7 +403,7 @@ interface CreditCard { id: string; name: string; }
     .cat-chip {
       width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
       align-items: center; justify-content: center; font-size: .9rem;
-      flex-shrink: 0; line-height: 1;
+      flex-shrink: 0; line-height: 1; background: #f3f4f6;
     }
     .cat-chip--none { background: #f3f4f6; color: #9ca3af; }
     .cat-dropdown {
@@ -628,6 +646,15 @@ export class TransactionFormComponent implements OnInit {
     'transporte':        { icon: '🚌', color: '#38bdf8' },
     'viagem':            { icon: '✈️', color: '#f87171' },
   };
+
+  onAccLogoError(event: Event, a: Account) {
+    (event.target as HTMLImageElement).style.display = 'none';
+    a.logo = '';
+  }
+  onCardLogoError(event: Event, c: CreditCard) {
+    (event.target as HTMLImageElement).style.display = 'none';
+    c.logo = '';
+  }
 
   catIcon(cat: any): string {
     if (!cat) return '●';
