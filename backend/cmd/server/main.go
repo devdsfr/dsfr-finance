@@ -210,6 +210,7 @@ func main() {
 		// Patrimony snapshots
 		auth.GET("/patrimony-snapshots", patrimonySnapH.List)
 		auth.POST("/patrimony-snapshots", patrimonySnapH.Upsert)
+		auth.PUT("/patrimony-snapshots/:id", patrimonySnapH.Update)
 		auth.DELETE("/patrimony-snapshots/:month", patrimonySnapH.Delete)
 	}
 

@@ -38,20 +38,7 @@ import { filter } from 'rxjs/operators';
           <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">{{ 'nav.overview' | translate }}</a>
           <a routerLink="/transactions" routerLinkActive="active">{{ 'nav.transactions' | translate }}</a>
 
-          <div class="dropdown" [class.open]="reportsOpen()">
-            <button class="dropdown__trigger" (click)="reportsOpen.set(!reportsOpen())"
-                    [class.active]="isReportsActive()">
-              {{ 'nav.reports' | translate }} <span class="caret">▾</span>
-            </button>
-            <div class="dropdown__menu" (mouseleave)="reportsOpen.set(false)">
-              <a routerLink="/reports/flow"         routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_flow' | translate }}</a>
-              <a routerLink="/reports/patrimony"    routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_patrimony' | translate }}</a>
-              <a routerLink="/reports/categories"   routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_categories' | translate }}</a>
-              <a routerLink="/reports/tags"         routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_tags' | translate }}</a>
-              <a routerLink="/reports/installments" routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_installments' | translate }}</a>
-              <a routerLink="/reports/card-invoices" routerLinkActive="active" (click)="reportsOpen.set(false)">{{ 'nav.reports_card_invoices' | translate }}</a>
-            </div>
-          </div>
+          <a routerLink="/reports" routerLinkActive="active">{{ 'nav.reports' | translate }}</a>
 
           <a routerLink="/patrimony-evolution" routerLinkActive="active">Patrimônio</a>
           <a routerLink="/spending-limits" routerLinkActive="active">{{ 'nav.spending_limits' | translate }}</a>
@@ -167,18 +154,8 @@ import { filter } from 'rxjs/operators';
 
         <div class="drawer__label">{{ 'nav.reports' | translate }}</div>
         <div class="drawer__section">
-          <a class="drawer__link" routerLink="/reports/flow" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">📈 {{ 'nav.reports_flow' | translate }}</a>
-          <a class="drawer__link" routerLink="/reports/patrimony" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">💹 {{ 'nav.reports_patrimony' | translate }}</a>
-          <a class="drawer__link" routerLink="/reports/categories" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">🏷️ {{ 'nav.reports_categories' | translate }}</a>
-          <a class="drawer__link" routerLink="/reports/tags" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">🔖 {{ 'nav.reports_tags' | translate }}</a>
-          <a class="drawer__link" routerLink="/reports/installments" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">📆 {{ 'nav.reports_installments' | translate }}</a>
-          <a class="drawer__link" routerLink="/reports/card-invoices" routerLinkActive="drawer__link--active"
-             (click)="drawerOpen.set(false)">💳 {{ 'nav.reports_card_invoices' | translate }}</a>
+          <a class="drawer__link" routerLink="/reports" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">📊 {{ 'nav.reports' | translate }}</a>
         </div>
 
         <div class="drawer__label">{{ 'nav.my_account' | translate }}</div>
@@ -434,7 +411,6 @@ export class ShellComponent implements OnInit {
   private router = inject(Router);
 
   unreadCount  = signal(0);
-  reportsOpen  = signal(false);
   userMenuOpen = signal(false);
   drawerOpen   = signal(false);
   langMenuOpen = signal(false);
@@ -445,10 +421,6 @@ export class ShellComponent implements OnInit {
   initials(): string {
     const name = this.auth.currentUser()?.name ?? '';
     return name.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase();
-  }
-
-  isReportsActive(): boolean {
-    return this.router.url.includes('/reports');
   }
 
   currentLangFlag(): string {
@@ -470,7 +442,6 @@ export class ShellComponent implements OnInit {
 
     // Close menus on navigation
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
-      this.reportsOpen.set(false);
       this.userMenuOpen.set(false);
       this.drawerOpen.set(false);
       this.langMenuOpen.set(false);

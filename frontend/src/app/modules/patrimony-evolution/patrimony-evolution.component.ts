@@ -104,7 +104,7 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
   }
 
   <!-- ── Chart ── -->
-  @if (filtered().length >= 2) {
+  @if (chartData().length >= 2) {
     <div class="chart-card">
       <div class="chart-header">
         <span class="chart-title">Evolução do Patrimônio</span>
@@ -123,7 +123,7 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
                 font-size="10" fill="#9ca3af">{{ y.label }}</text>
         }
         <!-- X axis labels -->
-        @for (s of filtered(); track s.month; let i = $index) {
+        @for (s of chartData(); track s.month; let i = $index) {
           <text [attr.x]="xPos(i)" [attr.y]="svgH - PAD_B + 14"
                 text-anchor="middle" font-size="10" fill="#9ca3af">{{ fmtMonth(s.month) }}</text>
         }
@@ -140,13 +140,13 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
         <polyline [attr.points]="linePoints('profit')"   fill="none" stroke="#86efac" stroke-width="1.5" stroke-linejoin="round" stroke-dasharray="4 3"/>
         <polyline [attr.points]="linePoints('total')"    fill="none" stroke="#2e7736" stroke-width="2.5" stroke-linejoin="round"/>
         <!-- Dots total -->
-        @for (s of filtered(); track s.month; let i = $index) {
+        @for (s of chartData(); track s.month; let i = $index) {
           <circle [attr.cx]="xPos(i)" [attr.cy]="yPos(s.total)" r="4"
                   fill="#fff" stroke="#2e7736" stroke-width="2"/>
         }
       </svg>
     </div>
-  } @else if (filtered().length === 1) {
+  } @else if (chartData().length === 1) {
     <div class="chart-card chart-card--empty">
       <p>Adicione pelo menos 2 meses para ver o gráfico de evolução 📈</p>
     </div>
@@ -309,6 +309,26 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
       <p>Nenhum registro ainda.<br>Clique em <strong>+ Registrar mês</strong> para começar.</p>
     </div>
   }
+
+  <!-- ── Delete confirmation modal ── -->
+  @if (confirmDelete()) {
+    <div class="modal-overlay" (click)="confirmDelete.set(null)">
+      <div class="confirm-modal" (click)="$event.stopPropagation()">
+        <div class="confirm-icon">🗑️</div>
+        <h3 class="confirm-title">Excluir registro</h3>
+        <p class="confirm-msg">
+          Tem certeza que deseja excluir o registro de
+          <strong>{{ fmtMonthLong(confirmDelete()!.month) }}</strong>
+          da carteira <strong>{{ confirmDelete()!.wallet }}</strong>?
+        </p>
+        <p class="confirm-sub">Essa ação não pode ser desfeita.</p>
+        <div class="confirm-actions">
+          <button class="btn btn--ghost" (click)="confirmDelete.set(null)">Cancelar</button>
+          <button class="btn btn--danger" (click)="confirmDeleteSnap()">Excluir</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>
   `,
   styles: [`
@@ -320,6 +340,8 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     .btn--primary { background: #2e7736; color: #fff; }
     .btn--ghost { background: none; color: #374151; border: 1px solid #d1d5db; }
     .btn--outline { background: #fff; color: #2e7736; border: 1.5px solid #2e7736; }
+    .btn--danger { background: #ef4444; color: #fff; }
+    .btn--danger:hover { background: #dc2626; }
     .btn--sm { padding: .3rem .75rem; font-size: .8rem; }
 
     /* Wallet tabs */
@@ -402,6 +424,23 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     .empty-icon { font-size: 2.5rem; margin-bottom: .75rem; }
     .empty-state p { font-size: .9rem; line-height: 1.6; }
 
+    /* Delete confirmation modal */
+    .confirm-modal {
+      background: #fff; border-radius: .875rem; padding: 2rem 1.75rem;
+      width: 100%; max-width: 400px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      animation: pop-in .18s ease;
+    }
+    @keyframes pop-in {
+      from { transform: scale(.92); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .confirm-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    .confirm-title { font-size: 1.1rem; font-weight: 700; color: #111; margin: 0 0 .5rem; }
+    .confirm-msg { font-size: .875rem; color: #374151; line-height: 1.55; margin: 0 0 .35rem; }
+    .confirm-sub { font-size: .78rem; color: #9ca3af; margin: 0 0 1.5rem; }
+    .confirm-actions { display: flex; gap: .75rem; justify-content: center; }
+
     @media (max-width: 640px) {
       .cards-grid { grid-template-columns: 1fr 1fr; }
       .card--main { grid-column: span 2; }
@@ -420,6 +459,8 @@ export class PatrimonyEvolutionComponent implements OnInit {
   activeWallet = signal<string>('__all__');
   form: Snapshot = EMPTY();
   pasteText = '';
+  // Delete confirmation modal
+  confirmDelete = signal<{ month: string; wallet: string } | null>(null);
 
   // Chart constants
   readonly PAD_L = 58; readonly PAD_R = 16; readonly PAD_T = 16; readonly PAD_B = 28;
@@ -428,6 +469,7 @@ export class PatrimonyEvolutionComponent implements OnInit {
   // Derived
   wallets = computed(() => [...new Set(this.snapshots().map(s => s.wallet_name))].sort());
 
+  // All individual rows (for history table)
   filtered = computed(() => {
     const w = this.activeWallet();
     const all = this.snapshots();
@@ -437,13 +479,44 @@ export class PatrimonyEvolutionComponent implements OnInit {
 
   filteredDesc = computed(() => [...this.filtered()].reverse());
 
+  // Consolidated by month: sums all wallets for each month (used by chart + summary cards)
+  chartData = computed((): Snapshot[] => {
+    const w = this.activeWallet();
+    const all = this.snapshots();
+    const src = w === '__all__' ? all : all.filter(s => s.wallet_name === w);
+
+    if (w !== '__all__') return [...src].sort((a, b) => a.month.localeCompare(b.month));
+
+    // Aggregate: one entry per month, sum numeric fields across wallets
+    const monthMap = new Map<string, Snapshot>();
+    [...src].sort((a, b) => a.month.localeCompare(b.month)).forEach(snap => {
+      if (!monthMap.has(snap.month)) {
+        monthMap.set(snap.month, { ...snap, wallet_name: '__all__' });
+      } else {
+        const e = monthMap.get(snap.month)!;
+        e.total         += snap.total;
+        e.invested      += snap.invested;
+        e.profit        += snap.profit;
+        e.capital_gains += snap.capital_gains;
+        e.dividends     += snap.dividends;
+        e.income_12m    += snap.income_12m;
+        e.variation_val += snap.variation_val;
+        // variation_pct and rentability: weighted average by total
+        // (simple average for now)
+        e.variation_pct  = (e.variation_pct + snap.variation_pct) / 2;
+        e.rentability    = (e.rentability + snap.rentability) / 2;
+      }
+    });
+    return [...monthMap.values()];
+  });
+
   latest = computed(() => {
-    const s = this.filtered();
+    const s = this.chartData();
     return s.length ? s[s.length - 1] : null;
   });
 
   growth = computed(() => {
-    const s = this.filtered();
+    const s = this.chartData();
     if (s.length < 2) return null;
     const prev = s[s.length - 2].total;
     const curr = s[s.length - 1].total;
@@ -505,9 +578,12 @@ export class PatrimonyEvolutionComponent implements OnInit {
 
   save() {
     this.saving.set(true);
-    this.api.post<any>('/patrimony-snapshots', this.form).subscribe({
+    const req = this.form.id
+      ? this.api.put<any>(`/patrimony-snapshots/${this.form.id}`, this.form)
+      : this.api.post<any>('/patrimony-snapshots', this.form);
+    req.subscribe({
       next: () => {
-        this.toast.success('Snapshot salvo!');
+        this.toast.success(this.form.id ? 'Atualizado!' : 'Registro salvo!');
         this.load();
         this.closeForm();
         this.saving.set(false);
@@ -520,16 +596,22 @@ export class PatrimonyEvolutionComponent implements OnInit {
   }
 
   deleteSnap(month: string, wallet: string) {
-    if (!confirm(`Excluir registro de ${this.fmtMonthLong(month)} (${wallet})?`)) return;
-    this.api.delete<any>(`/patrimony-snapshots/${month}?wallet=${encodeURIComponent(wallet)}`).subscribe(() => {
-      this.toast.success('Removido');
+    this.confirmDelete.set({ month, wallet });
+  }
+
+  confirmDeleteSnap() {
+    const d = this.confirmDelete();
+    if (!d) return;
+    this.api.delete<any>(`/patrimony-snapshots/${d.month}?wallet=${encodeURIComponent(d.wallet)}`).subscribe(() => {
+      this.toast.success('Registro removido.');
+      this.confirmDelete.set(null);
       this.load();
     });
   }
 
   // ── Chart helpers ──────────────────────────────────────────────────────────
   private chartBounds() {
-    const s = this.filtered();
+    const s = this.chartData();
     const vals = s.map(x => x.total);
     const min = Math.min(...vals) * 0.97;
     const max = Math.max(...vals) * 1.03;
@@ -537,7 +619,7 @@ export class PatrimonyEvolutionComponent implements OnInit {
   }
 
   xPos(i: number): number {
-    const n = this.filtered().length;
+    const n = this.chartData().length;
     const w = this.svgW - this.PAD_L - this.PAD_R;
     return this.PAD_L + (n === 1 ? w / 2 : (i / (n - 1)) * w);
   }
@@ -549,14 +631,14 @@ export class PatrimonyEvolutionComponent implements OnInit {
   }
 
   linePoints(key: keyof Snapshot): string {
-    return this.filtered()
+    return this.chartData()
       .map((s, i) => `${this.xPos(i)},${this.yPos(s[key] as number)}`)
       .join(' ');
   }
 
   areaPoints(): string {
-    const pts = this.filtered().map((s, i) => `${this.xPos(i)},${this.yPos(s.total)}`).join(' ');
-    const n = this.filtered().length;
+    const pts = this.chartData().map((s, i) => `${this.xPos(i)},${this.yPos(s.total)}`).join(' ');
+    const n = this.chartData().length;
     const base = this.svgH - this.PAD_B;
     return `${this.PAD_L},${base} ${pts} ${this.xPos(n - 1)},${base}`;
   }

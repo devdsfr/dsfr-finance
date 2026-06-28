@@ -64,6 +64,10 @@ export const routes: Routes = [
         loadComponent: () => import('./modules/transactions/form/transaction-form.component').then(m => m.TransactionFormComponent)
       },
       {
+        path: 'reports',
+        loadComponent: () => import('./modules/reports/reports.component').then(m => m.ReportsComponent)
+      },
+      {
         path: 'reports/flow',
         loadComponent: () => import('./modules/reports/flow/flow-report.component').then(m => m.FlowReportComponent)
       },

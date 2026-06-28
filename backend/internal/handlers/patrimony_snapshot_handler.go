@@ -102,6 +102,47 @@ func (h *PatrimonySnapshotHandler) Upsert(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
+func (h *PatrimonySnapshotHandler) Update(c *gin.Context) {
+	wsID := middleware.GetWorkspaceID(c)
+	id := c.Param("id")
+	var body struct {
+		Month        string  `json:"month"`
+		WalletName   string  `json:"wallet_name"`
+		Total        float64 `json:"total"`
+		Invested     float64 `json:"invested"`
+		Profit       float64 `json:"profit"`
+		CapitalGains float64 `json:"capital_gains"`
+		Dividends    float64 `json:"dividends"`
+		Income12m    float64 `json:"income_12m"`
+		VariationPct float64 `json:"variation_pct"`
+		VariationVal float64 `json:"variation_val"`
+		Rentability  float64 `json:"rentability"`
+		Notes        string  `json:"notes"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if body.WalletName == "" {
+		body.WalletName = "Principal"
+	}
+	_, err := h.db.ExecContext(c, `
+		UPDATE patrimony_snapshots SET
+		  month=$3, wallet_name=$4, total=$5, invested=$6, profit=$7,
+		  capital_gains=$8, dividends=$9, income_12m=$10,
+		  variation_pct=$11, variation_val=$12, rentability=$13,
+		  notes=$14, updated_at=NOW()
+		WHERE id=$1 AND workspace_id=$2`,
+		id, wsID, body.Month, body.WalletName, body.Total, body.Invested, body.Profit,
+		body.CapitalGains, body.Dividends, body.Income12m,
+		body.VariationPct, body.VariationVal, body.Rentability, body.Notes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 func (h *PatrimonySnapshotHandler) Delete(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
 	month := c.Param("month")
