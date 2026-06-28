@@ -757,7 +757,7 @@ export class DashboardComponent implements OnInit {
         // Recarrega saldo das contas para refletir no Saldo Geral
         this.api.get<any>('/accounts').subscribe(res => {
           const raw: any[] = res.data ?? [];
-          this.accounts.set(raw.map((a: any) => ({ ...a, logo: this.inferLogo(a.name, this.normalizeLogo(a.logo)) })));
+          this.accounts.set(raw);
         });
       },
       error: () => {
@@ -922,6 +922,45 @@ export class DashboardComponent implements OnInit {
     if (h < 18) return this.i18n.t('dashboard.greeting_afternoon');
     return this.i18n.t('dashboard.greeting_evening');
   }
+
+  ngOnInit(): void {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const dateFrom = `${y}-${m}-01`;
+    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+    const dateTo   = `${y}-${m}-${lastDay}`;
+
+    forkJoin({
+      accounts:   this.api.get<any>('/accounts').pipe(catchError(() => of({ data: [] }))),
+      cards:      this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
+      payable:    this.api.get<any>(`/transactions?type=expense&paid=false&limit=50`).pipe(catchError(() => of({ data: [] }))),
+      receivable: this.api.get<any>(`/transactions?type=income&paid=false&limit=50`).pipe(catchError(() => of({ data: [] }))),
+      summary:    this.api.get<any>(`/reports/summary?date_from=${dateFrom}&date_to=${dateTo}`).pipe(catchError(() => of({ income: 0, expense: 0 }))),
+      top:        this.api.get<any>(`/reports/categories?date_from=${dateFrom}&date_to=${dateTo}&type=expense`).pipe(catchError(() => of({ data: [] }))),
+      limits:     this.api.get<any>('/spending-limits').pipe(catchError(() => of({ data: [] }))),
+      cats:       this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
+      patrimony:  this.api.get<any>('/patrimony-snapshots').pipe(catchError(() => of({ data: [] }))),
+      flow:       this.api.get<any>('/reports/flow').pipe(catchError(() => of({ data: [] }))),
+    }).subscribe(res => {
+      this.accounts.set(res.accounts.data ?? []);
+      this.cards.set(res.cards.data ?? []);
+      this.payableBills.set(res.payable.data ?? []);
+      this.receivableBills.set(res.receivable.data ?? []);
+      this.income.set(res.summary.income ?? 0);
+      this.expense.set(res.summary.expense ?? 0);
+      this.topCategories.set((res.top.data ?? []).slice(0, 5));
+      this.spendingLimits.set(res.limits.data ?? []);
+      this._categories.set(res.cats.data ?? []);
+      this.patrimonySnapshots.set(res.patrimony.data ?? []);
+      const flow: any[] = res.flow.data ?? [];
+      this.monthlyFlow.set(flow.slice(-6));
+      this.loading.set(false);
+      sessionStorage.setItem('dash_visited', '1');
+      this.firstVisit.set(false);
+    });
+  }
+
 
   limitName(lim: any): string {
     const cat = this._categories().find((c: any) => c.id === lim.category_id);
