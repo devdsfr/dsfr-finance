@@ -306,6 +306,13 @@ const BANK_PRESETS = [
         </div>
       }
     </section>
+
+    <app-confirm-modal
+      [visible]="!!confirmItem()"
+      [message]="confirmItem() ? confirmItem()!.msg : ''"
+      (confirmed)="doDelete()"
+      (cancelled)="confirmItem.set(null)">
+    </app-confirm-modal>
   `,
   styles: [`
     .page-header { margin-bottom: 1.5rem; }

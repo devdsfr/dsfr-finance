@@ -19,6 +19,70 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
   template: `
     <div class="dash">
 
+      <!-- ── First-visit skeleton overlay ── -->
+      @if (firstVisit() && loading()) {
+        <div class="fv-overlay">
+          <div class="fv-inner">
+
+            <!-- hero -->
+            <div class="fv-hero">
+              <div class="fv-greeting">
+                <div class="sk sk--name"></div>
+                <div class="sk sk--sub"></div>
+              </div>
+              <div class="fv-hero-cards">
+                <div class="sk sk--hero-card"></div>
+                <div class="sk sk--hero-card"></div>
+              </div>
+            </div>
+
+            <!-- two-column grid -->
+            <div class="fv-grid">
+              <!-- left column -->
+              <div class="fv-col">
+                <div class="fv-card">
+                  <div class="sk sk--label"></div>
+                  <div class="sk sk--big"></div>
+                  <div class="sk sk--row"></div>
+                  <div class="sk sk--row"></div>
+                  <div class="sk sk--row"></div>
+                </div>
+                <div class="fv-card">
+                  <div class="sk sk--label"></div>
+                  <div class="sk sk--row"></div>
+                  <div class="sk sk--row"></div>
+                  <div class="sk sk--row"></div>
+                </div>
+              </div>
+              <!-- right column -->
+              <div class="fv-col">
+                <div class="fv-card">
+                  <div class="sk sk--label"></div>
+                  <div class="sk sk--row"></div>
+                  <div class="sk sk--row"></div>
+                </div>
+                <div class="fv-card">
+                  <div class="sk sk--label"></div>
+                  <div class="sk sk--donut">
+                    <div class="sk sk--circle"></div>
+                    <div class="fv-cat-lines">
+                      <div class="sk sk--cat"></div>
+                      <div class="sk sk--cat"></div>
+                      <div class="sk sk--cat"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="fv-card">
+                  <div class="sk sk--label"></div>
+                  <div class="sk sk--row"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      }
+
       <!-- ── Hero ──────────────────────────────────────────────── -->
       <div class="hero">
         <div class="hero__left">
@@ -111,7 +175,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                 <div class="bill-banner bill-banner--danger">{{ 'dashboard.payable_overdue' | translate }}</div>
                 @for (bill of overduePayable().slice(0, 4); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
-                    <div class="bill-icon" [style.background]="bill.category?.color ?? '#ef4444'">{{ (bill.description ?? 'B')[0] }}</div>
+                    <div class="bill-icon" [style.background]="billColor(bill, '#ef4444')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
@@ -131,7 +195,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                 <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
                 @for (bill of upcomingPayable().slice(0, 4); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
-                    <div class="bill-icon" [style.background]="bill.category?.color ?? '#6b7280'">{{ (bill.description ?? 'B')[0] }}</div>
+                    <div class="bill-icon" [style.background]="billColor(bill, '#6b7280')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
@@ -159,7 +223,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                 <div class="bill-banner bill-banner--warning">{{ 'dashboard.receivable_overdue' | translate }}</div>
                 @for (bill of overdueReceivable().slice(0, 4); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
-                    <div class="bill-icon" [style.background]="bill.category?.color ?? '#16a34a'">{{ (bill.description ?? 'R')[0] }}</div>
+                    <div class="bill-icon" [style.background]="billColor(bill, '#16a34a')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
@@ -179,7 +243,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                 <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
                 @for (bill of upcomingReceivable().slice(0, 4); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
-                    <div class="bill-icon" [style.background]="bill.category?.color ?? '#16a34a'">{{ (bill.description ?? 'R')[0] }}</div>
+                    <div class="bill-icon" [style.background]="billColor(bill, '#16a34a')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
@@ -530,6 +594,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       align-items: center; justify-content: center;
       color: #fff; font-weight: 700; font-size: .85rem; flex-shrink: 0;
     }
+    .bill-icon--emoji { font-size: 1rem; color: inherit; }
     .bill-info { flex: 1; display: flex; flex-direction: column; }
     .bill-name { font-size: .82rem; font-weight: 600; color: #111; }
     .bill-date { font-size: .7rem; color: #9ca3af; }
@@ -614,11 +679,53 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .pos { color: #16a34a; }
     .neg-val { color: #dc2626; }
 
-    /* Skeleton */
+    /* ── First-visit overlay skeleton ── */
     @keyframes shimmer {
-      0% { background-position: -400px 0; }
-      100% { background-position: 400px 0; }
+      0%   { background-position: -600px 0; }
+      100% { background-position:  600px 0; }
     }
+    .sk {
+      border-radius: .5rem;
+      background: linear-gradient(90deg, #ececec 25%, #d8d8d8 50%, #ececec 75%);
+      background-size: 1200px 100%;
+      animation: shimmer 1.6s ease-in-out infinite;
+    }
+    .fv-overlay {
+      position: fixed; inset: 0; background: #f9fafb; z-index: 500;
+      overflow-y: auto; padding: 2rem 1.5rem;
+      animation: fv-fade-in .2s ease;
+    }
+    @keyframes fv-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .fv-inner { max-width: 1100px; margin: 0 auto; }
+
+    /* hero */
+    .fv-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .fv-greeting { display: flex; flex-direction: column; gap: .5rem; }
+    .sk--name { width: 220px; height: 1.8rem; }
+    .sk--sub  { width: 140px; height: 1rem; }
+    .fv-hero-cards { display: flex; gap: 1rem; }
+    .sk--hero-card { width: 140px; height: 56px; border-radius: .75rem; }
+
+    /* grid */
+    .fv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media (max-width: 700px) { .fv-grid { grid-template-columns: 1fr; } }
+    .fv-col { display: flex; flex-direction: column; gap: 1.25rem; }
+    .fv-card {
+      background: #fff; border-radius: .75rem; padding: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      display: flex; flex-direction: column; gap: .6rem;
+    }
+    .sk--label { width: 100px; height: .75rem; border-radius: .25rem; }
+    .sk--big   { width: 160px; height: 2rem; }
+    .sk--row   { width: 100%; height: 42px; border-radius: .375rem; }
+    .sk--donut { display: flex; align-items: center; gap: 1rem; }
+    .sk--circle { width: 80px; height: 80px; border-radius: 50%; flex-shrink: 0; }
+    .fv-cat-lines { flex: 1; display: flex; flex-direction: column; gap: .5rem; }
+    .sk--cat { width: 100%; height: 14px; border-radius: .25rem; }
+    .sk--cat:nth-child(2) { width: 75%; }
+    .sk--cat:nth-child(3) { width: 55%; }
+
+    /* Existing inline skeleton */
     .skel {
       display: inline-block; border-radius: .375rem;
       background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -662,7 +769,8 @@ export class DashboardComponent implements OnInit {
 
   readonly C = 2 * Math.PI * 38; // SVG donut circumference ≈ 238.76
 
-  loading = signal(true);
+  loading     = signal(true);
+  firstVisit  = signal(!sessionStorage.getItem('dash_visited'));
   income  = signal(0);
   expense = signal(0);
   balance = computed(() => this.income() - this.expense());
@@ -816,7 +924,23 @@ export class DashboardComponent implements OnInit {
   }
 
   limitName(l: any): string {
-    if (l.category_id) return this._categories().find((c: any) => c.id === l.category_id)?.name ?? 'Categoria';
+    billCat(bill: any): any {
+    return this._categories().find((c: any) => c.id === bill.category_id) ?? null;
+  }
+
+  billIcon(bill: any): string {
+    const cat = this.billCat(bill);
+    if (cat?.icon) return cat.icon;
+    return (bill.description ?? '?')[0].toUpperCase();
+  }
+
+  billColor(bill: any, fallback: string): string {
+    const cat = this.billCat(bill);
+    if (cat?.icon) return '#f3f4f6'; // neutral bg when showing emoji
+    return cat?.color ?? fallback;
+  }
+
+  if (l.category_id) return this._categories().find((c: any) => c.id === l.category_id)?.name ?? 'Categoria';
     if (l.account_id)  return this.accounts().find(a => a.id === l.account_id)?.name ?? 'Conta';
     if (l.credit_card_id) return this.cards().find(c => c.id === l.credit_card_id)?.name ?? 'Cartão';
     return 'Limite geral';
@@ -947,6 +1071,12 @@ export class DashboardComponent implements OnInit {
       );
 
       this.loading.set(false);
+
+      // Mark first visit done so overlay won't show on subsequent navigations
+      if (this.firstVisit()) {
+        sessionStorage.setItem('dash_visited', '1');
+        this.firstVisit.set(false);
+      }
     });
   }
 }

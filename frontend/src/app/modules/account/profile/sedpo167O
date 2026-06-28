@@ -285,8 +285,6 @@ export class AccountProfileComponent implements OnInit {
     });
   }
 
-  encodeURI = encodeURI;
-
   sendInvite(): void {
     this.api.post('/workspace/invite', this.invite).subscribe(() => {
       this.toast.success('Convite enviado!');

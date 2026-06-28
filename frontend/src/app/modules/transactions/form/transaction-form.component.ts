@@ -672,12 +672,33 @@ export class TransactionFormComponent implements OnInit {
     return '#6b7280';
   }
 
+  private inferLogo(name: string): string {
+    const GF = (d: string) => `https://www.google.com/s2/favicons?domain=${d}&sz=64`;
+    const SI = (s: string, col: string) => `https://cdn.simpleicons.org/${s}/${col}`;
+    const n = (name ?? '').toLowerCase();
+    if (n.includes('nubank'))                                        return SI('nubank','8a05be');
+    if (n.includes('inter'))                                         return GF('inter.co');
+    if (n.includes('itaú') || n.includes('itau'))                   return GF('itau.com.br');
+    if (n.includes('bradesco'))                                      return GF('bradesco.com.br');
+    if (n.includes('santander'))                                     return GF('santander.com.br');
+    if (n.includes('caixa'))                                         return GF('caixa.gov.br');
+    if (n.includes('brasil') || n.includes(' bb'))                   return GF('bb.com.br');
+    if (n.includes('c6'))                                            return GF('c6bank.com.br');
+    if (n.includes('btg'))                                           return GF('btgpactual.com');
+    if (n.includes('xp'))                                            return GF('xpi.com.br');
+    if (n.includes('mercado pago') || n.includes('mercadopago'))     return SI('mercadopago','009ee3');
+    if (n.includes('picpay'))                                        return SI('picpay','21c25e');
+    if (n.includes('sicoob'))                                        return GF('sicoob.com.br');
+    if (n.includes('sicredi'))                                       return GF('sicredi.com.br');
+    if (n.includes('neon'))                                          return GF('neon.com.br');
+    return '';
+  }
+
   ngOnInit(): void {
     this.api.get<any>('/categories').subscribe(r => this.categories.set(r.data ?? []));
-    this.api.get<any>('/accounts').subscribe(r => this.accounts.set(r.data ?? []));
-    this.api.get<any>('/credit-cards').subscribe(r => this.cards.set(r.data ?? []));
+    this.api.get<any>('/accounts').subscribe(r => this.accounts.set((r.data ?? []).map((a: any) => ({ ...a, logo: a.logo || this.inferLogo(a.name) }))));
+    this.api.get<any>('/credit-cards').subscribe(r => this.cards.set((r.data ?? []).map((cc: any) => ({ ...cc, logo: cc.logo || this.inferLogo(cc.name) }))));
 
-    // Pre-select type from ?type=income / ?type=expense / ?type=transfer
     const typeParam = this.route.snapshot.queryParamMap.get('type');
     if (typeParam && ['expense','income','transfer'].includes(typeParam)) {
       this.form.type = typeParam;
@@ -708,7 +729,13 @@ export class TransactionFormComponent implements OnInit {
   save(): void {
     this.saving.set(true);
     const tagIDs = (this.form.tags ?? []).map((t: any) => t.id);
-    const payload = { ...this.form, tag_ids: tagIDs };
+    const payload = {
+      ...this.form,
+      tag_ids: tagIDs,
+      account_id:     this.form.account_id     || null,
+      credit_card_id: this.form.credit_card_id || null,
+      category_id:    this.form.category_id    || null,
+    };
 
     const req = this.isEdit
       ? this.api.put<any>(`/transactions/${this.form.id}`, payload)

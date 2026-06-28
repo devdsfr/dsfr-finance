@@ -22,7 +22,7 @@ func NewAccountHandler(db *sql.DB) *AccountHandler { return &AccountHandler{db: 
 // @Success 200 {object} map[string]interface{}
 // @Router /accounts [get]
 func (h *AccountHandler) List(c *gin.Context) {
-	rows, err := h.db.QueryContext(c, `SELECT id, name, type, balance, currency, created_at FROM accounts WHERE workspace_id = $1 ORDER BY name`, middleware.GetWorkspaceID(c))
+	rows, err := h.db.QueryContext(c, `SELECT id, name, type, balance, currency, COALESCE(color,'') as color, created_at FROM accounts WHERE workspace_id = $1 ORDER BY name`, middleware.GetWorkspaceID(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -30,11 +30,11 @@ func (h *AccountHandler) List(c *gin.Context) {
 	defer rows.Close()
 	var data []gin.H
 	for rows.Next() {
-		var id, name, typ, currency string
+		var id, name, typ, currency, color string
 		var balance float64
 		var createdAt interface{}
-		rows.Scan(&id, &name, &typ, &balance, &currency, &createdAt)
-		data = append(data, gin.H{"id": id, "name": name, "type": typ, "balance": balance, "currency": currency, "created_at": createdAt})
+		rows.Scan(&id, &name, &typ, &balance, &currency, &color, &createdAt)
+		data = append(data, gin.H{"id": id, "name": name, "type": typ, "balance": balance, "currency": currency, "color": color, "created_at": createdAt})
 	}
 	if data == nil {
 		data = []gin.H{}
