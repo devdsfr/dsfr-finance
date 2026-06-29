@@ -122,6 +122,44 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
             </div>
           }
 
+          <!-- Transfer destination account -->
+          @if (form.type === 'transfer') {
+            <div class="transfer-arrow">➜ Para</div>
+            <div class="chip-row chip-row--to" (click)="toggleAccTo()">
+              @if (selectedTransferAccount) {
+                <span class="chip chip--account">
+                  @if (selectedTransferAccount.logo) {
+                    <img class="chip-logo" [src]="selectedTransferAccount.logo" [alt]="selectedTransferAccount.name" (error)="onAccLogoError($event, selectedTransferAccount)" />
+                  } @else {
+                    <span class="chip-dot" [style.background]="selectedTransferAccount.color || '#2563eb'"></span>
+                  }
+                  {{ selectedTransferAccount.name }}
+                  <button type="button" class="chip-x"
+                          (click)="$event.stopPropagation(); form.transfer_account_id = ''">×</button>
+                </span>
+              } @else {
+                <span class="chip-placeholder">+ Conta destino</span>
+              }
+            </div>
+            @if (accToOpen()) {
+              <div class="acc-dropdown" (click)="$event.stopPropagation()">
+                @for (a of accounts(); track a.id) {
+                  @if (a.id !== form.account_id) {
+                    <div class="acc-item" [class.acc-item--active]="form.transfer_account_id === a.id"
+                         (click)="form.transfer_account_id = a.id; accToOpen.set(false)">
+                      @if (a.logo) {
+                        <img class="acc-logo" [src]="a.logo" [alt]="a.name" (error)="onAccLogoError($event, a)" />
+                      } @else {
+                        <span class="acc-dot" [style.background]="a.color || '#2563eb'"></span>
+                      }
+                      {{ a.name }}
+                    </div>
+                  }
+                }
+              </div>
+            }
+          }
+
           <!-- Category -->
           <div class="cat-select" [class.cat-select--open]="catOpen()" (click)="toggleCat()">
             <div class="cat-trigger">
@@ -498,6 +536,11 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
     .fab-row {
       display: flex; justify-content: center; padding: 1rem 1.25rem 0;
     }
+    .transfer-arrow {
+      font-size: .78rem; font-weight: 600; color: #2563eb;
+      padding: .2rem .5rem 0; letter-spacing: .02em;
+    }
+    .chip-row--to { border-color: #bfdbfe; }
     .fab-save {
       width: 56px; height: 56px; border-radius: 50%; border: none;
       background: #16a34a; color: #fff; font-size: 1.5rem; font-weight: 700;
@@ -532,7 +575,7 @@ export class TransactionFormComponent implements OnInit {
   form: any = {
     type: 'expense', description: '', amount: null,
     date: new Date().toISOString().slice(0, 10),
-    account_id: '', credit_card_id: '', category_id: '',
+    account_id: '', credit_card_id: '', category_id: '', transfer_account_id: '',
     notes: '', paid: false, installments: 1, tags: [], attachment_name: null
   };
 
@@ -546,12 +589,15 @@ export class TransactionFormComponent implements OnInit {
     return this.form.amount ? this.form.amount / (this.form.installments || 1) : 0;
   }
 
-  get selectedAccount() { return this.accounts().find(a => a.id === this.form.account_id) ?? null; }
+  get selectedAccount()         { return this.accounts().find(a => a.id === this.form.account_id)         ?? null; }
+  get selectedTransferAccount() { return this.accounts().find(a => a.id === this.form.transfer_account_id) ?? null; }
   get selectedCard()    { return this.cards().find(c => c.id === this.form.credit_card_id) ?? null; }
 
   /* ── Account picker ── */
-  accOpen = signal(false);
-  toggleAcc() { this.accOpen.update(v => !v); this.catOpen.set(false); }
+  accOpen   = signal(false);
+  accToOpen = signal(false);
+  toggleAcc()   { this.accOpen.update(v => !v); this.accToOpen.set(false); this.catOpen.set(false); }
+  toggleAccTo() { this.accToOpen.update(v => !v); this.accOpen.set(false); this.catOpen.set(false); }
 
   /* ── Category picker ── */
   catOpen    = signal(false);
@@ -590,7 +636,7 @@ export class TransactionFormComponent implements OnInit {
   onDocClick(e: MouseEvent) {
     const t = e.target as HTMLElement;
     if (!t.closest('.cat-select')) this.catOpen.set(false);
-    if (!t.closest('.chip-row') && !t.closest('.acc-dropdown')) this.accOpen.set(false);
+    if (!t.closest('.chip-row') && !t.closest('.acc-dropdown')) { this.accOpen.set(false); this.accToOpen.set(false); }
   }
 
   toggleCat() {
@@ -734,7 +780,8 @@ export class TransactionFormComponent implements OnInit {
       tag_ids: tagIDs,
       account_id:     this.form.account_id     || null,
       credit_card_id: this.form.credit_card_id || null,
-      category_id:    this.form.category_id    || null,
+      category_id:          this.form.category_id          || null,
+      transfer_account_id:  this.form.transfer_account_id  || null,
     };
 
     const req = this.isEdit

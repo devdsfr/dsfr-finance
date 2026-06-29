@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ImportOrganizzeComponent } from '../../import-organizze/import-organizze.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 interface Transaction {
   id: string; description: string; amount: number; type: string;
@@ -22,7 +23,7 @@ interface DayGroup {
 @Component({
   selector: 'app-transaction-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ImportOrganizzeComponent],
+  imports: [CommonModule, RouterModule, FormsModule, ImportOrganizzeComponent, ConfirmModalComponent],
   template: `
     <!-- Overdue banner (AC-UX-01 / AC-UX-02) -->
     @if (overdueCount() > 0) {
@@ -154,6 +155,13 @@ interface DayGroup {
         </span>
       </div>
     </div>
+
+    <app-confirm-modal
+      [visible]="!!confirmItem()"
+      [message]="confirmItem() ? confirmItem()!.msg : ''"
+      (confirmed)="doDelete()"
+      (cancelled)="confirmItem.set(null)">
+    </app-confirm-modal>
   `,
   styles: [`
     .overdue-banner {
@@ -437,11 +445,23 @@ export class TransactionListComponent implements OnInit {
     this.router.navigate(['/transactions/new'], { queryParams: { duplicate: tx.id } });
   }
 
+  confirmItem = signal<{ msg: string; action: () => void } | null>(null);
+
   deleteTx(tx: Transaction): void {
-    if (!confirm(`Excluir "${tx.description}"?`)) return;
-    this.api.delete(`/transactions/${tx.id}`).subscribe(() => {
-      this.toast.success('Lancamento excluido.');
-      this.load();
+    this.confirmItem.set({
+      msg: `Tem certeza que deseja excluir <strong>"${tx.description}"</strong>?`,
+      action: () => {
+        this.api.delete(`/transactions/${tx.id}`).subscribe(() => {
+          this.toast.success('Lançamento excluído.');
+          this.load();
+        });
+      }
     });
+  }
+
+  doDelete(): void {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
   }
 }

@@ -85,11 +85,11 @@ func (s *AuthService) Login(req LoginRequest) (*models.User, string, error) {
 		req.Email,
 	).Scan(&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.MFASecret, &user.MFAEnabled, &wsID)
 	if err != nil {
-		return nil, "", fmt.Errorf("invalid credentials")
+		return nil, "", fmt.Errorf("usuário não encontrado")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, "", fmt.Errorf("invalid credentials")
+		return nil, "", fmt.Errorf("senha incorreta")
 	}
 
 	// MFA check (AC-MC-10)
