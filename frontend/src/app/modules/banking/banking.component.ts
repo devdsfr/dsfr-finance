@@ -591,8 +591,8 @@ label { font-size: .78rem; font-weight: 500; color: #374151; }
   `]
 })
 export class BankingComponent implements OnInit {
-  private api   = inject(ApiService);
-  private toast = inject(ToastService);
+  private api: ApiService     = inject(ApiService);
+  private toast: ToastService = inject(ToastService);
 
   accounts      = signal<any[]>([]);
   cards         = signal<any[]>([]);
@@ -737,8 +737,10 @@ export class BankingComponent implements OnInit {
   }
   archiveCard(c: any) {
     this.closeForm();
-    this.confirmItem.set({ msg: `Arquivar o cartão <strong>${c.name}</strong>? Ele não aparecerá mais na lista.`, action: () => {
-      this.api.put(`/credit-cards/${c.id}`, { ...c, is_active: false }).subscribe({ next: () => { this.toast.show('Cartão arquivado.', 'success'); this.view.set('list'); this.loadCards(); }, error: () => this.toast.show('Erro.', 'error') });
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
+    this.confirmItem.set({ msg: `Arquivar o cartão <strong>${c.name}</strong>? Ele não aparecerá mais na lista.`, action() {
+      self.api.put<any>(`/credit-cards/${c.id}`, { ...c, is_active: false }).subscribe({ next: () => { self.toast.show('Cartão arquivado.', 'success'); self.view.set('list'); self.loadCards(); }, error: () => self.toast.show('Erro.', 'error') });
     }});
   }
 
@@ -747,10 +749,12 @@ export class BankingComponent implements OnInit {
   openAdjust() { this.adjustBalance = ''; this.adjustOpen.set(true); }
   saveAdjust() {
     const val = parseFloat(this.adjustBalance.replace(/\./g,'').replace(',','.'));
-    const a = this.selectedAcc();
-    this.api.put(`/accounts/${a.id}`, { ...a, balance: val }).subscribe({
-      next: () => { this.toast.show('Saldo ajustado!', 'success'); this.adjustOpen.set(false); const updated = { ...a, balance: val }; this.selectedAcc.set(updated); this.loadAccounts(); },
-      error: () => this.toast.show('Erro ao ajustar.', 'error'),
+    const a: any = this.selectedAcc();
+    const api = this.api;
+    const toast = this.toast;
+    api.put<any>(`/accounts/${a.id}`, { ...(a as object), balance: val }).subscribe({
+      next: () => { toast.show('Saldo ajustado!', 'success'); this.adjustOpen.set(false); const updated = { ...(a as object), balance: val }; this.selectedAcc.set(updated); this.loadAccounts(); },
+      error: () => toast.show('Erro ao ajustar.', 'error'),
     });
   }
 
