@@ -26,49 +26,63 @@ const CARD_BRANDS = [
 const COLORS = ['#111827','#2563eb','#16a34a','#dc2626','#9333ea','#f59e0b','#0891b2','#db2777'];
 
 // Logos bancários: Simple Icons CDN (vector SVG, sem API key)
-// onLogoError faz fallback automático para Google Favicon se slug inválido
+// Logo helpers — Simple Icons (SVG, vetorial) tem prioridade;
+// Clearbit Logo API (PNG 128px) para os demais (muito melhor que Google Favicon).
+// onLogoError no template cai para Google Favicon como último recurso.
 const SI = (slug: string, color = '000000') =>
   `https://cdn.simpleicons.org/${slug}/${color}`;
+const CL = (domain: string) =>
+  `https://logo.clearbit.com/${domain}`;
 const GF = (domain: string) =>
-  `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
 // Mapa domain→logo para normalizar URLs antigas salvas no BD
 const DOMAIN_TO_LOGO: Record<string, string> = {
-  'nubank.com.br':         SI('nubank',      '8a05be'),
-  'bancointer.com.br':     GF('inter.co'),
-  'inter.co':              GF('inter.co'),
-  'itau.com.br':           GF('itau.com.br'),
-  'bradesco.com.br':       GF('bradesco.com.br'),
-  'santander.com.br':      GF('santander.com.br'),
-  'caixa.gov.br':          GF('caixa.gov.br'),
-  'bb.com.br':             GF('bb.com.br'),
-  'c6bank.com.br':         GF('c6bank.com.br'),
-  'btgpactual.com':        GF('btgpactual.com'),
-  'xpi.com.br':            GF('xpi.com.br'),
-  'mercadopago.com.br':    SI('mercadopago', '009ee3'),
-  'picpay.com':            SI('picpay',      '21c25e'),
-  'sicoob.com.br':         GF('sicoob.com.br'),
-  'sicredi.com.br':        GF('sicredi.com.br'),
-  'neon.com.br':           GF('neon.com.br'),
+  'nubank.com.br':         SI('nubank',       '8a05be'),
+  'bancointer.com.br':     SI('inter',        'ff7000'),
+  'inter.co':              SI('inter',        'ff7000'),
+  'itau.com.br':           CL('itau.com.br'),
+  'bradesco.com.br':       CL('bradesco.com.br'),
+  'santander.com.br':      SI('santander',    'ec0000'),
+  'caixa.gov.br':          CL('caixa.gov.br'),
+  'bb.com.br':             CL('bb.com.br'),
+  'c6bank.com.br':         CL('c6bank.com.br'),
+  'btgpactual.com':        CL('btgpactual.com'),
+  'xpi.com.br':            CL('xpi.com.br'),
+  'mercadopago.com.br':    SI('mercadopago',  '009ee3'),
+  'picpay.com':            SI('picpay',       '21c25e'),
+  'sicoob.com.br':         CL('sicoob.com.br'),
+  'sicredi.com.br':        CL('sicredi.com.br'),
+  'neon.com.br':           CL('neon.com.br'),
+  'carrefour.com.br':      CL('carrefour.com.br'),
+  'mercadolivre.com.br':   SI('mercadolivre', '009ee3'),
+  'amex.com.br':           SI('americanexpress','2e77bc'),
+  'visa.com':              SI('visa',         '1a1f71'),
+  'mastercard.com':        SI('mastercard',   'eb001b'),
 };
 
 const BANK_PRESETS = [
-  { name: 'Nubank',          color: '#8a05be', logo: SI('nubank','8a05be'),       fallback: GF('nubank.com.br') },
-  { name: 'Inter',           color: '#ff7000', logo: GF('inter.co'),              fallback: '' },
-  { name: 'Itaú',            color: '#003d8f', logo: GF('itau.com.br'),           fallback: '' },
-  { name: 'Bradesco',        color: '#cc092f', logo: GF('bradesco.com.br'),       fallback: '' },
-  { name: 'Santander',       color: '#ec0000', logo: GF('santander.com.br'),      fallback: '' },
-  { name: 'Caixa',           color: '#005ca9', logo: GF('caixa.gov.br'),          fallback: '' },
-  { name: 'Banco do Brasil', color: '#f9dd16', logo: GF('bb.com.br'),             fallback: '' },
-  { name: 'C6 Bank',         color: '#242424', logo: GF('c6bank.com.br'),         fallback: '' },
-  { name: 'BTG',             color: '#002060', logo: GF('btgpactual.com'),        fallback: '' },
-  { name: 'XP',              color: '#111111', logo: GF('xpi.com.br'),            fallback: '' },
-  { name: 'Mercado Pago',    color: '#009ee3', logo: SI('mercadopago','009ee3'),  fallback: GF('mercadopago.com.br') },
-  { name: 'PicPay',          color: '#21c25e', logo: SI('picpay','21c25e'),       fallback: GF('picpay.com') },
-  { name: 'Sicoob',          color: '#007a3d', logo: GF('sicoob.com.br'),         fallback: '' },
-  { name: 'Sicredi',         color: '#009a44', logo: GF('sicredi.com.br'),        fallback: '' },
-  { name: 'Neon',            color: '#1b1c8a', logo: GF('neon.com.br'),           fallback: '' },
-  { name: 'Outro',           color: '#6b7280', logo: '',                          fallback: '' },
+  { name: 'Nubank',          color: '#8a05be', logo: SI('nubank','8a05be'),        fallback: GF('nubank.com.br') },
+  { name: 'Inter',           color: '#ff7000', logo: SI('inter','ff7000'),         fallback: CL('inter.co') },
+  { name: 'Itaú',            color: '#003d8f', logo: CL('itau.com.br'),            fallback: GF('itau.com.br') },
+  { name: 'Bradesco',        color: '#cc092f', logo: CL('bradesco.com.br'),        fallback: GF('bradesco.com.br') },
+  { name: 'Santander',       color: '#ec0000', logo: SI('santander','ec0000'),     fallback: CL('santander.com.br') },
+  { name: 'Caixa',           color: '#005ca9', logo: CL('caixa.gov.br'),           fallback: GF('caixa.gov.br') },
+  { name: 'Banco do Brasil', color: '#f9dd16', logo: CL('bb.com.br'),              fallback: GF('bb.com.br') },
+  { name: 'C6 Bank',         color: '#242424', logo: CL('c6bank.com.br'),          fallback: GF('c6bank.com.br') },
+  { name: 'BTG',             color: '#002060', logo: CL('btgpactual.com'),         fallback: GF('btgpactual.com') },
+  { name: 'XP',              color: '#111111', logo: CL('xpi.com.br'),             fallback: GF('xpi.com.br') },
+  { name: 'Mercado Pago',    color: '#009ee3', logo: SI('mercadopago','009ee3'),   fallback: CL('mercadopago.com.br') },
+  { name: 'Mercado Livre',   color: '#009ee3', logo: SI('mercadolivre','009ee3'),  fallback: CL('mercadolivre.com.br') },
+  { name: 'PicPay',          color: '#21c25e', logo: SI('picpay','21c25e'),        fallback: GF('picpay.com') },
+  { name: 'Sicoob',          color: '#007a3d', logo: CL('sicoob.com.br'),          fallback: GF('sicoob.com.br') },
+  { name: 'Sicredi',         color: '#009a44', logo: CL('sicredi.com.br'),         fallback: GF('sicredi.com.br') },
+  { name: 'Neon',            color: '#1b1c8a', logo: CL('neon.com.br'),            fallback: GF('neon.com.br') },
+  { name: 'Carrefour',       color: '#004a97', logo: CL('carrefour.com.br'),       fallback: GF('carrefour.com.br') },
+  { name: 'Visa',            color: '#1a1f71', logo: SI('visa','1a1f71'),          fallback: '' },
+  { name: 'Mastercard',      color: '#eb001b', logo: SI('mastercard','eb001b'),    fallback: '' },
+  { name: 'American Express',color: '#2e77bc', logo: SI('americanexpress','2e77bc'), fallback: '' },
+  { name: 'Outro',           color: '#6b7280', logo: '',                           fallback: '' },
 ];
 
 @Component({
@@ -163,7 +177,13 @@ const BANK_PRESETS = [
                          (error)="onLogoError($event, a.color ?? '#111', a.name)" />
                   </div>
                 } @else {
-                  <div class="item-icon" [style.background]="a.color ?? '#111'">{{ a.name[0] }}</div>
+                  <div class="item-icon item-icon--wallet" [style.background]="a.color ?? '#6b7280'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="60%" height="60%">
+                      <rect x="2" y="7" width="20" height="14" rx="2"/>
+                      <path d="M16 3H4a2 2 0 0 0-2 2v2"/>
+                      <path d="M22 12h-4a2 2 0 0 0 0 4h4"/>
+                    </svg>
+                  </div>
                 }
                 <div class="item-info">
                   <span class="item-name">{{ a.name }}</span>
@@ -272,7 +292,12 @@ const BANK_PRESETS = [
                          (error)="onLogoError($event, c.color ?? '#6366f1', c.name)" />
                   </div>
                 } @else {
-                  <div class="item-icon item-icon--card" [style.background]="c.color ?? '#6366f1'">{{ c.name[0] }}</div>
+                  <div class="item-icon item-icon--card item-icon--wallet" [style.background]="c.color ?? '#6366f1'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="60%" height="60%">
+                      <rect x="2" y="5" width="20" height="14" rx="2"/>
+                      <line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
+                  </div>
                 }
                 <div class="item-info">
                   <span class="item-name">{{ c.name }}</span>
