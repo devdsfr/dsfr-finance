@@ -2,26 +2,35 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { ApiService } from '../../../core/services/api.service';
-import { ToastService } from '../../../core/services/toast.service';
-import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
-import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
-import { AppCurrencyPipe } from '../../../shared/pipes/app-currency.pipe';
+import { ApiService } from '../../core/services/api.service';
+import { ToastService } from '../../core/services/toast.service';
+import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 
 const SI = (slug: string, color = '000000') => `https://cdn.simpleicons.org/${slug}/${color}`;
 const CL = (domain: string) => `https://logo.clearbit.com/${domain}`;
 const GF = (domain: string) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
 const DOMAIN_TO_LOGO: Record<string, string> = {
-  'nubank.com.br': SI('nubank','8a05be'), 'bancointer.com.br': SI('inter','ff7000'),
-  'inter.co': SI('inter','ff7000'), 'itau.com.br': CL('itau.com.br'),
-  'bradesco.com.br': CL('bradesco.com.br'), 'santander.com.br': SI('santander','ec0000'),
-  'caixa.gov.br': CL('caixa.gov.br'), 'bb.com.br': CL('bb.com.br'),
-  'c6bank.com.br': CL('c6bank.com.br'), 'btgpactual.com': CL('btgpactual.com'),
-  'xpi.com.br': CL('xpi.com.br'), 'mercadopago.com.br': SI('mercadopago','009ee3'),
-  'picpay.com': SI('picpay','21c25e'), 'sicoob.com.br': CL('sicoob.com.br'),
-  'sicredi.com.br': CL('sicredi.com.br'), 'neon.com.br': CL('neon.com.br'),
-  'carrefour.com.br': CL('carrefour.com.br'), 'mercadolivre.com.br': SI('mercadolivre','009ee3'),
+  'nubank.com.br': 'https://cdn.simpleicons.org/nubank/8a05be',
+  'bancointer.com.br': 'https://cdn.simpleicons.org/inter/ff7000',
+  'inter.co': 'https://cdn.simpleicons.org/inter/ff7000',
+  'itau.com.br': 'https://logo.clearbit.com/itau.com.br',
+  'bradesco.com.br': 'https://logo.clearbit.com/bradesco.com.br',
+  'santander.com.br': 'https://cdn.simpleicons.org/santander/ec0000',
+  'caixa.gov.br': 'https://logo.clearbit.com/caixa.gov.br',
+  'bb.com.br': 'https://logo.clearbit.com/bb.com.br',
+  'c6bank.com.br': 'https://logo.clearbit.com/c6bank.com.br',
+  'btgpactual.com': 'https://logo.clearbit.com/btgpactual.com',
+  'xpi.com.br': 'https://logo.clearbit.com/xpi.com.br',
+  'mercadopago.com.br': 'https://cdn.simpleicons.org/mercadopago/009ee3',
+  'picpay.com': 'https://cdn.simpleicons.org/picpay/21c25e',
+  'sicoob.com.br': 'https://logo.clearbit.com/sicoob.com.br',
+  'sicredi.com.br': 'https://logo.clearbit.com/sicredi.com.br',
+  'neon.com.br': 'https://logo.clearbit.com/neon.com.br',
+  'carrefour.com.br': 'https://logo.clearbit.com/carrefour.com.br',
+  'mercadolivre.com.br': 'https://cdn.simpleicons.org/mercadolivre/009ee3',
 };
 
 const BANK_PRESETS = [
@@ -65,7 +74,7 @@ const CARD_BRANDS = [
   { value: 'other',     label: 'Outro' },
 ];
 
-const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31];
 
 @Component({
   selector: 'app-banking',
@@ -664,15 +673,15 @@ export class BankingComponent implements OnInit {
 
   private map(r: any) { return (r.data ?? []).map((x: any) => ({ ...x, logo: this.inferLogo(x.name, this.normalizeLogo(x.logo)) })); }
 
-  loadAccounts() { this.loadingAccs.set(true); this.api.get<any>('/accounts').subscribe(r => { this.accounts.set(this.map(r)); this.loadingAccs.set(false); }); }
-  loadCards()    { this.loadingCards.set(true); this.api.get<any>('/credit-cards').subscribe(r => { this.cards.set(this.map(r)); this.loadingCards.set(false); }); }
+  loadAccounts() { this.loadingAccs.set(true); this.api.get<any>('/accounts').subscribe((r: any) => { this.accounts.set(this.map(r)); this.loadingAccs.set(false); }); }
+  loadCards()    { this.loadingCards.set(true); this.api.get<any>('/credit-cards').subscribe((r: any) => { this.cards.set(this.map(r)); this.loadingCards.set(false); }); }
 
   showAccDetail(a: any) { this.selectedAcc.set(a); this.section.set('accounts'); this.view.set('detail'); }
   showCardDetail(c: any) {
     this.selectedCard.set(c); this.section.set('cards'); this.view.set('detail');
     this.loadingInvoices.set(true); this.invoices.set([]);
     this.api.get<any>(`/reports/cards/${c.id}/invoices`).subscribe({
-      next: r => { this.invoices.set(r.data ?? []); this.loadingInvoices.set(false); },
+      next: (r: any) => { this.invoices.set(r.data ?? []); this.loadingInvoices.set(false); },
       error: () => this.loadingInvoices.set(false),
     });
   }
