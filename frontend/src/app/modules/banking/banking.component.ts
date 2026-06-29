@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
-import { ToastService } from '../../../shared/services/toast.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { AppCurrencyPipe } from '../../../shared/pipes/app-currency.pipe';
