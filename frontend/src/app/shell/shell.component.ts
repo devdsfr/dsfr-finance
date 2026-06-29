@@ -4,7 +4,7 @@ import { RouterModule, RouterOutlet, Router, NavigationEnd } from '@angular/rout
 import { AuthService } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
 import { PlanService } from '../core/services/plan.service';
-import { SettingsService } from '../core/services/settings.service';
+import { SettingsService, CURRENCIES, CURRENCY_SYMBOL, CurrencyCode } from '../core/services/settings.service';
 import { TranslationService } from '../core/services/translation.service';
 import { Lang } from '../core/i18n/translations';
 import { TranslatePipe } from '../shared/pipes/translate.pipe';
@@ -52,15 +52,34 @@ import { filter } from 'rxjs/operators';
         </nav>
 
         <div class="topnav__right">
+          <!-- Currency switcher -->
+          <div class="lang-menu" [class.open]="currMenuOpen()">
+            <button class="lang-menu__trigger" (click)="currMenuOpen.set(!currMenuOpen())" title="Moeda">
+              <img [src]="currFlag()" width="20" height="14" style="border-radius:2px;vertical-align:middle" alt=""/>
+              <span class="caret">▾</span>
+              @if (settings.rateLoading()) { <span class="rate-spin">⟳</span> }
+            </button>
+            <div class="lang-menu__dropdown" (mouseleave)="currMenuOpen.set(false)">
+              @for (c of currencies; track c.value) {
+                <button [class.active]="settings.currency() === c.value" (click)="setCurrency(c.value)">
+                  <img [src]="currFlagFor(c.value)" width="20" height="14" style="border-radius:2px;vertical-align:middle;margin-right:.35rem" alt=""/>
+                  {{ c.value }} — {{ c.label.split('--')[0].trim() }}
+                </button>
+              }
+            </div>
+          </div>
+
           <!-- Language switcher -->
           <div class="lang-menu" [class.open]="langMenuOpen()">
             <button class="lang-menu__trigger" (click)="langMenuOpen.set(!langMenuOpen())" [title]="'common.language' | translate">
-              {{ currentLangFlag() }} <span class="caret">▾</span>
+              <img [src]="langFlag()" width="20" height="14" style="border-radius:2px;vertical-align:middle" alt=""/>
+              <span class="caret">▾</span>
             </button>
             <div class="lang-menu__dropdown" (mouseleave)="langMenuOpen.set(false)">
               @for (l of i18n.langs; track l.value) {
                 <button [class.active]="i18n.lang() === l.value" (click)="setLang(l.value)">
-                  {{ l.flag }} {{ l.label }}
+                  <img [src]="langFlagFor(l.value)" width="20" height="14" style="border-radius:2px;vertical-align:middle;margin-right:.35rem" alt=""/>
+                  {{ l.label }}
                 </button>
               }
             </div>
@@ -114,7 +133,18 @@ import { filter } from 'rxjs/operators';
         <!-- Language switcher (mobile) -->
         <div class="drawer__langs">
           @for (l of i18n.langs; track l.value) {
-            <button [class.active]="i18n.lang() === l.value" (click)="setLang(l.value)">{{ l.flag }}</button>
+            <button [class.active]="i18n.lang() === l.value" (click)="setLang(l.value)">
+              <img [src]="langFlagFor(l.value)" width="24" height="17" style="border-radius:2px" alt=""/>
+            </button>
+          }
+        </div>
+
+        <!-- Currency switcher (mobile) -->
+        <div class="drawer__langs drawer__currencies">
+          @for (c of currencies; track c.value) {
+            <button [class.active]="settings.currency() === c.value" (click)="setCurrency(c.value)" [title]="c.label">
+              {{ c.value }}
+            </button>
           }
         </div>
 
@@ -389,6 +419,15 @@ import { filter } from 'rxjs/operators';
       cursor: pointer; text-align: left;
     }
 
+    .drawer__currencies { border-top: 1px solid #f3f4f6; }
+    .drawer__currencies button { font-size: .72rem; font-weight: 700; letter-spacing: .04em; }
+
+    .rate-spin {
+      display: inline-block; font-size: .75rem; margin-left: .15rem;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* ── Main ────────────────────────────────────────────── */
     .main { flex: 1; padding: 1.5rem 2rem; max-width: 1100px; margin: 0 auto; width: 100%; }
 
@@ -414,6 +453,26 @@ export class ShellComponent implements OnInit {
   userMenuOpen = signal(false);
   drawerOpen   = signal(false);
   langMenuOpen = signal(false);
+  currMenuOpen = signal(false);
+
+  // Expose currency list and symbol helper to template
+  currencies = CURRENCIES;
+  currSymbol() { return CURRENCY_SYMBOL[this.settings.currency()]; }
+
+  // Flag image helpers — flagcdn.com works on all platforms (no Windows emoji issue)
+  private readonly CURR_FLAG: Record<CurrencyCode, string> = {
+    BRL: 'br', USD: 'us', EUR: 'eu', RON: 'ro',
+  };
+  private readonly LANG_FLAG: Record<string, string> = {
+    pt: 'br', en: 'gb', ro: 'ro',
+  };
+  private flagUrl(code: string): string {
+    return `https://flagcdn.com/20x15/${code}.png`;
+  }
+  currFlag()                     { return this.flagUrl(this.CURR_FLAG[this.settings.currency()]); }
+  currFlagFor(c: CurrencyCode)   { return this.flagUrl(this.CURR_FLAG[c]); }
+  langFlag()                     { return this.flagUrl(this.LANG_FLAG[this.i18n.lang()] ?? 'br'); }
+  langFlagFor(l: string)         { return this.flagUrl(this.LANG_FLAG[l] ?? 'br'); }
 
   @HostListener('document:keydown.escape')
   onEscape() { this.drawerOpen.set(false); }
@@ -424,12 +483,17 @@ export class ShellComponent implements OnInit {
   }
 
   currentLangFlag(): string {
-    return this.i18n.langs.find(l => l.value === this.i18n.lang())?.flag ?? '🌐';
+    return this.i18n.langs.find(l => l.value === this.i18n.lang())?.flag ?? '\u{1F310}';
   }
 
   setLang(lang: Lang): void {
     this.i18n.setLang(lang);
     this.langMenuOpen.set(false);
+  }
+
+  setCurrency(code: CurrencyCode): void {
+    this.settings.setCurrency(code);
+    this.currMenuOpen.set(false);
   }
 
   ngOnInit(): void {
@@ -445,6 +509,7 @@ export class ShellComponent implements OnInit {
       this.userMenuOpen.set(false);
       this.drawerOpen.set(false);
       this.langMenuOpen.set(false);
+      this.currMenuOpen.set(false);
     });
   }
 }

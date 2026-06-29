@@ -555,13 +555,7 @@ export class BankingComponent implements OnInit {
       this.api.delete(`/credit-cards/${c.id}`).subscribe({
         next: () => { this.toast.show('Cartão excluído.', 'success'); this.loadCards(); },
         error: () => this.toast.show('Erro ao excluir.', 'error'),
-      });
+         });
     }});
   }
-  doDelete() {
-    const item = this.confirmItem();
-    this.confirmItem.set(null);
-    item?.action();
-  }
-  brandLabel(v: string) { return CARD_BRANDS.find(b => b.value === v)?.label ?? v; }
 }

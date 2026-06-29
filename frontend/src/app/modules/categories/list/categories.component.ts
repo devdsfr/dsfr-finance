@@ -250,6 +250,7 @@ export class CategoriesComponent implements OnInit {
   private toast = inject(ToastService);
 
   loading      = signal(true);
+  confirmItem   = signal<{ msg: string; action: () => void } | null>(null);
   categories   = signal<Category[]>([]);
   activeTab    = signal<'expense' | 'income'>('expense');
   showForm     = false;
@@ -318,43 +319,23 @@ export class CategoriesComponent implements OnInit {
 
   save() {
     if (!this.form.name.trim()) return;
-    const obs = this.editing
-      ? this.api.put<any>(`/categories/${this.editing.id}`, this.form)
-      : this.api.post<any>('/categories', this.form);
-    obs.subscribe(() => {
-      this.toast.success(this.editing ? 'Categoria atualizada!' : 'Categoria criada!');
-      this.showForm = false;
-      this.load();
-    });
+    const payload = { name: this.form.name, type: this.form.type, color: this.form.color, icon: this.form.icon };
+    if (this.editing) {
+      this.api.put(`/categories/${this.editing.id}`, payload).subscribe({
+        next: () => { this.toast.show('Categoria atualizada!', 'success'); this.showForm = false; this.editing = null; this.load(); },
+        error: () => this.toast.show('Erro ao atualizar.', 'error'),
+      });
+    } else {
+      this.api.post('/categories', payload).subscribe({
+        next: () => { this.toast.show('Categoria criada!', 'success'); this.showForm = false; this.load(); },
+        error: () => this.toast.show('Erro ao criar.', 'error'),
+      });
+    }
   }
 
-  askArchive(cat: Category) {
-    this.archiveTarget = cat;
-  }
-
-  confirmArchive() {
-    if (!this.archiveTarget) return;
-    const cat = this.archiveTarget;
-    this.archiveTarget = null;
-    this.api.delete(`/categories/${cat.id}`).subscribe(() => {
-      this.toast.success('Categoria arquivada.');
-      this.load();
-    });
-  }
-
-  deleteTarget: Category | null = null;
-
-  askDelete(cat: Category) {
-    this.deleteTarget = cat;
-  }
-
-  confirmDelete() {
-    if (!this.deleteTarget) return;
-    const cat = this.deleteTarget;
-    this.deleteTarget = null;
-    this.api.delete(`/categories/${cat.id}`).subscribe(() => {
-      this.toast.success('Categoria excluída.');
-      this.load();
-    });
+  doDelete(): void {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
   }
 }
