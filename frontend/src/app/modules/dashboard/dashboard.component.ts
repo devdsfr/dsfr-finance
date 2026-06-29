@@ -936,19 +936,19 @@ export class DashboardComponent implements OnInit {
       cards:      this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
       payable:    this.api.get<any>(`/transactions?type=expense&paid=false&limit=50`).pipe(catchError(() => of({ data: [] }))),
       receivable: this.api.get<any>(`/transactions?type=income&paid=false&limit=50`).pipe(catchError(() => of({ data: [] }))),
-      summary:    this.api.get<any>(`/reports/summary?date_from=${dateFrom}&date_to=${dateTo}`).pipe(catchError(() => of({ income: 0, expense: 0 }))),
+      summary:    this.api.get<any>(`/reports/flow?month=${y}-${m}`).pipe(catchError(() => of({ data: { income: 0, expense: 0 } }))),
       top:        this.api.get<any>(`/reports/categories?date_from=${dateFrom}&date_to=${dateTo}&type=expense`).pipe(catchError(() => of({ data: [] }))),
       limits:     this.api.get<any>('/spending-limits').pipe(catchError(() => of({ data: [] }))),
       cats:       this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
       patrimony:  this.api.get<any>('/patrimony-snapshots').pipe(catchError(() => of({ data: [] }))),
-      flow:       this.api.get<any>('/reports/flow').pipe(catchError(() => of({ data: [] }))),
+      flow:       this.api.get<any>(`/reports/flow?from=${new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0,7)}-01&to=${y}-${m}-${lastDay}`).pipe(catchError(() => of({ data: [] }))),
     }).subscribe(res => {
       this.accounts.set(res.accounts.data ?? []);
       this.cards.set(res.cards.data ?? []);
       this.payableBills.set(res.payable.data ?? []);
       this.receivableBills.set(res.receivable.data ?? []);
-      this.income.set(res.summary.income ?? 0);
-      this.expense.set(res.summary.expense ?? 0);
+      this.income.set(res.summary.data?.income ?? res.summary.income ?? 0);
+      this.expense.set(res.summary.data?.expense ?? res.summary.expense ?? 0);
       this.topCategories.set((res.top.data ?? []).slice(0, 5));
       this.spendingLimits.set(res.limits.data ?? []);
       this._categories.set(res.cats.data ?? []);
