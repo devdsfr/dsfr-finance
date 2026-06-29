@@ -251,6 +251,7 @@ export class CategoriesComponent implements OnInit {
 
   loading      = signal(true);
   confirmItem   = signal<{ msg: string; action: () => void } | null>(null);
+  deleteTarget: any = null;
   categories   = signal<Category[]>([]);
   activeTab    = signal<'expense' | 'income'>('expense');
   showForm     = false;
@@ -331,6 +332,20 @@ export class CategoriesComponent implements OnInit {
         error: () => this.toast.show('Erro ao criar.', 'error'),
       });
     }
+  }
+
+  askDelete(cat: any): void {
+    this.deleteTarget = cat;
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteTarget) return;
+    const id = this.deleteTarget.id;
+    this.deleteTarget = null;
+    this.api.delete(`/categories/${id}`).subscribe({
+      next: () => { this.toast.show('Categoria excluída!', 'success'); this.load(); },
+      error: () => this.toast.show('Erro ao excluir categoria.', 'error'),
+    });
   }
 
   doDelete(): void {

@@ -550,6 +550,12 @@ export class BankingComponent implements OnInit {
       error: () => this.toast.show('Erro ao salvar cartão.', 'error'),
     });
   }
+  doDelete(): void {
+    const item = this.confirmItem();
+    this.confirmItem.set(null);
+    item?.action();
+  }
+
   deleteCard(c: any) {
     this.confirmItem.set({ msg: `Tem certeza que deseja excluir o cartão <strong>${c.name}</strong>?`, action: () => {
       this.api.delete(`/credit-cards/${c.id}`).subscribe({

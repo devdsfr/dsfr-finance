@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/dsfr/finance/internal/middleware"
 	"github.com/dsfr/finance/internal/repositories"
@@ -34,7 +35,10 @@ func (h *ReportHandler) MonthlyFlow(c *gin.Context) {
 	if month := c.Query("month"); month != "" {
 		year, mo := month[:4], month[5:7]
 		from := fmt.Sprintf("%s-%s-01", year, mo)
-		to := fmt.Sprintf("%s-%s-31", year, mo)
+		// Compute actual last day of month (avoids invalid dates like 2026-06-31)
+		t, _ := time.Parse("2006-01", year+"-"+mo)
+		lastDay := t.AddDate(0, 1, -1).Format("2006-01-02")
+		to := lastDay
 		data, err := h.repo.MonthlyFlow(wsID, from, to)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
