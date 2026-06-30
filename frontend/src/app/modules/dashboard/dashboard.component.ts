@@ -967,7 +967,7 @@ export class DashboardComponent implements OnInit {
       // Load current-month invoice total for each card
       const curMonth = `${y}-${m}`;
       if (mappedCards.length) {
-        forkJoin(
+        forkJoin<any[]>(
           mappedCards.map((c: any) =>
             this.api.get<any>(`/reports/cards/${c.id}/invoices`).pipe(catchError(() => of({ data: [] })))
           )
