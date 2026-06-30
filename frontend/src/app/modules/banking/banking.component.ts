@@ -8,33 +8,39 @@ import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 
-// SI slug → white icon on brand-color background (Organizze style)
-// logo  → Clearbit URL on white background (for banks not in Simple Icons)
-const CL = (domain: string) => `https://logo.clearbit.com/${domain}`;
-
+// asset: local SVG in assets/banks/ (hasBg = SVG already has a background color)
+// siSlug: Simple Icons CDN fallback for banks without local SVG
+// hasBg true  → show SVG full-size as rounded square (built-in background)
+// hasBg false → show SVG on white background with border
 const BANK_PRESETS = [
-  { name: 'Nubank',           color: '#8a05be', siSlug: 'nubank',          logo: '' },
-  { name: 'Inter',            color: '#ff7000', siSlug: 'bancointer',      logo: '' },
-  { name: 'Itaú',             color: '#003d8f', siSlug: 'itau',            logo: '' },
-  { name: 'Bradesco',         color: '#cc092f', siSlug: 'bradesco',        logo: '' },
-  { name: 'Santander',        color: '#ec0000', siSlug: 'santander',       logo: '' },
-  { name: 'Caixa',            color: '#005ca9', siSlug: '',                logo: CL('caixa.gov.br') },
-  { name: 'Banco do Brasil',  color: '#f9dd16', siSlug: 'bancodobrasil',   logo: '' },
-  { name: 'C6 Bank',          color: '#242424', siSlug: 'c6bank',          logo: '' },
-  { name: 'BTG',              color: '#002060', siSlug: '',                logo: CL('btgpactual.com') },
-  { name: 'XP',               color: '#111111', siSlug: 'xpinvestimentos', logo: '' },
-  { name: 'Mercado Pago',     color: '#009ee3', siSlug: 'mercadopago',     logo: '' },
-  { name: 'Mercado Livre',    color: '#ffe600', siSlug: 'mercadolibre',    logo: '' },
-  { name: 'PicPay',           color: '#21c25e', siSlug: 'picpay',          logo: '' },
-  { name: 'Sicoob',           color: '#007a3d', siSlug: '',                logo: CL('sicoob.com.br') },
-  { name: 'Sicredi',          color: '#009a44', siSlug: '',                logo: CL('sicredi.com.br') },
-  { name: 'Neon',             color: '#7900df', siSlug: 'neon',            logo: '' },
-  { name: 'Carrefour',        color: '#004a97', siSlug: 'carrefour',       logo: '' },
-  { name: 'Visa',             color: '#1a1f71', siSlug: 'visa',            logo: '' },
-  { name: 'Mastercard',       color: '#eb001b', siSlug: 'mastercard',      logo: '' },
-  { name: 'American Express', color: '#2e77bc', siSlug: 'americanexpress', logo: '' },
-  { name: 'Outro',            color: '#6b7280', siSlug: '',                logo: '', emoji: '💳' },
+  { name: 'Nubank',           color: '#8a05be', asset: 'nubank.svg',      hasBg: true,  siSlug: '' },
+  { name: 'Inter',            color: '#ff7000', asset: 'inter.svg',       hasBg: false, siSlug: '' },
+  { name: 'Itaú',             color: '#003d8f', asset: 'itau.svg',        hasBg: true,  siSlug: '' },
+  { name: 'Bradesco',         color: '#cc092f', asset: 'bradesco.svg',    hasBg: false, siSlug: '' },
+  { name: 'Santander',        color: '#ec0000', asset: 'santander.svg',   hasBg: true,  siSlug: '' },
+  { name: 'Caixa',            color: '#005ca9', asset: 'caixa.svg',       hasBg: false, siSlug: '' },
+  { name: 'Banco do Brasil',  color: '#f9dd16', asset: 'bb.svg',          hasBg: true,  siSlug: '' },
+  { name: 'C6 Bank',          color: '#242424', asset: 'c6bank.svg',      hasBg: false, siSlug: '' },
+  { name: 'BTG',              color: '#002060', asset: 'btg.svg',         hasBg: false, siSlug: '' },
+  { name: 'XP',               color: '#111111', asset: 'xp.svg',          hasBg: false, siSlug: '' },
+  { name: 'Mercado Pago',     color: '#009ee3', asset: 'mercadopago.svg', hasBg: false, siSlug: '' },
+  { name: 'Mercado Livre',    color: '#ffe600', asset: '',                hasBg: false, siSlug: 'mercadolibre' },
+  { name: 'PicPay',           color: '#21c25e', asset: 'picpay.svg',      hasBg: false, siSlug: '' },
+  { name: 'Sicoob',           color: '#007a3d', asset: 'sicoob.svg',      hasBg: false, siSlug: '' },
+  { name: 'Sicredi',          color: '#009a44', asset: 'sicredi.svg',     hasBg: false, siSlug: '' },
+  { name: 'Neon',             color: '#7900df', asset: 'neon.svg',        hasBg: false, siSlug: '' },
+  { name: 'Stone',            color: '#00a868', asset: 'stone.svg',       hasBg: false, siSlug: '' },
+  { name: 'PagBank',          color: '#f5a700', asset: 'pagbank.svg',     hasBg: false, siSlug: '' },
+  { name: 'Visa',             color: '#1a1f71', asset: '',                hasBg: false, siSlug: 'visa' },
+  { name: 'Mastercard',       color: '#eb001b', asset: '',                hasBg: false, siSlug: 'mastercard' },
+  { name: 'American Express', color: '#2e77bc', asset: '',                hasBg: false, siSlug: 'americanexpress' },
+  { name: 'Outro',            color: '#6b7280', asset: '',                hasBg: false, siSlug: '', emoji: '💳' },
 ];
+
+// Used when loading cards from DB to determine if asset has built-in bg
+const ASSET_HAS_BG: Record<string, boolean> = {
+  'nubank.svg': true, 'itau.svg': true, 'santander.svg': true, 'bb.svg': true,
+};
 
 const ACCOUNT_ICON_PRESETS = [
   { name: 'Carteira',     color: '#10b981', emoji: '👛' },
@@ -194,14 +200,15 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           @for (c of cards(); track c.id) {
             <div class="flat-item" (click)="showCardDetail(c)">
               <div class="flat-icon flat-icon--card"
-                   [style.background]="c.siSlug ? (c.color || '#6366f1') : '#fff'"
-                   [style.border-color]="c.siSlug ? 'transparent' : (c.color || '#e5e7eb')">
-                @if (c.siSlug) {
+                   [class.flat-icon--hasbg]="c.hasBg"
+                   [style.background]="c.hasBg ? 'transparent' : (c.siSlug ? (c.color||'#6366f1') : '#fff')"
+                   [style.border-color]="(c.hasBg || c.siSlug) ? 'transparent' : '#e5e7eb'">
+                @if (c.asset) {
+                  <img [src]="'assets/banks/' + c.asset" [alt]="c.name"
+                       [class.flat-logo--full]="c.hasBg" [class.flat-logo]="!c.hasBg" />
+                } @else if (c.siSlug) {
                   <img [src]="'https://cdn.simpleicons.org/' + c.siSlug + '/ffffff'" [alt]="c.name" class="flat-logo"
-                       (error)="$any($event.target).style.display='none'" />
-                } @else if (c.logo) {
-                  <img [src]="c.logo" [alt]="c.name" class="flat-logo"
-                       (error)="$any($event.target).parentElement.style.background=c.color||'#6366f1'" />
+                       (error)="onSiError($event)" />
                 } @else {
                   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="55%" height="55%">
                     <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
@@ -231,12 +238,14 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
         </div>
         <div class="detail-hero">
           <div class="flat-icon flat-icon--card"
-               [style.background]="selectedCard()?.siSlug ? (selectedCard()?.color || '#6366f1') : '#fff'"
-               [style.border-color]="selectedCard()?.siSlug ? 'transparent' : (selectedCard()?.color || '#e5e7eb')">
-            @if (selectedCard()?.siSlug) {
-              <img [src]="'https://cdn.simpleicons.org/' + selectedCard()!.siSlug + '/ffffff'" [alt]="selectedCard()!.name" class="flat-logo" />
-            } @else if (selectedCard()?.logo) {
-              <img [src]="selectedCard()!.logo" [alt]="selectedCard()!.name" class="flat-logo" />
+               [class.flat-icon--hasbg]="selectedCard()?.hasBg"
+               [style.background]="selectedCard()?.hasBg ? 'transparent' : (selectedCard()?.siSlug ? (selectedCard()?.color||'#6366f1') : '#fff')"
+               [style.border-color]="(selectedCard()?.hasBg || selectedCard()?.siSlug) ? 'transparent' : '#e5e7eb'">
+            @if (selectedCard()?.asset) {
+              <img [src]="'assets/banks/' + selectedCard()!.asset" [alt]="selectedCard()!.name"
+                   [class.flat-logo--full]="selectedCard()?.hasBg" [class.flat-logo]="!selectedCard()?.hasBg" />
+            } @else if (selectedCard()?.siSlug) {
+              <img [src]="'https://cdn.simpleicons.org/' + selectedCard()!.siSlug + '/ffffff'" [alt]="selectedCard()!.name" class="flat-logo" (error)="onSiError($event)" />
             } @else {
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="55%" height="55%">
                 <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
@@ -341,16 +350,16 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           <label>Escolher banco</label>
           <div class="preset-grid">
             @for (b of bankPresets; track b.name) {
-              <button type="button" class="preset-btn" [class.selected]="card.color === b.color && card.siSlug === b.siSlug"
+              <button type="button" class="preset-btn" [class.selected]="card.asset === b.asset && card.color === b.color"
                       (click)="applyPreset(card, b)" [title]="b.name">
-                @if (b.siSlug) {
-                  <div class="preset-wrap" [style.background]="b.color">
-                    <img [src]="'https://cdn.simpleicons.org/' + b.siSlug + '/ffffff'" [alt]="b.name" class="preset-logo" />
+                @if (b.asset) {
+                  <div class="preset-wrap" [class.preset-wrap--bg]="b.hasBg" [style.background]="b.hasBg ? 'transparent' : '#fff'">
+                    <img [src]="'assets/banks/' + b.asset" [alt]="b.name"
+                         [class.preset-logo--full]="b.hasBg" [class.preset-logo]="!b.hasBg" />
                   </div>
-                } @else if (b.logo) {
-                  <div class="preset-wrap" style="background:#fff;border:1px solid #e5e7eb">
-                    <img [src]="b.logo" [alt]="b.name" class="preset-logo"
-                         (error)="$any($event.target).parentElement.style.background=b.color" />
+                } @else if (b.siSlug) {
+                  <div class="preset-wrap" [style.background]="b.color">
+                    <img [src]="'https://cdn.simpleicons.org/' + b.siSlug + '/ffffff'" [alt]="b.name" class="preset-logo" (error)="onSiError($event)" />
                   </div>
                 } @else {
                   <div class="preset-initial" [style.background]="b.color">{{ b['emoji'] || b.name[0] }}</div>
@@ -489,6 +498,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
 }
 .flat-icon--card { border-radius: .6rem; }
 .flat-logo { width: 70%; height: 70%; object-fit: contain; display: block; }
+.flat-logo--full { width: 100%; height: 100%; object-fit: cover; border-radius: .6rem; display: block; }
 .emoji-circle {
   width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -596,10 +606,12 @@ label { font-size: .78rem; font-weight: 500; color: #374151; }
 .preset-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
 .preset-btn.selected { border-color: #2e7736; background: #f0fdf4; }
 .preset-wrap {
-  width: 38px; height: 38px; border-radius: 50%; background: #fff;
+  width: 38px; height: 38px; border-radius: 50%; background: #fff; overflow: hidden;
   border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
 .preset-logo { width: 28px; height: 28px; object-fit: contain; }
+.preset-logo--full { width: 38px; height: 38px; object-fit: cover; border-radius: 50%; display: block; }
+.preset-wrap--bg { border-radius: 50%; overflow: hidden; }
 .preset-initial { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: .95rem; }
 .preset-label { font-size: .58rem; color: #6b7280; text-align: center; max-width: 58px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
@@ -660,12 +672,15 @@ export class BankingComponent implements OnInit {
     }));
   }
 
-  // Maps cards: icon column = SI slug, color column = brand color
+  // Maps cards: icon column is either an asset filename (*.svg) or a SI slug
   private mapCards(r: any) {
     return (r.data ?? []).map((x: any) => {
-      const siSlug = x.icon || this.inferCardSlug(x.name);
-      const logo   = siSlug ? '' : this.inferCardLogo(x.name);
-      return { ...x, color: x.color || '#6366f1', siSlug, logo };
+      const rawIcon = x.icon || this.inferCardIcon(x.name);
+      const isAsset = rawIcon.endsWith('.svg');
+      const asset   = isAsset ? rawIcon : '';
+      const siSlug  = isAsset ? '' : rawIcon;
+      const hasBg   = isAsset ? (ASSET_HAS_BG[rawIcon] ?? false) : false;
+      return { ...x, color: x.color || '#6366f1', asset, siSlug, hasBg };
     });
   }
 
@@ -675,35 +690,30 @@ export class BankingComponent implements OnInit {
     return '';
   }
 
-  // For cards: infer SI slug from card name when icon column is empty
-  private inferCardSlug(name: string): string {
+  // Infer icon from card name: returns asset filename or SI slug
+  private inferCardIcon(name: string): string {
     const n = name.toLowerCase();
-    if (n.includes('nubank'))                                       return 'nubank';
-    if (n.includes('inter'))                                        return 'bancointer';
-    if (n.includes('itaú') || n.includes('itau'))                  return 'itau';
-    if (n.includes('bradesco'))                                     return 'bradesco';
-    if (n.includes('santander'))                                    return 'santander';
-    if (n.includes('banco do brasil') || n.includes(' bb '))       return 'bancodobrasil';
-    if (n.includes('c6'))                                           return 'c6bank';
-    if (n.includes('mercado pago') || n.includes('mercadopago'))   return 'mercadopago';
-    if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'mercadolibre';
-    if (n.includes('picpay'))                                       return 'picpay';
-    if (n.includes('neon'))                                         return 'neon';
-    if (n.includes('carrefour'))                                    return 'carrefour';
-    if (n.includes('visa'))                                         return 'visa';
-    if (n.includes('mastercard'))                                   return 'mastercard';
-    if (n.includes('american express') || n.includes('amex'))      return 'americanexpress';
-    return '';
-  }
-
-  // For cards: Clearbit fallback for banks not in Simple Icons
-  private inferCardLogo(name: string): string {
-    const n = name.toLowerCase();
-    if (n.includes('caixa'))                                        return CL('caixa.gov.br');
-    if (n.includes('btg'))                                          return CL('btgpactual.com');
-    if (n.includes('sicoob'))                                       return CL('sicoob.com.br');
-    if (n.includes('sicredi'))                                      return CL('sicredi.com.br');
-    if (n.includes('xp'))                                           return CL('xpi.com.br');
+    if (n.includes('nubank'))                                       return 'nubank.svg';
+    if (n.includes('inter'))                                        return 'inter.svg';
+    if (n.includes('itaú') || n.includes('itau'))                  return 'itau.svg';
+    if (n.includes('bradesco'))                                     return 'bradesco.svg';
+    if (n.includes('santander'))                                    return 'santander.svg';
+    if (n.includes('banco do brasil') || n.includes('brasil'))     return 'bb.svg';
+    if (n.includes('c6'))                                           return 'c6bank.svg';
+    if (n.includes('btg'))                                          return 'btg.svg';
+    if (n.includes('caixa'))                                        return 'caixa.svg';
+    if (n.includes('mercado pago') || n.includes('mercadopago'))   return 'mercadopago.svg';
+    if (n.includes('picpay'))                                       return 'picpay.svg';
+    if (n.includes('sicoob'))                                       return 'sicoob.svg';
+    if (n.includes('sicredi'))                                      return 'sicredi.svg';
+    if (n.includes('neon'))                                         return 'neon.svg';
+    if (n.includes('stone'))                                        return 'stone.svg';
+    if (n.includes('pagbank') || n.includes('pagseguro'))          return 'pagbank.svg';
+    if (n.includes('xp'))                                           return 'xp.svg';
+    if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'mercadolibre'; // SI slug
+    if (n.includes('visa'))                                         return 'visa';         // SI slug
+    if (n.includes('mastercard'))                                   return 'mastercard';   // SI slug
+    if (n.includes('american express') || n.includes('amex'))      return 'americanexpress'; // SI slug
     return '';
   }
 
@@ -745,20 +755,28 @@ export class BankingComponent implements OnInit {
 
   applyPreset(obj: any, b: typeof BANK_PRESETS[0]) {
     if (b.name !== 'Outro') obj.name = b.name;
-    obj.color = b.color; obj.siSlug = b.siSlug; obj.logo = b.logo; obj.emoji = '';
+    obj.color = b.color; obj.asset = b.asset; obj.hasBg = b.hasBg; obj.siSlug = b.siSlug; obj.emoji = '';
   }
 
   applyIconPreset(obj: any, p: typeof ACCOUNT_ICON_PRESETS[0]) {
     obj.color = p.color; obj.logo = ''; obj.emoji = p.emoji;
   }
 
-  onLogoError(event: Event, color: string, name: string, fallback?: string) {
+  onLogoError(event: Event, color: string, name: string) {
     const img = event.target as HTMLImageElement;
-    if (fallback && !img.dataset['triedFallback']) { img.dataset['triedFallback'] = '1'; img.src = fallback; return; }
     const p = img.parentElement!;
     img.style.display = 'none'; p.style.background = color; p.style.border = 'none';
     p.textContent = name[0]; p.style.color = '#fff'; p.style.fontWeight = '700';
     p.style.fontSize = '1.1rem'; p.style.display = 'flex'; p.style.alignItems = 'center'; p.style.justifyContent = 'center';
+  }
+
+  // Fallback for Simple Icons: show first letter of the bank name on colored bg
+  onSiError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    const p = img.parentElement!;
+    const initial = (img.alt || '?')[0].toUpperCase();
+    img.style.display = 'none';
+    p.innerHTML = `<span style="color:#fff;font-weight:700;font-size:1.1rem;line-height:1">${initial}</span>`;
   }
 
   // ── Account CRUD ──
@@ -777,10 +795,10 @@ export class BankingComponent implements OnInit {
   }
 
   // ── Card CRUD ──
-  openCardForm() { this.editingCard = null; this.card = { name: '', limit_amount: 0, closing_day: null, due_day: null, account_id: null, color: '#6b7280', siSlug: '', logo: '' }; this.formMode.set('card'); this.formOpen.set(true); }
+  openCardForm() { this.editingCard = null; this.card = { name: '', limit_amount: 0, closing_day: null, due_day: null, account_id: null, color: '#6b7280', asset: '', hasBg: false, siSlug: '' }; this.formMode.set('card'); this.formOpen.set(true); }
   editCard(c: any) { this.editingCard = c; this.card = { ...c }; this.formMode.set('card'); this.formOpen.set(true); }
   saveCard() {
-    const payload = { name: this.card.name, limit_amount: this.card.limit_amount || 0, closing_day: this.card.closing_day || 0, due_day: this.card.due_day || 0, color: this.card.color || '', icon: this.card.siSlug || '' };
+    const payload = { name: this.card.name, limit_amount: Number(this.card.limit_amount) || 0, closing_day: Number(this.card.closing_day) || 0, due_day: Number(this.card.due_day) || 0, color: this.card.color || '', icon: this.card.asset || this.card.siSlug || '' };
     const obs = this.editingCard ? this.api.put(`/credit-cards/${this.editingCard.id}`, payload) : this.api.post('/credit-cards', payload);
     obs.subscribe({ next: () => { this.toast.show('Cartão salvo!', 'success'); this.closeForm(); this.loadCards(); }, error: (e: any) => this.toast.show(e?.error?.error || 'Erro ao salvar cartão.', 'error') });
   }
