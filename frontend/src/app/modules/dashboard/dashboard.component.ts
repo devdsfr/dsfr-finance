@@ -146,7 +146,11 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
             }
             @for (acc of accounts(); track acc.id) {
               <div class="acc-row">
-                @if (acc.logo) {
+                @if (acc.icon && acc.icon.endsWith('.svg')) {
+                  <div class="acc-icon acc-icon--img">
+                    <img [src]="'assets/icons/' + acc.icon" [alt]="acc.name" class="acc-logo" />
+                  </div>
+                } @else if (acc.logo) {
                   <div class="acc-icon acc-icon--img" [style.border-color]="acc.color ?? '#111'">
                     <img [src]="acc.logo" [alt]="acc.name" class="acc-logo"
                          (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.style.background=acc.color??'#111'; $any($event.target).parentElement.textContent=acc.name[0]" />
@@ -297,7 +301,16 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               <p class="section-label">{{ 'dashboard.my_cards' | translate }}</p>
               @for (card of cards(); track card.id) {
                 <div class="card-row">
-                  @if (card.logo) {
+                  @if (card.asset) {
+                    <div class="card-icon card-icon--img">
+                      <img [src]="'assets/banks/' + card.asset" [alt]="card.name" class="card-logo" />
+                    </div>
+                  } @else if (card.siSlug) {
+                    <div class="card-icon" [style.background]="card.color ?? '#6366f1'">
+                      <img [src]="'https://cdn.simpleicons.org/' + card.siSlug + '/ffffff'" [alt]="card.name" class="card-logo"
+                           (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.textContent=card.name[0]" />
+                    </div>
+                  } @else if (card.logo) {
                     <div class="card-icon card-icon--img" [style.border-color]="card.color ?? '#6366f1'">
                       <img [src]="card.logo" [alt]="card.name" class="card-logo"
                            (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.style.background=card.color??'#6366f1'; $any($event.target).parentElement.textContent=card.name[0]" />
@@ -309,7 +322,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                     <span class="card-name">{{ card.name }}</span>
                     <span class="card-sub">{{ 'dashboard.manual_card' | translate }}</span>
                   </div>
-                  <a [routerLink]="['/reports/card-invoices']" class="ver-fatura">{{ 'dashboard.see_invoice' | translate }}</a>
+                  <a [routerLink]="['/reports/card-invoices']" [queryParams]="{card_id: card.id}" class="ver-fatura">{{ 'dashboard.see_invoice' | translate }}</a>
                 </div>
                 <div class="card-limits">
                   <div>
@@ -944,7 +957,27 @@ export class DashboardComponent implements OnInit {
       flow:       this.api.get<any>(`/reports/flow?from=${new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0,7)}-01&to=${y}-${m}-${lastDay}`).pipe(catchError(() => of({ data: [] }))),
     }).subscribe(res => {
       this.accounts.set(res.accounts.data ?? []);
-      this.cards.set(res.cards.data ?? []);
+      const mappedCards = (res.cards.data ?? []).map((c: any) => {
+        const rawIcon = c.icon || '';
+        const isAsset = rawIcon.endsWith('.svg');
+        return { ...c, asset: isAsset ? rawIcon : '', siSlug: isAsset ? '' : rawIcon, current_invoice: 0 };
+      });
+      this.cards.set(mappedCards);
+
+      // Load current-month invoice total for each card
+      const curMonth = `${y}-${m}`;
+      if (mappedCards.length) {
+        forkJoin(
+          mappedCards.map((c: any) =>
+            this.api.get<any>(`/reports/cards/${c.id}/invoices`).pipe(catchError(() => of({ data: [] })))
+          )
+        ).subscribe((results: any[]) => {
+          this.cards.update(cards => cards.map((c, i) => {
+            const inv = (results[i].data ?? []).find((x: any) => x.month === curMonth);
+            return { ...c, current_invoice: inv ? Math.abs(inv.expense ?? 0) : 0 };
+          }));
+        });
+      }
       this.payableBills.set(res.payable.data ?? []);
       this.receivableBills.set(res.receivable.data ?? []);
       this.income.set(res.summary.data?.income ?? res.summary.income ?? 0);

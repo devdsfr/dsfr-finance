@@ -43,14 +43,14 @@ const ASSET_HAS_BG: Record<string, boolean> = {
 };
 
 const ACCOUNT_ICON_PRESETS = [
-  { name: 'Carteira',     color: '#10b981', emoji: '👛' },
-  { name: 'Banco',        color: '#3b82f6', emoji: '🏦' },
-  { name: 'Poupança',     color: '#f59e0b', emoji: '🐷' },
-  { name: 'Dinheiro',     color: '#22c55e', emoji: '💵' },
-  { name: 'Investimento', color: '#8b5cf6', emoji: '📈' },
-  { name: 'Cofre',        color: '#64748b', emoji: '🏛️' },
-  { name: 'Empresa',      color: '#0ea5e9', emoji: '🏢' },
-  { name: 'Cartão',       color: '#ec4899', emoji: '💳' },
+  { name: 'Carteira',     color: '#10b981', emoji: '👛', icon: 'carteira.svg' },
+  { name: 'Banco',        color: '#3b82f6', emoji: '🏦', icon: 'banco.svg' },
+  { name: 'Poupança',     color: '#f59e0b', emoji: '🐷', icon: 'poupanca.svg' },
+  { name: 'Dinheiro',     color: '#22c55e', emoji: '💵', icon: 'dinheiro.svg' },
+  { name: 'Investimento', color: '#8b5cf6', emoji: '📈', icon: 'investimento.svg' },
+  { name: 'Cofre',        color: '#64748b', emoji: '🏛️', icon: 'cofre.svg' },
+  { name: 'Empresa',      color: '#0ea5e9', emoji: '🏢', icon: 'empresa.svg' },
+  { name: 'Cartão',       color: '#ec4899', emoji: '💳', icon: 'cartao.svg' },
 ];
 
 const ACCOUNT_TYPES = [
@@ -115,7 +115,11 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           @for (a of accounts(); track a.id) {
             <div class="flat-item" (click)="showAccDetail(a)">
               <div class="flat-icon">
-                @if (a.logo) {
+                @if (a.icon) {
+                  <div class="emoji-circle" [style.background]="'#fff'">
+                    <img [src]="'assets/icons/' + a.icon" [alt]="a.name" class="preset-icon-img" />
+                  </div>
+                } @else if (a.logo) {
                   <img [src]="a.logo" [alt]="a.name" class="flat-logo"
                        (error)="onLogoError($event, a.color || '#6b7280', a.name)" />
                 } @else if (a.emoji) {
@@ -153,7 +157,11 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
         </div>
         <div class="detail-hero">
           <div class="detail-icon">
-            @if (selectedAcc()?.logo) {
+            @if (selectedAcc()?.icon) {
+              <div class="emoji-circle emoji-circle--lg" [style.background]="'#fff'">
+                <img [src]="'assets/icons/' + selectedAcc()!.icon" [alt]="selectedAcc()!.name" class="preset-icon-img" />
+              </div>
+            } @else if (selectedAcc()?.logo) {
               <img [src]="selectedAcc()!.logo" [alt]="selectedAcc()!.name" class="flat-logo" />
             } @else if (selectedAcc()?.emoji) {
               <div class="emoji-circle emoji-circle--lg" [style.background]="selectedAcc()!.color || '#6b7280'">{{ selectedAcc()!.emoji }}</div>
@@ -305,9 +313,11 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           <label>Tipo de ícone</label>
           <div class="preset-grid">
             @for (p of accountIconPresets; track p.name) {
-              <button type="button" class="preset-btn" [class.selected]="acc.color === p.color && !acc.logo"
+              <button type="button" class="preset-btn" [class.selected]="acc.icon === p.icon"
                       (click)="applyIconPreset(acc, p)" [title]="p.name">
-                <div class="preset-emoji" [style.background]="p.color">{{ p.emoji }}</div>
+                <div class="preset-emoji" [style.background]="'#fff'">
+                  <img [src]="'assets/icons/' + p.icon" [alt]="p.name" class="preset-icon-img" />
+                </div>
                 <span class="preset-label">{{ p.name }}</span>
               </button>
             }
@@ -506,6 +516,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
 }
 .emoji-circle--lg { width: 42px; height: 42px; font-size: 1.5rem; }
 .preset-emoji { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.preset-icon-img { width: 80%; height: 80%; object-fit: contain; display: block; }
 .flat-info { flex: 1; display: flex; flex-direction: column; gap: .1rem; }
 .flat-name { font-size: .92rem; font-weight: 600; color: #111; }
 .flat-sub { font-size: .75rem; color: #9ca3af; }
@@ -662,14 +673,19 @@ export class BankingComponent implements OnInit {
 
   ngOnInit() { this.loadAccounts(); this.loadCards(); }
 
-  // Maps accounts: icon column = emoji, logo column = clearbit URL
+  // Maps accounts: icon column = SVG filename or emoji, logo column = clearbit URL
   private mapAccounts(r: any) {
-    return (r.data ?? []).map((x: any) => ({
-      ...x,
-      color: x.color || '#6b7280',
-      emoji: x.icon  || '',
-      logo:  this.inferAccLogo(x.name, x.logo || ''),
-    }));
+    return (r.data ?? []).map((x: any) => {
+      const rawIcon = x.icon || '';
+      const isSvg = rawIcon.endsWith('.svg');
+      return {
+        ...x,
+        color: x.color || '#6b7280',
+        icon:  isSvg ? rawIcon : '',
+        emoji: isSvg ? '' : rawIcon,
+        logo:  this.inferAccLogo(x.name, x.logo || ''),
+      };
+    });
   }
 
   // Maps cards: icon column is either an asset filename (*.svg) or a SI slug
@@ -759,7 +775,7 @@ export class BankingComponent implements OnInit {
   }
 
   applyIconPreset(obj: any, p: typeof ACCOUNT_ICON_PRESETS[0]) {
-    obj.color = p.color; obj.logo = ''; obj.emoji = p.emoji;
+    obj.color = p.color; obj.logo = ''; obj.emoji = ''; obj.icon = p.icon;
   }
 
   onLogoError(event: Event, color: string, name: string) {
@@ -783,7 +799,7 @@ export class BankingComponent implements OnInit {
   openAccForm() { this.editingAcc = null; this.acc = { name: '', type: 'checking', balance: 0, color: '#6b7280', logo: '', exclude_from_total: false }; this.formMode.set('account'); this.formOpen.set(true); }
   editAcc(a: any) { this.editingAcc = a; this.acc = { ...a }; this.formMode.set('account'); this.formOpen.set(true); }
   saveAcc() {
-    const payload = { name: this.acc.name, type: this.acc.type, balance: this.acc.balance || 0, currency: this.acc.currency || 'BRL', color: this.acc.color || '', icon: this.acc.emoji || '', logo: this.acc.logo || '' };
+    const payload = { name: this.acc.name, type: this.acc.type, balance: this.acc.balance || 0, currency: this.acc.currency || 'BRL', color: this.acc.color || '', icon: this.acc.icon || this.acc.emoji || '', logo: this.acc.logo || '' };
     const obs = this.editingAcc ? this.api.put(`/accounts/${this.editingAcc.id}`, payload) : this.api.post('/accounts', payload);
     obs.subscribe({ next: () => { this.toast.show('Conta salva!', 'success'); this.closeForm(); this.loadAccounts(); }, error: (e: any) => this.toast.show(e?.error?.error || 'Erro ao salvar conta.', 'error') });
   }
