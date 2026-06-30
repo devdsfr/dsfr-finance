@@ -8,53 +8,43 @@ import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 
-const SI = (slug: string, color = '000000') => `https://cdn.simpleicons.org/${slug}/${color}`;
+// SI slug → white icon on brand-color background (Organizze style)
+// logo  → Clearbit URL on white background (for banks not in Simple Icons)
 const CL = (domain: string) => `https://logo.clearbit.com/${domain}`;
-const GF = (domain: string) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-
-const DOMAIN_TO_LOGO: Record<string, string> = {
-  'nubank.com.br': 'https://cdn.simpleicons.org/nubank/8a05be',
-  'bancointer.com.br': 'https://cdn.simpleicons.org/inter/ff7000',
-  'inter.co': 'https://cdn.simpleicons.org/inter/ff7000',
-  'itau.com.br': 'https://logo.clearbit.com/itau.com.br',
-  'bradesco.com.br': 'https://logo.clearbit.com/bradesco.com.br',
-  'santander.com.br': 'https://cdn.simpleicons.org/santander/ec0000',
-  'caixa.gov.br': 'https://logo.clearbit.com/caixa.gov.br',
-  'bb.com.br': 'https://logo.clearbit.com/bb.com.br',
-  'c6bank.com.br': 'https://logo.clearbit.com/c6bank.com.br',
-  'btgpactual.com': 'https://logo.clearbit.com/btgpactual.com',
-  'xpi.com.br': 'https://logo.clearbit.com/xpi.com.br',
-  'mercadopago.com.br': 'https://cdn.simpleicons.org/mercadopago/009ee3',
-  'picpay.com': 'https://cdn.simpleicons.org/picpay/21c25e',
-  'sicoob.com.br': 'https://logo.clearbit.com/sicoob.com.br',
-  'sicredi.com.br': 'https://logo.clearbit.com/sicredi.com.br',
-  'neon.com.br': 'https://logo.clearbit.com/neon.com.br',
-  'carrefour.com.br': 'https://logo.clearbit.com/carrefour.com.br',
-  'mercadolivre.com.br': 'https://cdn.simpleicons.org/mercadolivre/009ee3',
-};
 
 const BANK_PRESETS = [
-  { name: 'Nubank',           color: '#8a05be', logo: SI('nubank','8a05be'),         fallback: GF('nubank.com.br') },
-  { name: 'Inter',            color: '#ff7000', logo: SI('inter','ff7000'),           fallback: CL('inter.co') },
-  { name: 'Itaú',             color: '#003d8f', logo: CL('itau.com.br'),              fallback: GF('itau.com.br') },
-  { name: 'Bradesco',         color: '#cc092f', logo: CL('bradesco.com.br'),          fallback: GF('bradesco.com.br') },
-  { name: 'Santander',        color: '#ec0000', logo: SI('santander','ec0000'),       fallback: CL('santander.com.br') },
-  { name: 'Caixa',            color: '#005ca9', logo: CL('caixa.gov.br'),             fallback: GF('caixa.gov.br') },
-  { name: 'Banco do Brasil',  color: '#f9dd16', logo: CL('bb.com.br'),                fallback: GF('bb.com.br') },
-  { name: 'C6 Bank',          color: '#242424', logo: CL('c6bank.com.br'),            fallback: GF('c6bank.com.br') },
-  { name: 'BTG',              color: '#002060', logo: CL('btgpactual.com'),           fallback: GF('btgpactual.com') },
-  { name: 'XP',               color: '#111111', logo: CL('xpi.com.br'),               fallback: GF('xpi.com.br') },
-  { name: 'Mercado Pago',     color: '#009ee3', logo: SI('mercadopago','009ee3'),     fallback: CL('mercadopago.com.br') },
-  { name: 'Mercado Livre',    color: '#009ee3', logo: SI('mercadolivre','009ee3'),    fallback: CL('mercadolivre.com.br') },
-  { name: 'PicPay',           color: '#21c25e', logo: SI('picpay','21c25e'),          fallback: GF('picpay.com') },
-  { name: 'Sicoob',           color: '#007a3d', logo: CL('sicoob.com.br'),            fallback: GF('sicoob.com.br') },
-  { name: 'Sicredi',          color: '#009a44', logo: CL('sicredi.com.br'),           fallback: GF('sicredi.com.br') },
-  { name: 'Neon',             color: '#1b1c8a', logo: CL('neon.com.br'),              fallback: GF('neon.com.br') },
-  { name: 'Carrefour',        color: '#004a97', logo: CL('carrefour.com.br'),         fallback: GF('carrefour.com.br') },
-  { name: 'Visa',             color: '#1a1f71', logo: SI('visa','1a1f71'),            fallback: '' },
-  { name: 'Mastercard',       color: '#eb001b', logo: SI('mastercard','eb001b'),      fallback: '' },
-  { name: 'American Express', color: '#2e77bc', logo: SI('americanexpress','2e77bc'), fallback: '' },
-  { name: 'Outro',            color: '#6b7280', logo: '',                             fallback: '' },
+  { name: 'Nubank',           color: '#8a05be', siSlug: 'nubank',          logo: '' },
+  { name: 'Inter',            color: '#ff7000', siSlug: 'bancointer',      logo: '' },
+  { name: 'Itaú',             color: '#003d8f', siSlug: 'itau',            logo: '' },
+  { name: 'Bradesco',         color: '#cc092f', siSlug: 'bradesco',        logo: '' },
+  { name: 'Santander',        color: '#ec0000', siSlug: 'santander',       logo: '' },
+  { name: 'Caixa',            color: '#005ca9', siSlug: '',                logo: CL('caixa.gov.br') },
+  { name: 'Banco do Brasil',  color: '#f9dd16', siSlug: 'bancodobrasil',   logo: '' },
+  { name: 'C6 Bank',          color: '#242424', siSlug: 'c6bank',          logo: '' },
+  { name: 'BTG',              color: '#002060', siSlug: '',                logo: CL('btgpactual.com') },
+  { name: 'XP',               color: '#111111', siSlug: 'xpinvestimentos', logo: '' },
+  { name: 'Mercado Pago',     color: '#009ee3', siSlug: 'mercadopago',     logo: '' },
+  { name: 'Mercado Livre',    color: '#ffe600', siSlug: 'mercadolibre',    logo: '' },
+  { name: 'PicPay',           color: '#21c25e', siSlug: 'picpay',          logo: '' },
+  { name: 'Sicoob',           color: '#007a3d', siSlug: '',                logo: CL('sicoob.com.br') },
+  { name: 'Sicredi',          color: '#009a44', siSlug: '',                logo: CL('sicredi.com.br') },
+  { name: 'Neon',             color: '#7900df', siSlug: 'neon',            logo: '' },
+  { name: 'Carrefour',        color: '#004a97', siSlug: 'carrefour',       logo: '' },
+  { name: 'Visa',             color: '#1a1f71', siSlug: 'visa',            logo: '' },
+  { name: 'Mastercard',       color: '#eb001b', siSlug: 'mastercard',      logo: '' },
+  { name: 'American Express', color: '#2e77bc', siSlug: 'americanexpress', logo: '' },
+  { name: 'Outro',            color: '#6b7280', siSlug: '',                logo: '', emoji: '💳' },
+];
+
+const ACCOUNT_ICON_PRESETS = [
+  { name: 'Carteira',     color: '#10b981', emoji: '👛' },
+  { name: 'Banco',        color: '#3b82f6', emoji: '🏦' },
+  { name: 'Poupança',     color: '#f59e0b', emoji: '🐷' },
+  { name: 'Dinheiro',     color: '#22c55e', emoji: '💵' },
+  { name: 'Investimento', color: '#8b5cf6', emoji: '📈' },
+  { name: 'Cofre',        color: '#64748b', emoji: '🏛️' },
+  { name: 'Empresa',      color: '#0ea5e9', emoji: '🏢' },
+  { name: 'Cartão',       color: '#ec4899', emoji: '💳' },
 ];
 
 const ACCOUNT_TYPES = [
@@ -110,7 +100,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
       <div class="content-card">
         <div class="content-head">
           <h1 class="content-title">Contas</h1>
-          <button class="btn-add" (click)="openAccForm()">⊕ Nova conta</button>
+          <button class="btn-add" (click)="openAccForm()">👛 Nova conta</button>
         </div>
         @if (accounts().length === 0 && !loadingAccs()) {
           <div class="empty">Nenhuma conta cadastrada.</div>
@@ -118,16 +108,19 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
         <div class="flat-list">
           @for (a of accounts(); track a.id) {
             <div class="flat-item" (click)="showAccDetail(a)">
-              <div class="flat-icon" [style.background]="a.logo ? 'transparent' : (a.color ?? '#6b7280')"
-                   [style.border-color]="a.logo ? (a.color ?? '#e5e7eb') : 'transparent'">
+              <div class="flat-icon">
                 @if (a.logo) {
                   <img [src]="a.logo" [alt]="a.name" class="flat-logo"
-                       (error)="onLogoError($event, a.color ?? '#6b7280', a.name, a.fallback)" />
+                       (error)="onLogoError($event, a.color || '#6b7280', a.name)" />
+                } @else if (a.emoji) {
+                  <div class="emoji-circle" [style.background]="a.color || '#6b7280'">{{ a.emoji }}</div>
                 } @else {
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="55%" height="55%">
-                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H4a2 2 0 0 0-2 2v2"/>
-                    <path d="M22 12h-4a2 2 0 0 0 0 4h4"/>
-                  </svg>
+                  <div class="emoji-circle" [style.background]="a.color || '#6b7280'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="60%" height="60%">
+                      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H4a2 2 0 0 0-2 2v2"/>
+                      <path d="M22 12h-4a2 2 0 0 0 0 4h4"/>
+                    </svg>
+                  </div>
                 }
               </div>
               <div class="flat-info">
@@ -149,19 +142,22 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           <button class="btn-back" (click)="view.set('list')">← Voltar</button>
           <div class="detail-actions">
             <button class="btn-link btn-link--green" (click)="editAcc(selectedAcc())">Editar</button>
-            <button class="btn-link btn-link--red" (click)="archiveAcc(selectedAcc())">Arquivar</button>
+            <button class="btn-link btn-link--red" (click)="archiveAcc(selectedAcc())">Excluir</button>
           </div>
         </div>
         <div class="detail-hero">
-          <div class="detail-icon" [style.background]="selectedAcc()?.logo ? 'transparent' : (selectedAcc()?.color ?? '#6b7280')"
-               [style.border-color]="selectedAcc()?.color ?? '#e5e7eb'">
+          <div class="detail-icon">
             @if (selectedAcc()?.logo) {
               <img [src]="selectedAcc()!.logo" [alt]="selectedAcc()!.name" class="flat-logo" />
+            } @else if (selectedAcc()?.emoji) {
+              <div class="emoji-circle emoji-circle--lg" [style.background]="selectedAcc()!.color || '#6b7280'">{{ selectedAcc()!.emoji }}</div>
             } @else {
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="55%" height="55%">
-                <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H4a2 2 0 0 0-2 2v2"/>
-                <path d="M22 12h-4a2 2 0 0 0 0 4h4"/>
-              </svg>
+              <div class="emoji-circle emoji-circle--lg" [style.background]="selectedAcc()!.color || '#6b7280'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="60%" height="60%">
+                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H4a2 2 0 0 0-2 2v2"/>
+                  <path d="M22 12h-4a2 2 0 0 0 0 4h4"/>
+                </svg>
+              </div>
             }
           </div>
           <div>
@@ -197,11 +193,15 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
         <div class="flat-list">
           @for (c of cards(); track c.id) {
             <div class="flat-item" (click)="showCardDetail(c)">
-              <div class="flat-icon flat-icon--card" [style.background]="c.logo ? 'transparent' : (c.color ?? '#6366f1')"
-                   [style.border-color]="c.logo ? (c.color ?? '#e5e7eb') : 'transparent'">
-                @if (c.logo) {
+              <div class="flat-icon flat-icon--card"
+                   [style.background]="c.siSlug ? (c.color || '#6366f1') : '#fff'"
+                   [style.border-color]="c.siSlug ? 'transparent' : (c.color || '#e5e7eb')">
+                @if (c.siSlug) {
+                  <img [src]="'https://cdn.simpleicons.org/' + c.siSlug + '/ffffff'" [alt]="c.name" class="flat-logo"
+                       (error)="$any($event.target).style.display='none'" />
+                } @else if (c.logo) {
                   <img [src]="c.logo" [alt]="c.name" class="flat-logo"
-                       (error)="onLogoError($event, c.color ?? '#6366f1', c.name, c.fallback)" />
+                       (error)="$any($event.target).parentElement.style.background=c.color||'#6366f1'" />
                 } @else {
                   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="55%" height="55%">
                     <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
@@ -226,13 +226,16 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           <button class="btn-back" (click)="view.set('list')">← Voltar</button>
           <div class="detail-actions">
             <button class="btn-link btn-link--green" (click)="editCard(selectedCard())">Editar</button>
-            <button class="btn-link btn-link--red" (click)="archiveCard(selectedCard())">Arquivar</button>
+            <button class="btn-link btn-link--red" (click)="archiveCard(selectedCard())">Excluir</button>
           </div>
         </div>
         <div class="detail-hero">
-          <div class="flat-icon flat-icon--card" [style.background]="selectedCard()?.logo ? 'transparent' : (selectedCard()?.color ?? '#6366f1')"
-               [style.border-color]="selectedCard()?.color ?? '#e5e7eb'">
-            @if (selectedCard()?.logo) {
+          <div class="flat-icon flat-icon--card"
+               [style.background]="selectedCard()?.siSlug ? (selectedCard()?.color || '#6366f1') : '#fff'"
+               [style.border-color]="selectedCard()?.siSlug ? 'transparent' : (selectedCard()?.color || '#e5e7eb')">
+            @if (selectedCard()?.siSlug) {
+              <img [src]="'https://cdn.simpleicons.org/' + selectedCard()!.siSlug + '/ffffff'" [alt]="selectedCard()!.name" class="flat-logo" />
+            } @else if (selectedCard()?.logo) {
               <img [src]="selectedCard()!.logo" [alt]="selectedCard()!.name" class="flat-logo" />
             } @else {
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="55%" height="55%">
@@ -290,18 +293,13 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
       @if (formMode() === 'account') {
         <!-- ACCOUNT FORM -->
         <div class="form-group">
-          <label>Escolher banco</label>
+          <label>Tipo de ícone</label>
           <div class="preset-grid">
-            @for (b of bankPresets; track b.name) {
-              <button type="button" class="preset-btn" [class.selected]="acc.logo === b.logo"
-                      (click)="applyPreset(acc, b)" [title]="b.name">
-                @if (b.logo) {
-                  <div class="preset-wrap"><img [src]="b.logo" [alt]="b.name" class="preset-logo"
-                       (error)="onLogoError($event, b.color, b.name, b.fallback)"/></div>
-                } @else {
-                  <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
-                }
-                <span class="preset-label">{{ b.name }}</span>
+            @for (p of accountIconPresets; track p.name) {
+              <button type="button" class="preset-btn" [class.selected]="acc.color === p.color && !acc.logo"
+                      (click)="applyIconPreset(acc, p)" [title]="p.name">
+                <div class="preset-emoji" [style.background]="p.color">{{ p.emoji }}</div>
+                <span class="preset-label">{{ p.name }}</span>
               </button>
             }
           </div>
@@ -343,13 +341,19 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           <label>Escolher banco</label>
           <div class="preset-grid">
             @for (b of bankPresets; track b.name) {
-              <button type="button" class="preset-btn" [class.selected]="card.logo === b.logo"
+              <button type="button" class="preset-btn" [class.selected]="card.color === b.color && card.siSlug === b.siSlug"
                       (click)="applyPreset(card, b)" [title]="b.name">
-                @if (b.logo) {
-                  <div class="preset-wrap"><img [src]="b.logo" [alt]="b.name" class="preset-logo"
-                       (error)="onLogoError($event, b.color, b.name, b.fallback)"/></div>
+                @if (b.siSlug) {
+                  <div class="preset-wrap" [style.background]="b.color">
+                    <img [src]="'https://cdn.simpleicons.org/' + b.siSlug + '/ffffff'" [alt]="b.name" class="preset-logo" />
+                  </div>
+                } @else if (b.logo) {
+                  <div class="preset-wrap" style="background:#fff;border:1px solid #e5e7eb">
+                    <img [src]="b.logo" [alt]="b.name" class="preset-logo"
+                         (error)="$any($event.target).parentElement.style.background=b.color" />
+                  </div>
                 } @else {
-                  <div class="preset-initial" [style.background]="b.color">{{ b.name[0] }}</div>
+                  <div class="preset-initial" [style.background]="b.color">{{ b['emoji'] || b.name[0] }}</div>
                 }
                 <span class="preset-label">{{ b.name }}</span>
               </button>
@@ -364,7 +368,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
           </div>
           <div class="form-group">
             <label>Limite (R$)</label>
-            <input [(ngModel)]="card.limit" type="text" inputmode="decimal" appMoneyMask class="input" placeholder="0,00" />
+            <input [(ngModel)]="card.limit_amount" type="text" inputmode="decimal" appMoneyMask class="input" placeholder="0,00" />
           </div>
         </div>
         <div class="form-row">
@@ -412,7 +416,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
         <button class="modal-close" (click)="adjustOpen.set(false)">✕</button>
       </div>
       <div class="adjust-body">
-        <div class="detail-icon" [style.background]="selectedAcc()?.color ?? '#6b7280'">
+        <div class="detail-icon" [style.background]="selectedAcc()?.color || '#6b7280'">
           <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="55%" height="55%">
             <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H4a2 2 0 0 0-2 2v2"/>
             <path d="M22 12h-4a2 2 0 0 0 0 4h4"/>
@@ -485,6 +489,13 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
 }
 .flat-icon--card { border-radius: .6rem; }
 .flat-logo { width: 70%; height: 70%; object-fit: contain; display: block; }
+.emoji-circle {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; line-height: 1; flex-shrink: 0;
+}
+.emoji-circle--lg { width: 42px; height: 42px; font-size: 1.5rem; }
+.preset-emoji { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 .flat-info { flex: 1; display: flex; flex-direction: column; gap: .1rem; }
 .flat-name { font-size: .92rem; font-weight: 600; color: #111; }
 .flat-sub { font-size: .75rem; color: #9ca3af; }
@@ -627,9 +638,10 @@ export class BankingComponent implements OnInit {
 
   confirmItem = signal<{ msg: string; action: () => void } | null>(null);
 
-  readonly bankPresets = BANK_PRESETS;
-  readonly accTypes    = ACCOUNT_TYPES;
-  readonly days        = DAYS;
+  readonly bankPresets        = BANK_PRESETS;
+  readonly accountIconPresets = ACCOUNT_ICON_PRESETS;
+  readonly accTypes           = ACCOUNT_TYPES;
+  readonly days               = DAYS;
 
   formTitle() {
     if (this.formMode() === 'account') return this.editingAcc ? 'Editar conta' : 'Nova conta manual';
@@ -638,43 +650,65 @@ export class BankingComponent implements OnInit {
 
   ngOnInit() { this.loadAccounts(); this.loadCards(); }
 
-  private inferLogo(name: string, logo: string): string {
-    if (logo) return logo;
-    const n = name.toLowerCase();
-    if (n.includes('nubank'))                                       return SI('nubank','8a05be');
-    if (n.includes('inter'))                                        return SI('inter','ff7000');
-    if (n.includes('itaú') || n.includes('itau'))                  return CL('itau.com.br');
-    if (n.includes('bradesco'))                                     return CL('bradesco.com.br');
-    if (n.includes('santander'))                                    return SI('santander','ec0000');
-    if (n.includes('caixa'))                                        return CL('caixa.gov.br');
-    if (n.includes('brasil') || n.includes(' bb'))                  return CL('bb.com.br');
-    if (n.includes('c6'))                                           return CL('c6bank.com.br');
-    if (n.includes('btg'))                                          return CL('btgpactual.com');
-    if (n.includes('mercado pago') || n.includes('mercadopago'))   return SI('mercadopago','009ee3');
-    if (n.includes('picpay'))                                       return SI('picpay','21c25e');
-    if (n.includes('sicoob'))                                       return CL('sicoob.com.br');
-    if (n.includes('sicredi'))                                      return CL('sicredi.com.br');
-    if (n.includes('neon'))                                         return CL('neon.com.br');
-    if (n.includes('carrefour'))                                    return CL('carrefour.com.br');
-    if (n.includes('mercado livre') || n.includes('mercadolivre')) return SI('mercadolivre','009ee3');
+  // Maps accounts: icon column = emoji, logo column = clearbit URL
+  private mapAccounts(r: any) {
+    return (r.data ?? []).map((x: any) => ({
+      ...x,
+      color: x.color || '#6b7280',
+      emoji: x.icon  || '',
+      logo:  this.inferAccLogo(x.name, x.logo || ''),
+    }));
+  }
+
+  // Maps cards: icon column = SI slug, color column = brand color
+  private mapCards(r: any) {
+    return (r.data ?? []).map((x: any) => {
+      const siSlug = x.icon || this.inferCardSlug(x.name);
+      const logo   = siSlug ? '' : this.inferCardLogo(x.name);
+      return { ...x, color: x.color || '#6366f1', siSlug, logo };
+    });
+  }
+
+  // For accounts: infer logo from stored logo column or account name
+  private inferAccLogo(name: string, logo: string): string {
+    if (logo && logo.startsWith('http')) return logo;
     return '';
   }
 
-  normalizeLogo(logo: string): string {
-    if (!logo) return '';
-    let m = logo.match(/logo\.clearbit\.com\/([^?/]+)/);
-    if (m) return DOMAIN_TO_LOGO[m[1]] ?? GF(m[1]);
-    m = logo.match(/https?:\/\/([^/]+)\/apple-touch-icon/);
-    if (m) { const d = m[1].replace(/^www\./, ''); return DOMAIN_TO_LOGO[d] ?? GF(d); }
-    m = logo.match(/favicons\?domain=([^&]+)/);
-    if (m) return DOMAIN_TO_LOGO[m[1]] ?? GF(m[1]);
-    return logo;
+  // For cards: infer SI slug from card name when icon column is empty
+  private inferCardSlug(name: string): string {
+    const n = name.toLowerCase();
+    if (n.includes('nubank'))                                       return 'nubank';
+    if (n.includes('inter'))                                        return 'bancointer';
+    if (n.includes('itaú') || n.includes('itau'))                  return 'itau';
+    if (n.includes('bradesco'))                                     return 'bradesco';
+    if (n.includes('santander'))                                    return 'santander';
+    if (n.includes('banco do brasil') || n.includes(' bb '))       return 'bancodobrasil';
+    if (n.includes('c6'))                                           return 'c6bank';
+    if (n.includes('mercado pago') || n.includes('mercadopago'))   return 'mercadopago';
+    if (n.includes('mercado livre') || n.includes('mercadolivre')) return 'mercadolibre';
+    if (n.includes('picpay'))                                       return 'picpay';
+    if (n.includes('neon'))                                         return 'neon';
+    if (n.includes('carrefour'))                                    return 'carrefour';
+    if (n.includes('visa'))                                         return 'visa';
+    if (n.includes('mastercard'))                                   return 'mastercard';
+    if (n.includes('american express') || n.includes('amex'))      return 'americanexpress';
+    return '';
   }
 
-  private map(r: any) { return (r.data ?? []).map((x: any) => ({ ...x, logo: this.inferLogo(x.name, this.normalizeLogo(x.logo)) })); }
+  // For cards: Clearbit fallback for banks not in Simple Icons
+  private inferCardLogo(name: string): string {
+    const n = name.toLowerCase();
+    if (n.includes('caixa'))                                        return CL('caixa.gov.br');
+    if (n.includes('btg'))                                          return CL('btgpactual.com');
+    if (n.includes('sicoob'))                                       return CL('sicoob.com.br');
+    if (n.includes('sicredi'))                                      return CL('sicredi.com.br');
+    if (n.includes('xp'))                                           return CL('xpi.com.br');
+    return '';
+  }
 
-  loadAccounts() { this.loadingAccs.set(true); this.api.get<any>('/accounts').subscribe((r: any) => { this.accounts.set(this.map(r)); this.loadingAccs.set(false); }); }
-  loadCards()    { this.loadingCards.set(true); this.api.get<any>('/credit-cards').subscribe((r: any) => { this.cards.set(this.map(r)); this.loadingCards.set(false); }); }
+  loadAccounts() { this.loadingAccs.set(true); this.api.get<any>('/accounts').subscribe((r: any) => { this.accounts.set(this.mapAccounts(r)); this.loadingAccs.set(false); }); }
+  loadCards()    { this.loadingCards.set(true); this.api.get<any>('/credit-cards').subscribe((r: any) => { this.cards.set(this.mapCards(r)); this.loadingCards.set(false); }); }
 
   showAccDetail(a: any) { this.selectedAcc.set(a); this.section.set('accounts'); this.view.set('detail'); }
   showCardDetail(c: any) {
@@ -711,7 +745,11 @@ export class BankingComponent implements OnInit {
 
   applyPreset(obj: any, b: typeof BANK_PRESETS[0]) {
     if (b.name !== 'Outro') obj.name = b.name;
-    obj.color = b.color; obj.logo = b.logo; obj.fallback = b.fallback;
+    obj.color = b.color; obj.siSlug = b.siSlug; obj.logo = b.logo; obj.emoji = '';
+  }
+
+  applyIconPreset(obj: any, p: typeof ACCOUNT_ICON_PRESETS[0]) {
+    obj.color = p.color; obj.logo = ''; obj.emoji = p.emoji;
   }
 
   onLogoError(event: Event, color: string, name: string, fallback?: string) {
@@ -727,29 +765,31 @@ export class BankingComponent implements OnInit {
   openAccForm() { this.editingAcc = null; this.acc = { name: '', type: 'checking', balance: 0, color: '#6b7280', logo: '', exclude_from_total: false }; this.formMode.set('account'); this.formOpen.set(true); }
   editAcc(a: any) { this.editingAcc = a; this.acc = { ...a }; this.formMode.set('account'); this.formOpen.set(true); }
   saveAcc() {
-    const obs = this.editingAcc ? this.api.put(`/accounts/${this.editingAcc.id}`, this.acc) : this.api.post('/accounts', this.acc);
-    obs.subscribe({ next: () => { this.toast.show('Conta salva!', 'success'); this.closeForm(); this.loadAccounts(); }, error: () => this.toast.show('Erro.', 'error') });
+    const payload = { name: this.acc.name, type: this.acc.type, balance: this.acc.balance || 0, currency: this.acc.currency || 'BRL', color: this.acc.color || '', icon: this.acc.emoji || '', logo: this.acc.logo || '' };
+    const obs = this.editingAcc ? this.api.put(`/accounts/${this.editingAcc.id}`, payload) : this.api.post('/accounts', payload);
+    obs.subscribe({ next: () => { this.toast.show('Conta salva!', 'success'); this.closeForm(); this.loadAccounts(); }, error: (e: any) => this.toast.show(e?.error?.error || 'Erro ao salvar conta.', 'error') });
   }
   archiveAcc(a: any) {
     this.closeForm();
-    this.confirmItem.set({ msg: `Arquivar a conta <strong>${a.name}</strong>? Ela não aparecerá mais na lista.`, action: () => {
-      this.api.put(`/accounts/${a.id}`, { ...a, is_active: false }).subscribe({ next: () => { this.toast.show('Conta arquivada.', 'success'); this.view.set('list'); this.loadAccounts(); }, error: () => this.toast.show('Erro.', 'error') });
+    this.confirmItem.set({ msg: `Excluir a conta <strong>${a.name}</strong>? Essa ação não pode ser desfeita.`, action: () => {
+      this.api.delete<any>(`/accounts/${a.id}`).subscribe({ next: () => { this.toast.show('Conta excluída.', 'success'); this.view.set('list'); this.loadAccounts(); }, error: () => this.toast.show('Erro ao excluir.', 'error') });
     }});
   }
 
   // ── Card CRUD ──
-  openCardForm() { this.editingCard = null; this.card = { name: '', limit: 0, closing_day: null, due_day: null, account_id: null, color: '#6b7280', logo: '' }; this.formMode.set('card'); this.formOpen.set(true); }
+  openCardForm() { this.editingCard = null; this.card = { name: '', limit_amount: 0, closing_day: null, due_day: null, account_id: null, color: '#6b7280', siSlug: '', logo: '' }; this.formMode.set('card'); this.formOpen.set(true); }
   editCard(c: any) { this.editingCard = c; this.card = { ...c }; this.formMode.set('card'); this.formOpen.set(true); }
   saveCard() {
-    const obs = this.editingCard ? this.api.put(`/credit-cards/${this.editingCard.id}`, this.card) : this.api.post('/credit-cards', this.card);
-    obs.subscribe({ next: () => { this.toast.show('Cartão salvo!', 'success'); this.closeForm(); this.loadCards(); }, error: () => this.toast.show('Erro.', 'error') });
+    const payload = { name: this.card.name, limit_amount: this.card.limit_amount || 0, closing_day: this.card.closing_day || 0, due_day: this.card.due_day || 0, color: this.card.color || '', icon: this.card.siSlug || '' };
+    const obs = this.editingCard ? this.api.put(`/credit-cards/${this.editingCard.id}`, payload) : this.api.post('/credit-cards', payload);
+    obs.subscribe({ next: () => { this.toast.show('Cartão salvo!', 'success'); this.closeForm(); this.loadCards(); }, error: (e: any) => this.toast.show(e?.error?.error || 'Erro ao salvar cartão.', 'error') });
   }
   archiveCard(c: any) {
     this.closeForm();
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.confirmItem.set({ msg: `Arquivar o cartão <strong>${c.name}</strong>? Ele não aparecerá mais na lista.`, action() {
-      self.api.put<any>(`/credit-cards/${c.id}`, { ...c, is_active: false }).subscribe({ next: () => { self.toast.show('Cartão arquivado.', 'success'); self.view.set('list'); self.loadCards(); }, error: () => self.toast.show('Erro.', 'error') });
+      self.api.delete<any>(`/credit-cards/${c.id}`).subscribe({ next: () => { self.toast.show('Cartão excluído.', 'success'); self.view.set('list'); self.loadCards(); }, error: () => self.toast.show('Erro ao excluir.', 'error') });
     }});
   }
 

@@ -22,7 +22,7 @@ func NewAccountHandler(db *sql.DB) *AccountHandler { return &AccountHandler{db: 
 // @Success 200 {object} map[string]interface{}
 // @Router /accounts [get]
 func (h *AccountHandler) List(c *gin.Context) {
-	rows, err := h.db.QueryContext(c, `SELECT id, name, type, balance, currency, COALESCE(color,'') as color, created_at FROM accounts WHERE workspace_id = $1 ORDER BY name`, middleware.GetWorkspaceID(c))
+	rows, err := h.db.QueryContext(c, `SELECT id, name, type, balance, currency, COALESCE(color,'') as color, COALESCE(icon,'') as icon, COALESCE(logo,'') as logo, created_at FROM accounts WHERE workspace_id = $1 ORDER BY name`, middleware.GetWorkspaceID(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -30,11 +30,11 @@ func (h *AccountHandler) List(c *gin.Context) {
 	defer rows.Close()
 	var data []gin.H
 	for rows.Next() {
-		var id, name, typ, currency, color string
+		var id, name, typ, currency, color, icon, logo string
 		var balance float64
 		var createdAt interface{}
-		rows.Scan(&id, &name, &typ, &balance, &currency, &color, &createdAt)
-		data = append(data, gin.H{"id": id, "name": name, "type": typ, "balance": balance, "currency": currency, "color": color, "created_at": createdAt})
+		rows.Scan(&id, &name, &typ, &balance, &currency, &color, &icon, &logo, &createdAt)
+		data = append(data, gin.H{"id": id, "name": name, "type": typ, "balance": balance, "currency": currency, "color": color, "icon": icon, "logo": logo, "created_at": createdAt})
 	}
 	if data == nil {
 		data = []gin.H{}
@@ -57,6 +57,9 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		Type     string  `json:"type"`
 		Balance  float64 `json:"balance"`
 		Currency string  `json:"currency"`
+		Color    string  `json:"color"`
+		Icon     string  `json:"icon"`
+		Logo     string  `json:"logo"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -66,23 +69,26 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		body.Currency = "BRL"
 	}
 	id := uuid.New().String()
-	_, err := h.db.ExecContext(c, `INSERT INTO accounts (id, workspace_id, name, type, balance, currency, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())`,
-		id, middleware.GetWorkspaceID(c), body.Name, body.Type, body.Balance, body.Currency)
+	_, err := h.db.ExecContext(c, `INSERT INTO accounts (id, workspace_id, name, type, balance, currency, color, icon, logo, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())`,
+		id, middleware.GetWorkspaceID(c), body.Name, body.Type, body.Balance, body.Currency, body.Color, body.Icon, body.Logo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"id": id, "name": body.Name, "type": body.Type, "balance": body.Balance, "currency": body.Currency})
+	c.JSON(http.StatusCreated, gin.H{"id": id, "name": body.Name, "type": body.Type, "balance": body.Balance, "currency": body.Currency, "color": body.Color, "icon": body.Icon, "logo": body.Logo})
 }
 
 func (h *AccountHandler) Update(c *gin.Context) {
 	var body struct {
 		Name    string  `json:"name"`
 		Balance float64 `json:"balance"`
+		Color   string  `json:"color"`
+		Icon    string  `json:"icon"`
+		Logo    string  `json:"logo"`
 	}
 	c.ShouldBindJSON(&body)
-	_, err := h.db.ExecContext(c, `UPDATE accounts SET name=$1, balance=$2, updated_at=NOW() WHERE id=$3 AND workspace_id=$4`,
-		body.Name, body.Balance, c.Param("id"), middleware.GetWorkspaceID(c))
+	_, err := h.db.ExecContext(c, `UPDATE accounts SET name=$1, balance=$2, color=$3, icon=$4, logo=$5, updated_at=NOW() WHERE id=$6 AND workspace_id=$7`,
+		body.Name, body.Balance, body.Color, body.Icon, body.Logo, c.Param("id"), middleware.GetWorkspaceID(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
