@@ -1,7 +1,10 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../core/services/api.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { AppCurrencyPipe } from '../../../shared/pipes/app-currency.pipe';
 
 // Same asset/hasBg logic as banking component
@@ -96,13 +99,27 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
         <div class="sum-panel sum-panel--right">
           <div class="sum-label">VALOR DA FATURA</div>
           <div class="sum-val sum-val--total">{{ currentTotal() | appCurrency }}</div>
-          @if (isCurrentMonth()) {
+          @if (isPaid()) {
+            <span class="pay-badge pay-badge--paid">PAGA</span>
+          } @else if (hasUnpaid()) {
             <span class="pay-badge pay-badge--open">EM ABERTO</span>
           } @else {
             <span class="pay-badge">FECHADA</span>
           }
         </div>
       </div>
+
+      @if (hasUnpaid()) {
+        <div class="inv-action">
+          <button class="btn-pay" (click)="payInvoice()" [disabled]="payingInvoice()">
+            {{ payingInvoice() ? 'Pagando…' : 'Pagar fatura · ' + (currentTotal() | appCurrency) }}
+          </button>
+        </div>
+      } @else if (isPaid()) {
+        <div class="inv-action">
+          <span class="paid-tag">✓ Fatura paga</span>
+        </div>
+      }
 
       <div class="inv-meta">
         <span>Fatura atual: <strong>{{ currentTotal() | appCurrency }}</strong></span>
@@ -214,6 +231,17 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     .pay-badge { display: inline-block; margin-top: .4rem; padding: .2rem .7rem; border-radius: 1rem;
       font-size: .68rem; font-weight: 700; background: #f3f4f6; color: #6b7280; letter-spacing: .05em; }
     .pay-badge--open { background: #dcfce7; color: #16a34a; }
+    .pay-badge--paid { background: #dbeafe; color: #2563eb; }
+
+    /* Pay action */
+    .inv-action { margin-bottom: 1.25rem; }
+    .btn-pay { width: 100%; padding: .85rem 1.25rem; border: none; border-radius: .6rem;
+      background: #16a34a; color: #fff; font-size: .95rem; font-weight: 700; cursor: pointer;
+      transition: background .15s; }
+    .btn-pay:hover:not(:disabled) { background: #15803d; }
+    .btn-pay:disabled { opacity: .6; cursor: not-allowed; }
+    .paid-tag { display: inline-flex; align-items: center; gap: .4rem; padding: .6rem 1rem;
+      border-radius: .6rem; background: #f0fdf4; color: #16a34a; font-weight: 700; font-size: .9rem; }
 
     .inv-meta { display: flex; gap: 1.5rem; font-size: .8rem; color: #6b7280; margin-bottom: 1.5rem; flex-wrap: wrap; }
     .inv-meta strong { color: #374151; }
@@ -250,12 +278,19 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
 export class CardInvoicesComponent implements OnInit {
   private api   = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private toast = inject(ToastService);
 
   cards          = signal<any[]>([]);
   selectedCardId = signal('');
   invoices       = signal<any[]>([]);
   transactions   = signal<any[]>([]);
   loadingTxns    = signal(false);
+  payingInvoice  = signal(false);
+
+  // Unpaid expense transactions that compose the current invoice
+  unpaidTxns = computed(() => this.transactions().filter(t => t.type === 'expense' && !t.paid));
+  hasUnpaid  = computed(() => this.unpaidTxns().length > 0);
+  isPaid     = computed(() => this.currentTotal() > 0 && !this.hasUnpaid());
 
   // current month index within invoices array
   monthIdx = signal(0);
@@ -366,6 +401,32 @@ export class CardInvoicesComponent implements OnInit {
       this.monthIdx.update(i => i + 1);
       this.loadTransactions();
     }
+  }
+
+  payInvoice() {
+    const unpaid = this.unpaidTxns();
+    if (!unpaid.length || this.payingInvoice()) return;
+    this.payingInvoice.set(true);
+    forkJoin(
+      unpaid.map(t =>
+        this.api.patch<any>(`/transactions/${t.id}/pay`, {}).pipe(catchError(() => of(null)))
+      )
+    ).subscribe({
+      next: (results: any[]) => {
+        const failed = results.filter(r => r === null).length;
+        this.payingInvoice.set(false);
+        if (failed === 0) {
+          this.toast.success('Fatura paga com sucesso!');
+        } else {
+          this.toast.error(`${failed} lançamento(s) não puderam ser pagos.`);
+        }
+        this.loadTransactions();
+      },
+      error: () => {
+        this.payingInvoice.set(false);
+        this.toast.error('Erro ao pagar a fatura.');
+      },
+    });
   }
 
   nextMonth() {
