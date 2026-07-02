@@ -57,6 +57,7 @@ func main() {
 	txRepo := repositories.NewTransactionRepository(db)
 	reportRepo := repositories.NewReportRepository(db)
 	spendingRepo := repositories.NewSpendingRepository(db)
+	goalRepo := repositories.NewGoalRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	notifSvc := services.NewNotificationService(db)
@@ -85,6 +86,7 @@ func main() {
 	planH := handlers.NewPlanHandler(db)
 	settingsH := handlers.NewSettingsHandler(db)
 	patrimonySnapH := handlers.NewPatrimonySnapshotHandler(db)
+	goalH := handlers.NewGoalHandler(goalRepo)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -212,6 +214,12 @@ func main() {
 		auth.POST("/patrimony-snapshots", patrimonySnapH.Upsert)
 		auth.PUT("/patrimony-snapshots/:id", patrimonySnapH.Update)
 		auth.DELETE("/patrimony-snapshots/:month", patrimonySnapH.Delete)
+
+		// Goals
+		auth.GET("/goals", goalH.List)
+		auth.POST("/goals", goalH.Create)
+		auth.PUT("/goals/:id", goalH.Update)
+		auth.DELETE("/goals/:id", goalH.Delete)
 	}
 
 	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })

@@ -142,6 +142,10 @@ export const routes: Routes = [
       {
         path: 'patrimony-evolution',
         loadComponent: () => import('./modules/patrimony-evolution/patrimony-evolution.component').then(m => m.PatrimonyEvolutionComponent)
+      },
+      {
+        path: 'goals',
+        loadComponent: () => import('./modules/goals/goals.component').then(m => m.GoalsComponent)
       }
     ]
   },

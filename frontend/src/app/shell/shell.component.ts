@@ -42,6 +42,7 @@ import { filter } from 'rxjs/operators';
 
           <a routerLink="/patrimony-evolution" routerLinkActive="active">Patrimônio</a>
           <a routerLink="/spending-limits" routerLinkActive="active">{{ 'nav.spending_limits' | translate }}</a>
+          <a routerLink="/goals" routerLinkActive="active">Objetivos</a>
           <a routerLink="/debt-strategy"   routerLinkActive="active">
             {{ 'nav.debt_strategy' | translate }} @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
           </a>
@@ -165,6 +166,10 @@ import { filter } from 'rxjs/operators';
           <a class="drawer__link" routerLink="/spending-limits" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
             🎯 {{ 'nav.spending_limits' | translate }}
+          </a>
+          <a class="drawer__link" routerLink="/goals" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            🏆 Objetivos
           </a>
           <a class="drawer__link" routerLink="/debt-strategy" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">

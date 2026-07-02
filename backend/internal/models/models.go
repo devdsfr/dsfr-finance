@@ -307,6 +307,35 @@ type PatrimonyPoint struct {
 	NetWorth float64 `json:"net_worth"`
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// GOALS
+// ────────────────────────────────────────────────────────────────────────────
+
+type GoalMonthly struct {
+	Month  string  `json:"month"`
+	Amount float64 `json:"amount"`
+}
+
+type Goal struct {
+	ID           string       `json:"id"`
+	WorkspaceID  string       `json:"workspace_id"`
+	Name         string       `json:"name"`
+	Type         string       `json:"type"` // category | saving | patrimony | debt
+	TargetAmount float64      `json:"target_amount"`
+	TargetDate   *string      `json:"target_date,omitempty"`
+	CategoryID   *string      `json:"category_id,omitempty"`
+	AccountID    *string      `json:"account_id,omitempty"`
+	ChartStyle   string       `json:"chart_style"` // ring | bar | thermometer | line | gauge
+	Color        string       `json:"color"`
+	Icon         string       `json:"icon"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+	// Computed at response time
+	CurrentAmount float64      `json:"current_amount"`
+	ProgressPct   float64      `json:"progress_pct"`
+	MonthlyData   []GoalMonthly `json:"monthly_data"`
+}
+
 type ActiveInstallment struct {
 	TransactionID    string  `json:"transaction_id"`
 	Description      string  `json:"description"`
