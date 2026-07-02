@@ -112,7 +112,7 @@ func (r *SpendingRepository) ComputeCurrentSpend(l *models.SpendingLimit, month 
 	}
 
 	q := fmt.Sprintf(`SELECT COALESCE(SUM(amount),0) FROM transactions
-		WHERE workspace_id=$1 AND type='expense' AND paid=true AND date BETWEEN $2 AND $3 %s`, extra)
+		WHERE workspace_id=$1 AND type='expense' AND ignored=false AND date BETWEEN $2 AND $3 %s`, extra)
 
 	var spend float64
 	err := r.db.QueryRow(q, args...).Scan(&spend)
