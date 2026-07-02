@@ -291,16 +291,19 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
 
         <div class="fm-body">
 
-          <!-- Name + Icon row -->
-          <div class="fm-row">
-            <div class="fm-icon-pick">
-              @for (ic of iconOpts; track ic) {
-                <button type="button" class="icon-btn" [class.icon-btn--sel]="form.icon === ic"
-                        (click)="form.icon = ic">{{ ic }}</button>
-              }
-            </div>
-            <input [(ngModel)]="form.name" name="name" class="fm-input fm-input--flex"
-                   placeholder="Nome do objetivo" required />
+          <!-- Name field -->
+          <div class="fm-label">Nome do objetivo</div>
+          <input [(ngModel)]="form.name" name="name" class="fm-input"
+                 placeholder="Ex: Viagem, Reserva de emergência…" required
+                 style="width:100%;margin-bottom:.75rem" />
+
+          <!-- Icon picker -->
+          <div class="fm-label">Ícone</div>
+          <div class="fm-icon-pick">
+            @for (ic of iconOpts; track ic) {
+              <button type="button" class="icon-btn" [class.icon-btn--sel]="form.icon === ic"
+                      (click)="form.icon = ic">{{ ic }}</button>
+            }
           </div>
 
           <!-- Type selector -->
