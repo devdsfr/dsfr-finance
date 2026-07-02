@@ -256,7 +256,7 @@ func (s *TransactionService) checkSpendingAlerts(workspaceID, userID string, cat
 			continue
 		}
 
-		spend, err := s.spendingRepo.ComputeCurrentSpend(l)
+		spend, err := s.spendingRepo.ComputeCurrentSpend(l, "")
 		if err != nil {
 			continue
 		}
