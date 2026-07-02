@@ -7,7 +7,7 @@ import { ApiService } from '../../core/services/api.service';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 
 // ── Types ────────────────────────────────────────────────────────────────
-type WidgetStyle = 'compare' | 'evolution' | 'pie';
+type WidgetStyle = 'compare' | 'evolution' | 'pie' | 'bar' | 'gauge';
 type SourceType  = 'category' | 'card' | 'debt' | 'ai';
 
 interface CatalogItem {
@@ -179,6 +179,62 @@ const TYPE_LABEL: Record<SourceType, string> = {
               }
             }
 
+            <!-- ── BAR ── -->
+            @if (w.style === 'bar') {
+              @if (barValues(w.id).length > 0) {
+                <div class="bar">
+                  <svg [attr.viewBox]="'0 0 ' + BAR_W + ' ' + BAR_H" class="bar-svg" preserveAspectRatio="none">
+                    @for (yl of barYLines(w.id); track yl.py) {
+                      <line [attr.x1]="PAD_L" [attr.x2]="BAR_W - PAD_R" [attr.y1]="yl.py" [attr.y2]="yl.py"
+                            stroke="#eef0f2" stroke-width="1"/>
+                      <text [attr.x]="PAD_L - 3" [attr.y]="yl.py + 3" text-anchor="end" font-size="8" fill="#9ca3af">{{ yl.label }}</text>
+                    }
+                    @for (v of barValues(w.id); track $index) {
+                      <rect [attr.x]="barX($index, barValues(w.id).length)" [attr.y]="barY(w.id, v.value)"
+                            [attr.width]="barW(barValues(w.id).length)" [attr.height]="barH(w.id, v.value)"
+                            [attr.fill]="v.color" rx="2"/>
+                      <text [attr.x]="barX($index, barValues(w.id).length) + barW(barValues(w.id).length)/2"
+                            [attr.y]="BAR_H - 4" text-anchor="middle" font-size="8" fill="#9ca3af">{{ v.label }}</text>
+                    }
+                  </svg>
+                  <div class="pie-legend">
+                    @for (v of barValues(w.id); track v.label) {
+                      <div class="pie-leg-row">
+                        <span class="cmp-dot" [style.background]="v.color"></span>
+                        <span class="pie-leg-label">{{ v.label }}</span>
+                        <span class="pie-leg-pct">{{ v.value | appCurrency }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              } @else {
+                <div class="widget-nodata">Sem dados para exibir.</div>
+              }
+            }
+
+            <!-- ── GAUGE ── -->
+            @if (w.style === 'gauge') {
+              @if (gaugeValue(w.id) > 0) {
+                <div class="gauge">
+                  <svg viewBox="0 0 120 70" class="gauge-svg">
+                    <path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="#f3f4f6" stroke-width="12" stroke-linecap="round"/>
+                    <path d="M10 60 A50 50 0 0 1 110 60" fill="none" [attr.stroke]="gaugeColor(w.id)" stroke-width="12"
+                          stroke-linecap="round" [attr.stroke-dasharray]="gaugeDash(w.id) + ' 314'"/>
+                    <text x="60" y="50" text-anchor="middle" font-size="10" fill="#9ca3af">Atual</text>
+                    <text x="60" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#111">
+                      {{ gaugeValueShort(w.id) }}
+                    </text>
+                  </svg>
+                  <div class="gauge-info">
+                    <span class="gauge-label">{{ gaugeLabel(w.id) }}</span>
+                    <span class="gauge-pct">{{ gaugePct(w.id) }}%</span>
+                  </div>
+                </div>
+              } @else {
+                <div class="widget-nodata">Sem dados para exibir.</div>
+              }
+            }
+
           }
         </div>
       }
@@ -209,6 +265,14 @@ const TYPE_LABEL: Record<SourceType, string> = {
             <button type="button" class="style-opt" [class.active]="draftStyle() === 'pie'" (click)="setStyle('pie')">
               <svg width="24" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="5" opacity=".45"/><path d="M10 2 a8 8 0 0 1 8 8 l-8 0 z" fill="currentColor"/></svg>
               <span>Pizza</span>
+            </button>
+            <button type="button" class="style-opt" [class.active]="draftStyle() === 'bar'" (click)="setStyle('bar')">
+              <svg width="28" height="20" viewBox="0 0 28 20"><rect x="3" y="10" width="6" height="8" rx="1" fill="currentColor" opacity=".45"/><rect x="11" y="5" width="6" height="13" rx="1" fill="currentColor" opacity=".85"/><rect x="19" y="8" width="6" height="10" rx="1" fill="currentColor" opacity=".65"/></svg>
+              <span>Barras</span>
+            </button>
+            <button type="button" class="style-opt" [class.active]="draftStyle() === 'gauge'" (click)="setStyle('gauge')">
+              <svg width="28" height="20" viewBox="0 0 28 20"><path d="M4 16 A10 10 0 0 1 24 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M4 16 A10 10 0 0 1 14 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".45"/></svg>
+              <span>Medidor</span>
             </button>
           </div>
           <span class="fld-hint">{{ styleHint() }}</span>
@@ -313,6 +377,16 @@ const TYPE_LABEL: Record<SourceType, string> = {
   /* Evolution */
   .evo-svg { width: 100%; height: 160px; }
 
+  /* Bar */
+  .bar-svg { width: 100%; height: 140px; }
+
+  /* Gauge */
+  .gauge { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+  .gauge-svg { width: 120px; height: 70px; }
+  .gauge-info { display: flex; align-items: center; gap: .5rem; }
+  .gauge-label { font-size: .8rem; color: #374151; }
+  .gauge-pct { font-size: .78rem; font-weight: 700; color: #6b7280; }
+
   /* Modal */
   .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
     align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
@@ -327,7 +401,7 @@ const TYPE_LABEL: Record<SourceType, string> = {
   .inp { width: 100%; padding: .6rem .75rem; border: 1.5px solid #e5e7eb; border-radius: .5rem; font-size: .9rem; }
   .inp:focus { outline: none; border-color: #16a34a; }
 
-  .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+  .style-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; }
   .style-opt { display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: .7rem .5rem;
     border: 1.5px solid #e5e7eb; border-radius: .6rem; background: #fff; cursor: pointer; color: #6b7280;
     font-size: .78rem; font-weight: 600; transition: all .15s; }
@@ -362,6 +436,7 @@ export class ConfigurableDashboardComponent implements OnInit {
   readonly C = 2 * Math.PI * 38;
   readonly EVO_W = 520; readonly EVO_H = 160;
   readonly PAD_L = 34; readonly PAD_R = 12; readonly PAD_T = 12; readonly PAD_B = 22;
+  readonly BAR_W = 520; readonly BAR_H = 140;
 
   widgets = signal<DashWidget[]>([]);
   data    = signal<Record<string, WidgetData>>({});
@@ -436,7 +511,8 @@ export class ConfigurableDashboardComponent implements OnInit {
     const s = this.draftStyle();
     if (s === 'evolution') return 1;
     if (s === 'compare') return 2;
-    return 8; // pie
+    if (s === 'gauge') return 1;
+    return 8; // pie, bar
   }
   canSelectMore(): boolean { return this.draftSources().length < this.maxSources(); }
 
@@ -445,6 +521,9 @@ export class ConfigurableDashboardComponent implements OnInit {
       case 'compare':   return 'Compare 1 ou 2 registros lado a lado.';
       case 'evolution': return 'Acompanhe a evolução de 1 registro nos últimos 6 meses.';
       case 'pie':       return 'Distribuição proporcional entre vários registros.';
+      case 'bar':       return 'Barras verticais comparando valores dos registros.';
+      case 'gauge':     return 'Medidor de progresso com base no valor total.';
+      default:          return '';
     }
   }
 
@@ -476,7 +555,8 @@ export class ConfigurableDashboardComponent implements OnInit {
     const n = this.draftSources().length;
     if (this.draftStyle() === 'evolution') return n === 1;
     if (this.draftStyle() === 'compare')   return n >= 1 && n <= 2;
-    return n >= 2; // pie
+    if (this.draftStyle() === 'gauge')     return n === 1;
+    return n >= 2; // pie, bar
   }
 
   saveWidget() {
@@ -559,7 +639,7 @@ export class ConfigurableDashboardComponent implements OnInit {
       ai:    this.api.get<any>('/ai-subscriptions').pipe(catchError(() => of({ data: [] }))),
     }).subscribe(res => {
       const items: CatalogItem[] = [];
-      (res.cats.data ?? []).filter((c: any) => c.type === 'expense').forEach((c: any, i: number) =>
+      (res.cats.data ?? []).forEach((c: any, i: number) =>
         items.push({ type: 'category', refId: c.id, label: c.name, color: c.color || PALETTE[i % PALETTE.length], icon: c.icon, raw: c }));
       (res.cards.data ?? []).forEach((c: any, i: number) =>
         items.push({ type: 'card', refId: c.id, label: c.name, color: c.color || PALETTE[i % PALETTE.length], raw: c }));
@@ -600,7 +680,7 @@ export class ConfigurableDashboardComponent implements OnInit {
     const m = this.lastMonths(1)[0];
     switch (src.type) {
       case 'category':
-        return this.api.get<any>(`/reports/categories?type=expense&date_from=${m.start}&date_to=${m.end}`).pipe(
+        return this.api.get<any>(`/reports/categories?date_from=${m.start}&date_to=${m.end}`).pipe(
           map(r => {
             const row = (r.data ?? []).find((x: any) => x.category_id === src.refId || x.id === src.refId);
             return row ? Math.abs(row.total ?? 0) : 0;
@@ -626,7 +706,7 @@ export class ConfigurableDashboardComponent implements OnInit {
     switch (src.type) {
       case 'category':
         return forkJoin(months.map(m =>
-          this.api.get<any>(`/reports/categories?type=expense&date_from=${m.start}&date_to=${m.end}`).pipe(
+          this.api.get<any>(`/reports/categories?date_from=${m.start}&date_to=${m.end}`).pipe(
             map(r => {
               const row = (r.data ?? []).find((x: any) => x.category_id === src.refId || x.id === src.refId);
               return row ? Math.abs(row.total ?? 0) : 0;
@@ -716,5 +796,62 @@ export class ConfigurableDashboardComponent implements OnInit {
     const H = this.EVO_H - this.PAD_T - this.PAD_B;
     const fmt = (v: number) => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'k' : v.toFixed(0);
     return [0, 0.5, 1].map(t => ({ py: this.PAD_T + H - t * H, label: fmt(t * max) }));
+  }
+
+  // ── Bar helpers ──
+  barValues(id: string) { return this.data()[id]?.values ?? []; }
+  private barMax(id: string): number {
+    const vals = this.barValues(id);
+    return Math.max(...vals.map(v => v.value), 1) * 1.15;
+  }
+  barYLines(id: string) {
+    const max = this.barMax(id);
+    const H = this.BAR_H - this.PAD_T - this.PAD_B;
+    const fmt = (v: number) => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'k' : v.toFixed(0);
+    return [0, 0.5, 1].map(t => ({ py: this.PAD_T + H - t * H, label: fmt(t * max) }));
+  }
+  barX(i: number, n: number): number {
+    const W = this.BAR_W - this.PAD_L - this.PAD_R;
+    return this.PAD_L + (n <= 1 ? W / 2 : (i / (n - 1)) * W);
+  }
+  barW(n: number): number {
+    const W = this.BAR_W - this.PAD_L - this.PAD_R;
+    return Math.max(8, Math.floor(W / (n * 3 + 1)) - 2);
+  }
+  barY(id: string, v: number): number {
+    const H = this.BAR_H - this.PAD_T - this.PAD_B;
+    return this.PAD_T + H - (v / this.barMax(id)) * H;
+  }
+  barH(id: string, v: number): number {
+    const H = this.BAR_H - this.PAD_T - this.PAD_B;
+    return (v / this.barMax(id)) * H;
+  }
+
+  // ── Gauge helpers ──
+  gaugeValue(id: string): number {
+    const v = this.data()[id]?.values?.[0]?.value ?? 0;
+    return Math.abs(v);
+  }
+  gaugeLabel(id: string): string {
+    return this.data()[id]?.values?.[0]?.label ?? '';
+  }
+  gaugeColor(id: string): string {
+    return this.data()[id]?.values?.[0]?.color ?? '#6366f1';
+  }
+  gaugePct(id: string): number {
+    const v = this.gaugeValue(id);
+    // Use a fixed target of 5000 for percentage, or use the max of other values if available
+    const target = 5000;
+    return Math.min(100, Math.round((v / target) * 100));
+  }
+  gaugeDash(id: string): number {
+    const pct = this.gaugePct(id) / 100;
+    return pct * 314; // 2 * PI * 50 ≈ 314
+  }
+  gaugeValueShort(id: string): string {
+    const t = this.gaugeValue(id);
+    if (t >= 1e6) return (t / 1e6).toFixed(1) + 'M';
+    if (t >= 1e3) return (t / 1e3).toFixed(1) + 'k';
+    return t.toFixed(0);
   }
 }
