@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
+import { ConfigurableDashboardComponent } from './configurable-dashboard.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -15,7 +16,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe, AppCurrencyPipe],
+  imports: [CommonModule, RouterModule, TranslatePipe, AppCurrencyPipe, ConfigurableDashboardComponent],
   template: `
     <div class="dash">
 
@@ -120,6 +121,9 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
           </div>
         </div>
       </div>
+
+      <!-- ── Configurable dashboard (Meu Painel) ──────────────── -->
+      <app-configurable-dashboard />
 
       <!-- ── Body: 2 columns ──────────────────────────────────── -->
       <div class="body-grid">
