@@ -20,14 +20,15 @@ func NewSpendingHandler(repo *repositories.SpendingRepository) *SpendingHandler 
 
 func (h *SpendingHandler) List(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
+	month := c.DefaultQuery("month", "") // optional YYYY-MM
 	limits, err := h.repo.List(wsID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// Enrich with current spend
+	// Enrich with current spend for the requested month
 	for _, l := range limits {
-		spend, _ := h.repo.ComputeCurrentSpend(l)
+		spend, _ := h.repo.ComputeCurrentSpend(l, month)
 		l.CurrentSpend = spend
 		if l.Amount > 0 {
 			l.UsagePct = (spend / l.Amount) * 100

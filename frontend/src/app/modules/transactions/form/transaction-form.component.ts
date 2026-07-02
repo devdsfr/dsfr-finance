@@ -176,13 +176,13 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
                 <input class="cat-search" [(ngModel)]="catSearchVal" name="catSearch"
                        placeholder="Buscar categoria..." />
                 <div class="cat-list">
-                  <div class="cat-item" (click)="selectCat('')">
+                  <div class="cat-item" (click)="$event.stopPropagation(); selectCat('')">
                     <span class="cat-chip cat-chip--none">—</span>
                     Sem categoria
                   </div>
                   @for (cat of filteredCats(); track cat.id) {
                     <div class="cat-item" [class.cat-item--active]="form.category_id === cat.id"
-                         (click)="selectCat(cat.id)">
+                         (click)="$event.stopPropagation(); selectCat(cat.id)">
                       <span class="cat-chip">{{ catIcon(cat) }}</span>
                       {{ cat.name }}
                     </div>
@@ -257,17 +257,40 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
           <!-- Expanded sections -->
           @if (showRepeat && form.type === 'expense') {
             <div class="expanded">
-              <label class="exp-label">Parcelamento</label>
-              <div class="installment-row">
-                <input [(ngModel)]="form.installments" name="installments" type="number"
-                       min="1" max="48" class="inst-input" />
-                <span class="inst-label">parcelas</span>
+              <!-- Mode toggle -->
+              <div class="repeat-tabs">
+                <button type="button" class="repeat-tab" [class.repeat-tab--active]="repeatMode === 'installment'"
+                        (click)="repeatMode = 'installment'">Parcelar</button>
+                <button type="button" class="repeat-tab" [class.repeat-tab--active]="repeatMode === 'monthly'"
+                        (click)="repeatMode = 'monthly'">Repetir</button>
               </div>
-              @if ((form.installments ?? 1) > 1) {
-                <div class="inst-preview">
-                  Valor por parcela: <strong>R$ {{ installmentAmount | number:'1.2-2' }}</strong>
-                  — impacto nas próximas {{ form.installments }} faturas
+
+              @if (repeatMode === 'installment') {
+                <div class="repeat-mode-desc">Divide o valor em parcelas mensais</div>
+                <div class="installment-row">
+                  <input [(ngModel)]="form.installments" name="installments" type="number"
+                         min="1" max="48" class="inst-input" />
+                  <span class="inst-label">parcelas</span>
                 </div>
+                @if ((form.installments ?? 1) > 1) {
+                  <div class="inst-preview">
+                    Valor por parcela: <strong>R$ {{ installmentAmount | number:'1.2-2' }}</strong>
+                    — impacto nas próximas {{ form.installments }} faturas
+                  </div>
+                }
+              } @else {
+                <div class="repeat-mode-desc">Repete o lançamento com o mesmo valor</div>
+                <div class="installment-row">
+                  <input [(ngModel)]="form.repeat_months" name="repeat_months" type="number"
+                         min="1" max="60" class="inst-input" />
+                  <span class="inst-label">meses</span>
+                </div>
+                @if ((form.repeat_months ?? 1) > 1) {
+                  <div class="inst-preview">
+                    Serão criados <strong>{{ form.repeat_months }} lançamentos</strong>
+                    de <strong>R$ {{ form.amount | number:'1.2-2' }}</strong> nos próximos meses
+                  </div>
+                }
               }
             </div>
           }
@@ -524,6 +547,17 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
       font-size: .8rem; color: #6b7280; padding: .4rem .6rem;
       background: #eff6ff; border-radius: .375rem;
     }
+    .repeat-tabs {
+      display: flex; gap: .25rem; background: #e5e7eb;
+      border-radius: .5rem; padding: .2rem;
+    }
+    .repeat-tab {
+      flex: 1; padding: .35rem .5rem; border: none; border-radius: .375rem;
+      font-size: .8rem; font-weight: 600; cursor: pointer;
+      background: transparent; color: #6b7280; transition: all .15s;
+    }
+    .repeat-tab--active { background: #fff; color: #111827; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    .repeat-mode-desc { font-size: .75rem; color: #9ca3af; }
     .notes-input {
       width: 100%; padding: .5rem .6rem; border: 1px solid #d1d5db;
       border-radius: .375rem; font-size: .875rem; resize: vertical;
@@ -576,7 +610,7 @@ export class TransactionFormComponent implements OnInit {
     type: 'expense', description: '', amount: null,
     date: new Date().toISOString().slice(0, 10),
     account_id: '', credit_card_id: '', category_id: '', transfer_account_id: '',
-    notes: '', paid: false, installments: 1, tags: [], attachment_name: null
+    notes: '', paid: false, installments: 1, repeat_months: 1, tags: [], attachment_name: null
   };
 
   get formTitle(): string {
@@ -600,9 +634,10 @@ export class TransactionFormComponent implements OnInit {
   toggleAccTo() { this.accToOpen.update(v => !v); this.accOpen.set(false); this.catOpen.set(false); }
 
   /* ── Category picker ── */
-  catOpen    = signal(false);
-  newCatMode = false;
-  newCat: any = { name: '', color: '#16a34a', icon: '●' };
+  catOpen      = signal(false);
+  categoryId   = signal('');   // mirrors form.category_id so computed() reacts to changes
+  newCatMode   = false;
+  newCat: any  = { name: '', color: '#16a34a', icon: '●' };
   catSearchVal = '';
 
   catIconOpts = [
@@ -623,7 +658,7 @@ export class TransactionFormComponent implements OnInit {
   });
 
   selectedCategory = computed(() =>
-    this.categories().find(c => c.id === this.form.category_id) ?? null
+    this.categories().find(c => c.id === this.categoryId()) ?? null
   );
 
   /* ── Expandable sections ── */
@@ -631,6 +666,7 @@ export class TransactionFormComponent implements OnInit {
   showNotes      = false;
   showAttachment = false;
   showTags       = false;
+  repeatMode: 'installment' | 'monthly' = 'installment';
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent) {
@@ -646,6 +682,7 @@ export class TransactionFormComponent implements OnInit {
 
   selectCat(id: string) {
     this.form.category_id = id;
+    this.categoryId.set(id);   // update signal so selectedCategory computed reacts
     this.catSearchVal = '';
     this.catOpen.set(false);
     this.newCatMode = false;
@@ -660,7 +697,7 @@ export class TransactionFormComponent implements OnInit {
       this.api.get<any>('/categories').subscribe(res => {
         this.categories.set(res.data ?? []);
         const created = (res.data ?? []).find((c: any) => c.name === this.newCat.name);
-        if (created) this.form.category_id = created.id;
+        if (created) { this.form.category_id = created.id; this.categoryId.set(created.id); }
         this.newCatMode = false;
         this.newCat = { name: '', color: '#16a34a', icon: '●' };
         this.catOpen.set(false);
@@ -755,6 +792,7 @@ export class TransactionFormComponent implements OnInit {
       this.isEdit = true;
       this.api.get<any>(`/transactions/${id}`).subscribe(tx => {
         this.form = { ...tx, installments: 1, tags: tx.tags ?? [] };
+        this.categoryId.set(tx.category_id || '');
       });
     }
 
@@ -762,6 +800,7 @@ export class TransactionFormComponent implements OnInit {
     if (duplicateId) {
       this.api.get<any>(`/transactions/${duplicateId}`).subscribe(tx => {
         this.form = { ...tx, id: null, date: new Date().toISOString().slice(0, 10), installments: 1, tags: tx.tags ?? [] };
+        this.categoryId.set(tx.category_id || '');
       });
     }
   }
@@ -778,10 +817,13 @@ export class TransactionFormComponent implements OnInit {
     const payload = {
       ...this.form,
       tag_ids: tagIDs,
-      account_id:     this.form.account_id     || null,
-      credit_card_id: this.form.credit_card_id || null,
+      account_id:           this.form.account_id           || null,
+      credit_card_id:       this.form.credit_card_id       || null,
       category_id:          this.form.category_id          || null,
       transfer_account_id:  this.form.transfer_account_id  || null,
+      // repeat mode: mutually exclusive — zero out the unused field
+      installments:  this.repeatMode === 'installment' ? (this.form.installments ?? 1) : 1,
+      repeat_months: this.repeatMode === 'monthly'     ? (this.form.repeat_months ?? 1) : 1,
     };
 
     const req = this.isEdit

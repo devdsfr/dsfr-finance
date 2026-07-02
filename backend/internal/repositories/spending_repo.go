@@ -71,16 +71,28 @@ func (r *SpendingRepository) Delete(id, workspaceID string) error {
 	return err
 }
 
-// ComputeCurrentSpend calculates current spend for a limit this period
-func (r *SpendingRepository) ComputeCurrentSpend(l *models.SpendingLimit) (float64, error) {
+// ComputeCurrentSpend calculates current spend for a limit in the given month (YYYY-MM).
+// Pass an empty string to use the current month.
+func (r *SpendingRepository) ComputeCurrentSpend(l *models.SpendingLimit, month string) (float64, error) {
 	now := time.Now()
+	var ref time.Time
+	if month != "" {
+		parsed, err := time.Parse("2006-01", month)
+		if err == nil {
+			ref = parsed
+		} else {
+			ref = now
+		}
+	} else {
+		ref = now
+	}
 	var from, to string
 	if l.Period == "yearly" {
-		from = fmt.Sprintf("%d-01-01", now.Year())
-		to = fmt.Sprintf("%d-12-31", now.Year())
+		from = fmt.Sprintf("%d-01-01", ref.Year())
+		to = fmt.Sprintf("%d-12-31", ref.Year())
 	} else {
-		from = fmt.Sprintf("%d-%02d-01", now.Year(), now.Month())
-		last := time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, time.UTC)
+		from = fmt.Sprintf("%d-%02d-01", ref.Year(), ref.Month())
+		last := time.Date(ref.Year(), ref.Month()+1, 0, 0, 0, 0, 0, time.UTC)
 		to = last.Format("2006-01-02")
 	}
 
