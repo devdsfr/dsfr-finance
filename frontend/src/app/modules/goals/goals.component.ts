@@ -175,25 +175,24 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
                 <!-- Target line -->
                 <line x1="10" x2="270" [attr.y1]="20" [attr.y2]="20"
                       stroke="#dc2626" stroke-width="1" stroke-dasharray="5 3"/>
+                <!-- Gradient def -->
+                <defs>
+                  <linearGradient [attr.id]="'grad-' + g.id" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" [attr.stop-color]="progressColor(g)" stop-opacity="0.4"/>
+                    <stop offset="100%" [attr.stop-color]="progressColor(g)" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
                 <!-- Area fill -->
-                @if (linePoints(g) as pts) {
-                  <polyline [attr.points]="lineAreaPoints(g)"
-                            fill="url(#grad-{{g.id}})" fill-opacity="0.15" stroke="none"/>
-                  <defs>
-                    <linearGradient [attr.id]="'grad-' + g.id" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" [attr.stop-color]="progressColor(g)" stop-opacity="0.4"/>
-                      <stop offset="100%" [attr.stop-color]="progressColor(g)" stop-opacity="0"/>
-                    </linearGradient>
-                  </defs>
-                  <!-- Line -->
-                  <polyline [attr.points]="pts" fill="none"
-                            [attr.stroke]="progressColor(g)" stroke-width="2.5"
-                            stroke-linecap="round" stroke-linejoin="round"/>
-                  <!-- Data dots -->
-                  @for (pt of lineDataPoints(g); track pt.x) {
-                    <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5"
-                            fill="#fff" [attr.stroke]="progressColor(g)" stroke-width="2"/>
-                  }
+                <polyline [attr.points]="lineAreaPoints(g)"
+                          [attr.fill]="'url(#grad-' + g.id + ')'" fill-opacity="0.15" stroke="none"/>
+                <!-- Line -->
+                <polyline [attr.points]="linePoints(g)" fill="none"
+                          [attr.stroke]="progressColor(g)" stroke-width="2.5"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- Data dots -->
+                @for (pt of lineDataPoints(g); track pt.x) {
+                  <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5"
+                          fill="#fff" [attr.stroke]="progressColor(g)" stroke-width="2"/>
                 }
                 <!-- Month labels -->
                 @for (d of g.monthly_data; track d.month; let i = $index) {
