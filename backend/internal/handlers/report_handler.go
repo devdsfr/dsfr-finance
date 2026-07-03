@@ -98,7 +98,7 @@ func (h *ReportHandler) CategorySummary(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
 	from := c.DefaultQuery("from", "2024-01-01")
 	to := c.DefaultQuery("to", "2024-12-31")
-	txType := c.DefaultQuery("type", "expense")
+	txType := c.Query("type")
 	data, err := h.repo.CategorySummary(wsID, txType, from, to)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -39,16 +39,24 @@ type CreateTransactionRequest struct {
 	TagIDs           []string `json:"tag_ids"`
 	// installments (AC-UX-05)
 	Installments     int      `json:"installments"`
+	// repeat_months: creates N copies with the full amount (for income/expense recurrence)
+	RepeatMonths     int      `json:"repeat_months"`
 }
 
 func (s *TransactionService) Create(workspaceID, userID string, req CreateTransactionRequest) ([]*models.Transaction, error) {
+	// repeat_months takes priority over installments for income; installments splits amount
+	repeatMonths := req.RepeatMonths
+	if repeatMonths < 1 {
+		repeatMonths = 1
+	}
+
 	installments := req.Installments
-	if installments <= 1 {
+	if installments <= 1 || repeatMonths > 1 {
 		installments = 1
 	}
 
 	var groupID *string
-	if installments > 1 {
+	if installments > 1 || repeatMonths > 1 {
 		id := uuid.New().String()
 		groupID = &id
 	}
@@ -61,9 +69,20 @@ func (s *TransactionService) Create(workspaceID, userID string, req CreateTransa
 
 	var created []*models.Transaction
 	amountPerInstallment := req.Amount / float64(installments)
+	iterations := installments
+	if repeatMonths > 1 {
+		iterations = repeatMonths
+	}
 
-	for i := 1; i <= installments; i++ {
+	for i := 1; i <= iterations; i++ {
 		date := baseDate.AddDate(0, i-1, 0).Format("2006-01-02")
+
+		// For installments: divide amount; for repeat: keep full amount
+		txAmount := amountPerInstallment
+		if repeatMonths > 1 {
+			txAmount = req.Amount
+		}
+
 		num := i
 		total := installments
 
@@ -74,7 +93,7 @@ func (s *TransactionService) Create(workspaceID, userID string, req CreateTransa
 			CreditCardID:     req.CreditCardID,
 			CategoryID:       req.CategoryID,
 			Type:             req.Type,
-			Amount:           amountPerInstallment,
+			Amount:           txAmount,
 			Date:             date,
 			Description:      req.Description,
 			Notes:            req.Notes,
@@ -134,6 +153,37 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 	}
 	if req.TagIDs != nil {
 		_ = s.repo.SetTags(txID, req.TagIDs)
+	}
+
+	// If repeat_months > 0, create copies for the following months
+	if req.RepeatMonths > 0 {
+		baseDate, err := time.Parse("2006-01-02", req.Date)
+		if err == nil {
+			groupID := uuid.New().String()
+			for i := 1; i <= req.RepeatMonths; i++ {
+				date := baseDate.AddDate(0, i, 0).Format("2006-01-02")
+				tx := &models.Transaction{
+					ID:               uuid.New().String(),
+					WorkspaceID:      workspaceID,
+					AccountID:        req.AccountID,
+					CreditCardID:     req.CreditCardID,
+					CategoryID:       req.CategoryID,
+					Type:             req.Type,
+					Amount:           req.Amount,
+					Date:             date,
+					Description:      req.Description,
+					Notes:            req.Notes,
+					Paid:             false,
+					InstallmentGroup: &groupID,
+				}
+				if err := s.repo.Create(tx); err != nil {
+					break
+				}
+				if len(req.TagIDs) > 0 {
+					_ = s.repo.SetTags(tx.ID, req.TagIDs)
+				}
+			}
+		}
 	}
 
 	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)

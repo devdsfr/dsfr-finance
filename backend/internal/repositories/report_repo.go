@@ -102,16 +102,33 @@ func (r *ReportRepository) AccountBalanceHistory(workspaceID string, accountIDs 
 
 // CategorySummary returns totals per category (AC-RL-21)
 func (r *ReportRepository) CategorySummary(workspaceID, txType, from, to string) ([]models.CategorySummary, error) {
-	q := `
-		SELECT c.id, c.name, c.color, c.icon,
-		       COALESCE(SUM(t.amount),0) AS total,
-		       COUNT(t.id) AS cnt
-		FROM transactions t
-		JOIN categories c ON c.id = t.category_id
-		WHERE t.workspace_id=$1 AND t.type=$2 AND t.ignored=false AND t.date BETWEEN $3 AND $4
-		GROUP BY c.id, c.name, c.color, c.icon
-		ORDER BY total DESC`
-	rows, err := r.db.Query(q, workspaceID, txType, from, to)
+	var q string
+	var rows *sql.Rows
+	var err error
+
+	if txType == "" {
+		q = `
+			SELECT c.id, c.name, c.color, c.icon,
+			       COALESCE(SUM(t.amount),0) AS total,
+			       COUNT(t.id) AS cnt
+			FROM transactions t
+			JOIN categories c ON c.id = t.category_id
+			WHERE t.workspace_id=$1 AND t.ignored=false AND t.date BETWEEN $2 AND $3
+			GROUP BY c.id, c.name, c.color, c.icon
+			ORDER BY total DESC`
+		rows, err = r.db.Query(q, workspaceID, from, to)
+	} else {
+		q = `
+			SELECT c.id, c.name, c.color, c.icon,
+			       COALESCE(SUM(t.amount),0) AS total,
+			       COUNT(t.id) AS cnt
+			FROM transactions t
+			JOIN categories c ON c.id = t.category_id
+			WHERE t.workspace_id=$1 AND t.type=$2 AND t.ignored=false AND t.date BETWEEN $3 AND $4
+			GROUP BY c.id, c.name, c.color, c.icon
+			ORDER BY total DESC`
+		rows, err = r.db.Query(q, workspaceID, txType, from, to)
+	}
 	if err != nil {
 		return nil, err
 	}

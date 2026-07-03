@@ -230,7 +230,7 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
 
           <!-- Bottom action icons -->
           <div class="action-bar">
-            @if (form.type === 'expense') {
+            @if (form.type === 'expense' || form.type === 'income') {
               <button type="button" class="action-btn" [class.action-btn--active]="showRepeat"
                       (click)="showRepeat = !showRepeat">
                 <span class="action-icon">⟲</span>
@@ -255,42 +255,53 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
           </div>
 
           <!-- Expanded sections -->
-          @if (showRepeat && form.type === 'expense') {
+          @if (showRepeat && (form.type === 'expense' || form.type === 'income')) {
             <div class="expanded">
-              <!-- Mode toggle -->
-              <div class="repeat-tabs">
-                <button type="button" class="repeat-tab" [class.repeat-tab--active]="repeatMode === 'installment'"
-                        (click)="repeatMode = 'installment'">Parcelar</button>
-                <button type="button" class="repeat-tab" [class.repeat-tab--active]="repeatMode === 'monthly'"
-                        (click)="repeatMode = 'monthly'">Repetir</button>
-              </div>
-
-              @if (repeatMode === 'installment') {
-                <div class="repeat-mode-desc">Divide o valor em parcelas mensais</div>
-                <div class="installment-row">
-                  <input [(ngModel)]="form.installments" name="installments" type="number"
-                         min="1" max="48" class="inst-input" />
-                  <span class="inst-label">parcelas</span>
+              @if (form.type === 'expense') {
+                <!-- Mode toggle (only for expense) -->
+                <div class="repeat-tabs">
+                  <button type="button" class="repeat-tab" [class.repeat-tab--active]="repeatMode === 'installment'"
+                          (click)="repeatMode = 'installment'">Parcelar</button>
+                  <button type="button" class="repeat-tab" [class.repeat-tab--active]="repeatMode === 'monthly'"
+                          (click)="repeatMode = 'monthly'">Repetir</button>
                 </div>
-                @if ((form.installments ?? 1) > 1) {
-                  <div class="inst-preview">
-                    Valor por parcela: <strong>R$ {{ installmentAmount | number:'1.2-2' }}</strong>
-                    — impacto nas próximas {{ form.installments }} faturas
+
+                @if (repeatMode === 'installment') {
+                  <div class="repeat-mode-desc">Divide o valor em parcelas mensais</div>
+                  <div class="installment-row">
+                    <input [(ngModel)]="form.installments" name="installments" type="number"
+                           min="1" max="48" class="inst-input" />
+                    <span class="inst-label">parcelas</span>
                   </div>
+                  @if ((form.installments ?? 1) > 1) {
+                    <div class="inst-preview">
+                      Valor por parcela: <strong>R$ {{ installmentAmount | number:'1.2-2' }}</strong>
+                      — impacto nas próximas {{ form.installments }} faturas
+                    </div>
+                  }
+                } @else {
+                  <div class="repeat-mode-desc">Repete o lançamento com o mesmo valor</div>
+                  <div class="installment-row">
+                    <input [(ngModel)]="form.repeat_months" name="repeat_months" type="number"
+                           min="1" max="60" class="inst-input" />
+                    <span class="inst-label">meses</span>
+                  </div>
+                  @if ((form.repeat_months ?? 1) > 1) {
+                    <div class="inst-preview">
+                      Serão criados <strong>{{ form.repeat_months }} lançamentos</strong>
+                      de <strong>R$ {{ form.amount | number:'1.2-2' }}</strong> nos próximos meses
+                    </div>
+                  }
                 }
               } @else {
-                <div class="repeat-mode-desc">Repete o lançamento com o mesmo valor</div>
-                <div class="installment-row">
-                  <input [(ngModel)]="form.repeat_months" name="repeat_months" type="number"
-                         min="1" max="60" class="inst-input" />
-                  <span class="inst-label">meses</span>
+                <!-- Income: simple monthly recurrence toggle -->
+                <div class="repeat-mode-desc">
+                  @if (isEdit) {
+                    Cria novos lançamentos desta receita para os próximos <strong>12 meses</strong> a partir desta data.
+                  } @else {
+                    Cria automaticamente essa receita nos próximos <strong>12 meses</strong>.
+                  }
                 </div>
-                @if ((form.repeat_months ?? 1) > 1) {
-                  <div class="inst-preview">
-                    Serão criados <strong>{{ form.repeat_months }} lançamentos</strong>
-                    de <strong>R$ {{ form.amount | number:'1.2-2' }}</strong> nos próximos meses
-                  </div>
-                }
               }
             </div>
           }
@@ -821,9 +832,11 @@ export class TransactionFormComponent implements OnInit {
       credit_card_id:       this.form.credit_card_id       || null,
       category_id:          this.form.category_id          || null,
       transfer_account_id:  this.form.transfer_account_id  || null,
-      // repeat mode: mutually exclusive — zero out the unused field
-      installments:  this.repeatMode === 'installment' ? (this.form.installments ?? 1) : 1,
-      repeat_months: this.repeatMode === 'monthly'     ? (this.form.repeat_months ?? 1) : 1,
+      // repeat mode: income uses fixed 12-month recurrence; expense uses installment or monthly
+      installments:  (this.form.type === 'expense' && this.repeatMode === 'installment' && this.showRepeat) ? (this.form.installments ?? 1) : 1,
+      repeat_months: this.showRepeat
+        ? (this.form.type === 'income' ? 12 : (this.repeatMode === 'monthly' ? (this.form.repeat_months ?? 1) : 1))
+        : 1,
     };
 
     const req = this.isEdit

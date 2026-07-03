@@ -677,10 +677,13 @@ export class ConfigurableDashboardComponent implements OnInit {
   }
 
   private currentValue$(src: WidgetSource): Observable<number> {
+    const now = new Date();
+    const yearStart = `${now.getFullYear()}-01-01`;
+    const yearEnd = `${now.getFullYear()}-12-31`;
     const m = this.lastMonths(1)[0];
     switch (src.type) {
       case 'category':
-        return this.api.get<any>(`/reports/categories?date_from=${m.start}&date_to=${m.end}`).pipe(
+        return this.api.get<any>(`/reports/categories?from=${yearStart}&to=${yearEnd}`).pipe(
           map(r => {
             const row = (r.data ?? []).find((x: any) => x.category_id === src.refId || x.id === src.refId);
             return row ? Math.abs(row.total ?? 0) : 0;
@@ -706,7 +709,7 @@ export class ConfigurableDashboardComponent implements OnInit {
     switch (src.type) {
       case 'category':
         return forkJoin(months.map(m =>
-          this.api.get<any>(`/reports/categories?date_from=${m.start}&date_to=${m.end}`).pipe(
+          this.api.get<any>(`/reports/categories?from=${m.start}&to=${m.end}`).pipe(
             map(r => {
               const row = (r.data ?? []).find((x: any) => x.category_id === src.refId || x.id === src.refId);
               return row ? Math.abs(row.total ?? 0) : 0;
