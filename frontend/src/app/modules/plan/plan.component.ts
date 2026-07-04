@@ -13,7 +13,7 @@ const FREE_INCLUDES = [
 export const PREMIUM_LABELS: Record<string, string> = {
   export_reports: '📤 Exportar relatórios em CSV / Excel',
   debt_strategy: '📊 Estratégia de Dívidas (bola de neve / avalanche)',
-  ai_subscriptions: '🤖 Assinaturas de IA — consumo e recomendação de cancelamento',
+  ai_subscriptions: '🤖 Assinaturas Tech — consumo e recomendação de cancelamento',
 };
 
 @Component({

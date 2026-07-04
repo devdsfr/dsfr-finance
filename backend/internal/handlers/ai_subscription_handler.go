@@ -24,8 +24,8 @@ func NewAISubscriptionHandler(db *sql.DB, svc *services.AIUsageService) *AISubsc
 func (h *AISubscriptionHandler) List(c *gin.Context) {
 	rows, err := h.db.QueryContext(c, `
 		SELECT id, provider, name, plan_name, monthly_cost, billing_day, (api_key_enc IS NOT NULL AND api_key_enc != ''),
-		       color, logo, status, last_synced_at, created_at, updated_at
-		FROM ai_subscriptions WHERE workspace_id=$1 ORDER BY created_at DESC`, middleware.GetWorkspaceID(c))
+		       color, logo, status, COALESCE(category,'other'), COALESCE(billing_cycle,'monthly'), last_synced_at, created_at, updated_at
+		FROM ai_subscriptions WHERE workspace_id=$1 ORDER BY category, name`, middleware.GetWorkspaceID(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -36,7 +36,7 @@ func (h *AISubscriptionHandler) List(c *gin.Context) {
 	for rows.Next() {
 		s := &models.AISubscription{}
 		if err := rows.Scan(&s.ID, &s.Provider, &s.Name, &s.PlanName, &s.MonthlyCost, &s.BillingDay, &s.HasAPIKey,
-			&s.Color, &s.Logo, &s.Status, &s.LastSyncedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
+			&s.Color, &s.Logo, &s.Status, &s.Category, &s.BillingCycle, &s.LastSyncedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			continue
 		}
 		s.WorkspaceID = middleware.GetWorkspaceID(c)
@@ -70,19 +70,24 @@ func (h *AISubscriptionHandler) fetchUsage(c *gin.Context, subID, period string)
 
 func (h *AISubscriptionHandler) Create(c *gin.Context) {
 	var body struct {
-		Provider    string  `json:"provider"`
-		Name        string  `json:"name"`
-		PlanName    string  `json:"plan_name"`
-		MonthlyCost float64 `json:"monthly_cost"`
-		BillingDay  *int    `json:"billing_day"`
-		APIKey      string  `json:"api_key"`
-		Color       string  `json:"color"`
-		Logo        string  `json:"logo"`
+		Provider     string  `json:"provider"`
+		Name         string  `json:"name"`
+		PlanName     string  `json:"plan_name"`
+		MonthlyCost  float64 `json:"monthly_cost"`
+		BillingDay   *int    `json:"billing_day"`
+		APIKey       string  `json:"api_key"`
+		Color        string  `json:"color"`
+		Logo         string  `json:"logo"`
+		Category     string  `json:"category"`
+		BillingCycle string  `json:"billing_cycle"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if body.Category == "" { body.Category = "other" }
+	if body.BillingCycle == "" { body.BillingCycle = "monthly" }
+	if body.Provider == "" { body.Provider = "other" }
 
 	var encKey string
 	if body.APIKey != "" {
@@ -96,9 +101,9 @@ func (h *AISubscriptionHandler) Create(c *gin.Context) {
 
 	id := uuid.New().String()
 	_, err := h.db.ExecContext(c, `
-		INSERT INTO ai_subscriptions (id, workspace_id, provider, name, plan_name, monthly_cost, billing_day, api_key_enc, color, logo, status, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'active',NOW(),NOW())`,
-		id, middleware.GetWorkspaceID(c), body.Provider, body.Name, nullable(body.PlanName), body.MonthlyCost, body.BillingDay, nullable(encKey), nullable(body.Color), nullable(body.Logo))
+		INSERT INTO ai_subscriptions (id, workspace_id, provider, name, plan_name, monthly_cost, billing_day, api_key_enc, color, logo, category, billing_cycle, status, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'active',NOW(),NOW())`,
+		id, middleware.GetWorkspaceID(c), body.Provider, body.Name, nullable(body.PlanName), body.MonthlyCost, body.BillingDay, nullable(encKey), nullable(body.Color), nullable(body.Logo), body.Category, body.BillingCycle)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -108,28 +113,33 @@ func (h *AISubscriptionHandler) Create(c *gin.Context) {
 
 func (h *AISubscriptionHandler) Update(c *gin.Context) {
 	var body struct {
-		Provider    string  `json:"provider"`
-		Name        string  `json:"name"`
-		PlanName    string  `json:"plan_name"`
-		MonthlyCost float64 `json:"monthly_cost"`
-		BillingDay  *int    `json:"billing_day"`
-		APIKey      *string `json:"api_key"` // nil = keep current; "" = clear; value = update
-		Color       string  `json:"color"`
-		Logo        string  `json:"logo"`
+		Provider     string  `json:"provider"`
+		Name         string  `json:"name"`
+		PlanName     string  `json:"plan_name"`
+		MonthlyCost  float64 `json:"monthly_cost"`
+		BillingDay   *int    `json:"billing_day"`
+		APIKey       *string `json:"api_key"` // nil = keep current; "" = clear; value = update
+		Color        string  `json:"color"`
+		Logo         string  `json:"logo"`
+		Category     string  `json:"category"`
+		BillingCycle string  `json:"billing_cycle"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if body.Category == "" { body.Category = "other" }
+	if body.BillingCycle == "" { body.BillingCycle = "monthly" }
+	if body.Provider == "" { body.Provider = "other" }
 
 	id := c.Param("id")
 	wsID := middleware.GetWorkspaceID(c)
 
 	if body.APIKey == nil {
 		_, err := h.db.ExecContext(c, `
-			UPDATE ai_subscriptions SET provider=$1, name=$2, plan_name=$3, monthly_cost=$4, billing_day=$5, color=$6, logo=$7, updated_at=NOW()
-			WHERE id=$8 AND workspace_id=$9`,
-			body.Provider, body.Name, nullable(body.PlanName), body.MonthlyCost, body.BillingDay, nullable(body.Color), nullable(body.Logo), id, wsID)
+			UPDATE ai_subscriptions SET provider=$1, name=$2, plan_name=$3, monthly_cost=$4, billing_day=$5, color=$6, logo=$7, category=$8, billing_cycle=$9, updated_at=NOW()
+			WHERE id=$10 AND workspace_id=$11`,
+			body.Provider, body.Name, nullable(body.PlanName), body.MonthlyCost, body.BillingDay, nullable(body.Color), nullable(body.Logo), body.Category, body.BillingCycle, id, wsID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -145,9 +155,9 @@ func (h *AISubscriptionHandler) Update(c *gin.Context) {
 			encKey = enc
 		}
 		_, err := h.db.ExecContext(c, `
-			UPDATE ai_subscriptions SET provider=$1, name=$2, plan_name=$3, monthly_cost=$4, billing_day=$5, api_key_enc=$6, color=$7, logo=$8, updated_at=NOW()
-			WHERE id=$9 AND workspace_id=$10`,
-			body.Provider, body.Name, nullable(body.PlanName), body.MonthlyCost, body.BillingDay, nullable(encKey), nullable(body.Color), nullable(body.Logo), id, wsID)
+			UPDATE ai_subscriptions SET provider=$1, name=$2, plan_name=$3, monthly_cost=$4, billing_day=$5, api_key_enc=$6, color=$7, logo=$8, category=$9, billing_cycle=$10, updated_at=NOW()
+			WHERE id=$11 AND workspace_id=$12`,
+			body.Provider, body.Name, nullable(body.PlanName), body.MonthlyCost, body.BillingDay, nullable(encKey), nullable(body.Color), nullable(body.Logo), body.Category, body.BillingCycle, id, wsID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

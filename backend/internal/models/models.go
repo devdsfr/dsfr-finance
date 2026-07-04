@@ -238,6 +238,8 @@ type AISubscription struct {
 	Color        *string    `json:"color,omitempty"`
 	Logo         *string    `json:"logo,omitempty"`
 	Status       string     `json:"status"` // active | canceled
+	Category     string     `json:"category"`      // streaming | music | storage | ai | productivity | games | ecommerce | other
+	BillingCycle string     `json:"billing_cycle"` // monthly | annual
 	LastSyncedAt *time.Time `json:"last_synced_at,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`

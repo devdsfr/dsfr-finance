@@ -201,7 +201,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               }
               @if (upcomingPayable().length > 0) {
                 <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
-                @for (bill of upcomingPayable().slice(0, 4); track bill.id) {
+                @for (bill of (showAllPayable() ? upcomingPayable() : upcomingPayable().slice(0, 4)); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="billColor(bill, '#6b7280')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
@@ -219,7 +219,11 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                   </div>
                 }
               }
-              <a routerLink="/transactions" [queryParams]="{type:'expense',paid:'false'}" class="manage-link">{{ 'dashboard.see_more' | translate }}</a>
+              @if (upcomingPayable().length > 4) {
+                <button class="manage-link" (click)="showAllPayable.set(!showAllPayable())">
+                  {{ showAllPayable() ? 'ver menos ▲' : 'ver mais ▼' }}
+                </button>
+              }
             </div>
           }
 
@@ -249,7 +253,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               }
               @if (upcomingReceivable().length > 0) {
                 <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
-                @for (bill of upcomingReceivable().slice(0, 4); track bill.id) {
+                @for (bill of (showAllReceivable() ? upcomingReceivable() : upcomingReceivable().slice(0, 4)); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="billColor(bill, '#16a34a')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
@@ -267,7 +271,11 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                   </div>
                 }
               }
-              <a routerLink="/transactions" [queryParams]="{type:'income',paid:'false'}" class="manage-link">{{ 'dashboard.see_more' | translate }}</a>
+              @if (upcomingReceivable().length > 4) {
+                <button class="manage-link" (click)="showAllReceivable.set(!showAllReceivable())">
+                  {{ showAllReceivable() ? 'ver menos ▲' : 'ver mais ▼' }}
+                </button>
+              }
             </div>
           }
         </div>
@@ -589,7 +597,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       display: block; text-align: center; margin-top: 1rem;
       padding: .5rem; border: 1px solid #e5e7eb; border-radius: .375rem;
       color: #6b7280; text-decoration: none; font-size: .82rem;
-      transition: border-color .15s;
+      transition: border-color .15s; background: none; cursor: pointer; width: 100%;
     }
     .manage-link:hover { border-color: #2e7736; color: #2e7736; }
 
@@ -761,6 +769,8 @@ export class DashboardComponent implements OnInit {
   private toast = inject(ToastService);
 
   markingPaid = new Set<string>();
+  showAllPayable   = signal(false);
+  showAllReceivable = signal(false);
 
   markPaid(bill: any) {
     if (this.markingPaid.has(bill.id)) return;
@@ -951,8 +961,8 @@ export class DashboardComponent implements OnInit {
     forkJoin({
       accounts:   this.api.get<any>('/accounts').pipe(catchError(() => of({ data: [] }))),
       cards:      this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
-      payable:    this.api.get<any>(`/transactions?type=expense&paid=false&limit=50`).pipe(catchError(() => of({ data: [] }))),
-      receivable: this.api.get<any>(`/transactions?type=income&paid=false&limit=50`).pipe(catchError(() => of({ data: [] }))),
+      payable:    this.api.get<any>(`/transactions?type=expense&paid=false&date_from=${dateFrom}&date_to=${dateTo}&limit=100`).pipe(catchError(() => of({ data: [] }))),
+      receivable: this.api.get<any>(`/transactions?type=income&paid=false&date_from=${dateFrom}&date_to=${dateTo}&limit=100`).pipe(catchError(() => of({ data: [] }))),
       summary:    this.api.get<any>(`/reports/flow?month=${y}-${m}`).pipe(catchError(() => of({ data: { income: 0, expense: 0 } }))),
       top:        this.api.get<any>(`/reports/categories?date_from=${dateFrom}&date_to=${dateTo}&type=expense`).pipe(catchError(() => of({ data: [] }))),
       limits:     this.api.get<any>('/spending-limits').pipe(catchError(() => of({ data: [] }))),
@@ -982,8 +992,8 @@ export class DashboardComponent implements OnInit {
           }));
         });
       }
-      this.payableBills.set(res.payable.data ?? []);
-      this.receivableBills.set(res.receivable.data ?? []);
+      this.payableBills.set((res.payable.data ?? []).slice().sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+      this.receivableBills.set((res.receivable.data ?? []).slice().sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()));
       this.income.set(res.summary.data?.income ?? res.summary.income ?? 0);
       this.expense.set(res.summary.data?.expense ?? res.summary.expense ?? 0);
       this.topCategories.set((res.top.data ?? []).slice(0, 5));

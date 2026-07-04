@@ -26,7 +26,7 @@ export const TRANSLATIONS: Record<Lang, any> = {
       reports_categories: 'Categorias', reports_tags: 'Tags',
       reports_installments: 'Parcelamentos', reports_card_invoices: 'Faturas de Cartão',
       spending_limits: 'Limite de Gastos', debt_strategy: 'Estratégia de Dívidas',
-      ai_subscriptions: 'Assinaturas de IA', banking: 'Conexão Bancária',
+      ai_subscriptions: 'Assinaturas Tech', banking: 'Conexão Bancária',
       my_account: 'Minha Conta', categories: 'Categorias',
       access_control: 'Controle de Acesso', alert_config: 'Configurar Alertas',
       activity_log: 'Log de Atividades', notifications: 'Notificações', logout: 'Sair',
