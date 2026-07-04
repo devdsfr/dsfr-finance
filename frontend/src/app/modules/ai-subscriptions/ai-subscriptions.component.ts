@@ -136,24 +136,6 @@ const AI_PROVIDERS = [
             }
           </div>
 
-          <!-- Presets for selected category -->
-          @if (filteredPresets().length > 0) {
-            <div class="fm-label" style="margin-top:.75rem">Serviço</div>
-            <div class="preset-grid">
-              @for (p of filteredPresets(); track p.name) {
-                <button type="button" class="preset-btn" [class.preset-btn--sel]="item.name === p.name && item.logo === p.logo"
-                        (click)="applyPreset(p)" [title]="p.name">
-                  @if (p.logo) {
-                    <img [src]="p.logo" [alt]="p.name" class="preset-logo" (error)="onLogoError($event, p.color, p.name)" />
-                  } @else {
-                    <div class="preset-initial" [style.background]="p.color">{{ p.name[0] }}</div>
-                  }
-                  <span class="preset-label">{{ p.name }}</span>
-                </button>
-              }
-            </div>
-          }
-
           <!-- Name + Plan -->
           <div class="fm-row" style="margin-top:.75rem">
             <div class="fm-group">
@@ -241,11 +223,11 @@ const AI_PROVIDERS = [
             <div class="item-card">
               <div class="card-top">
                 @if (it.logo) {
-                  <div class="item-icon" [style.background]="it.color ?? '#374151'">
+                  <div class="item-icon item-icon--logo">
                     <img [src]="it.logo" [alt]="it.name" class="icon-logo" (error)="onLogoError($event, it.color ?? '#374151', it.name)" />
                   </div>
                 } @else {
-                  <div class="item-icon" [style.background]="it.color ?? '#374151'">{{ it.name[0] }}</div>
+                  <div class="item-icon item-icon--emoji">{{ categoryEmoji(it.category) }}</div>
                 }
                 <div class="card-info">
                   <span class="card-name">{{ it.name }}</span>
@@ -391,7 +373,9 @@ const AI_PROVIDERS = [
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
     .skel-block { background:#e5e7eb; border-radius:.25rem; }
     .card-top { display:flex; align-items:center; gap:.65rem; }
-    .item-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:1.1rem; flex-shrink:0; overflow:hidden; }
+    .item-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.1rem; flex-shrink:0; overflow:hidden; background:#fff; border:1px solid #e5e7eb; }
+    .item-icon--logo { background:#fff; }
+    .item-icon--emoji { font-size:1.35rem; overflow:visible; }
     .icon-logo { width:100%; height:100%; object-fit:contain; padding:4px; }
     .card-info { flex:1; display:flex; flex-direction:column; }
     .card-name { font-size:.9rem; font-weight:700; color:#111; }
@@ -481,6 +465,19 @@ export class AiSubscriptionsComponent implements OnInit {
   monthlyCost(it: any): number {
     const cost = parseFloat(String(it.monthly_cost).replace(',', '.')) || 0;
     return it.billing_cycle === 'annual' ? cost / 12 : cost;
+  }
+
+  private readonly CAT_COLORS: Record<string, string> = {
+    streaming: '#e50914', music: '#1db954', storage: '#3a7bd5', ai: '#10a37f',
+    productivity: '#d83b01', games: '#107c10', ecommerce: '#ff9900', other: '#6b7280',
+  };
+
+  categoryEmoji(cat: string): string {
+    return CATEGORIES.find(c => c.value === cat)?.emoji ?? '📱';
+  }
+
+  categoryColor(cat: string): string {
+    return this.CAT_COLORS[cat] ?? '#6b7280';
   }
 
   ngOnInit() {
