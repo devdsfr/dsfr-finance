@@ -100,6 +100,12 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               @if (loading()) { <span class="skel skel--val"></span> }
               @else { <span class="ms-value ms-value--expense">{{ expense() | appCurrency }}</span> }
             </div>
+            <div class="ms-sep"></div>
+            <div class="ms-item">
+              <span class="ms-label">Saldo do mês</span>
+              @if (loading()) { <span class="skel skel--val"></span> }
+              @else { <span class="ms-value" [class.ms-value--income]="balance() >= 0" [class.ms-value--expense]="balance() < 0">{{ balance() | appCurrency }}</span> }
+            </div>
           </div>
         </div>
 
@@ -178,7 +184,10 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
           <!-- Contas a pagar -->
           @if (!loading() && payableBills().length > 0) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">{{ 'dashboard.payable' | translate }}</p>
+              <p class="section-label" style="margin-top:0">
+                {{ 'dashboard.payable' | translate }}
+                <span class="bill-total bill-total--expense">{{ totalPayable() | appCurrency }}</span>
+              </p>
               @if (overduePayable().length > 0) {
                 <div class="bill-banner bill-banner--danger">{{ 'dashboard.payable_overdue' | translate }}</div>
                 @for (bill of overduePayable().slice(0, 4); track bill.id) {
@@ -230,7 +239,10 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
           <!-- Contas a receber -->
           @if (!loading() && receivableBills().length > 0) {
             <div class="card mt">
-              <p class="section-label" style="margin-top:0">{{ 'dashboard.receivable' | translate }}</p>
+              <p class="section-label" style="margin-top:0">
+                {{ 'dashboard.receivable' | translate }}
+                <span class="bill-total bill-total--income">{{ totalReceivable() | appCurrency }}</span>
+              </p>
               @if (overdueReceivable().length > 0) {
                 <div class="bill-banner bill-banner--warning">{{ 'dashboard.receivable_overdue' | translate }}</div>
                 @for (bill of overdueReceivable().slice(0, 4); track bill.id) {
@@ -360,7 +372,8 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                   @for (c of topCategories(); track c.category) {
                     <div class="cat-row">
                       <span class="cat-dot" [style.background]="c.color"></span>
-                      <span class="cat-name">{{ c.category }}</span>
+                      <span class="cat-name">{{ c.category ?? c.category_name }}</span>
+                      <span class="cat-amt">{{ c.total | appCurrency }}</span>
                       <span class="cat-pct">{{ c.pct | number:'1.0-0' }}%</span>
                     </div>
                   }
@@ -625,6 +638,9 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .bill-date { font-size: .7rem; color: #9ca3af; }
     .bill-amt { font-size: .875rem; font-weight: 600; color: #374151; }
     .bill-amt--income { color: #16a34a; }
+    .bill-total { float: right; font-size: .85rem; font-weight: 700; }
+    .bill-total--expense { color: #dc2626; }
+    .bill-total--income { color: #16a34a; }
 
     /* Credit Cards */
     .card-row { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-top: 1px solid #f3f4f6; }
@@ -657,7 +673,8 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .cat-row { display: flex; align-items: center; gap: .5rem; font-size: .82rem; }
     .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .cat-name { flex: 1; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cat-pct { font-weight: 700; color: #111; }
+    .cat-amt { font-size: .75rem; color: #6b7280; margin-right: .2rem; white-space: nowrap; }
+    .cat-pct { font-weight: 700; color: #111; white-space: nowrap; }
     .donut-svg { width: 110px; height: 110px; flex-shrink: 0; }
 
     /* Spending limits */
@@ -675,7 +692,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .flow-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
     .flow-legend-dot--in { background: #16a34a; }
     .flow-legend-dot--ex { background: #ef4444; }
-    .flow-chart { display: flex; align-items: flex-end; gap: .3rem; height: 80px; margin-bottom: .75rem; }
+    .flow-chart { display: flex; align-items: flex-end; gap: .3rem; height: 130px; margin-bottom: .75rem; }
     .flow-col { display: flex; flex-direction: column; align-items: center; flex: 1; gap: .25rem; height: 100%; }
     .flow-bars { display: flex; align-items: flex-end; gap: 2px; flex: 1; width: 100%; }
     .flow-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 2px; transition: height .3s ease; }
@@ -823,6 +840,8 @@ export class DashboardComponent implements OnInit {
 
   totalBalance     = computed(() => this.accounts().reduce((s, a) => s + (a.balance ?? 0), 0));
   totalCardExpense = computed(() => this.cards().reduce((s, c) => s + (c.current_invoice ?? 0), 0));
+  totalPayable     = computed(() => this.payableBills().reduce((s: number, b: any) => s + (b.amount ?? 0), 0));
+  totalReceivable  = computed(() => this.receivableBills().reduce((s: number, b: any) => s + (b.amount ?? 0), 0));
 
   // Patrimony chart (multi-wallet)
   patrimonySnapshots = signal<any[]>([]);

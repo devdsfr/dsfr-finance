@@ -74,6 +74,8 @@ const TYPE_LABEL: Record<SourceType, string> = {
           <div class="widget__head">
             <span class="widget__title">{{ w.title }}</span>
             <div class="widget__actions">
+              <button class="wbtn" (click)="moveWidget(w.id, -1)" title="Mover para cima">↑</button>
+              <button class="wbtn" (click)="moveWidget(w.id, 1)" title="Mover para baixo">↓</button>
               <button class="wbtn" (click)="editWidget(w)" title="Editar">✎</button>
               <button class="wbtn wbtn--del" (click)="removeWidget(w.id)" title="Remover">✕</button>
             </div>
@@ -579,6 +581,16 @@ export class ConfigurableDashboardComponent implements OnInit {
     const d = { ...this.data() }; delete d[id]; this.data.set(d);
   }
 
+  moveWidget(id: string, dir: -1 | 1) {
+    const list = [...this.widgets()];
+    const idx = list.findIndex(w => w.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= list.length) return;
+    [list[idx], list[newIdx]] = [list[newIdx], list[idx]];
+    this.widgets.set(list);
+    this.persist();
+  }
+
   // ── Catalog loading ──
   private ensureCatalog() { this.ensureCatalogThen(() => {}); }
 
@@ -815,11 +827,12 @@ export class ConfigurableDashboardComponent implements OnInit {
   }
   barX(i: number, n: number): number {
     const W = this.BAR_W - this.PAD_L - this.PAD_R;
-    return this.PAD_L + (n <= 1 ? W / 2 : (i / (n - 1)) * W);
+    const slotW = W / (n || 1);
+    return this.PAD_L + i * slotW + (slotW - this.barW(n)) / 2;
   }
   barW(n: number): number {
     const W = this.BAR_W - this.PAD_L - this.PAD_R;
-    return Math.max(8, Math.floor(W / (n * 3 + 1)) - 2);
+    return Math.max(8, Math.floor((W / (n || 1)) * 0.6));
   }
   barY(id: string, v: number): number {
     const H = this.BAR_H - this.PAD_T - this.PAD_B;
@@ -843,8 +856,18 @@ export class ConfigurableDashboardComponent implements OnInit {
   }
   gaugePct(id: string): number {
     const v = this.gaugeValue(id);
-    // Use a fixed target of 5000 for percentage, or use the max of other values if available
-    const target = 5000;
+    if (v <= 0) return 0;
+    const w = this.widgets().find(x => x.id === id);
+    const src = w?.sources[0];
+    const it = src ? this.catalogItem(src) : undefined;
+    // For debts: show remaining balance as % of original (payoff progress)
+    if (src?.type === 'debt') {
+      const orig = Math.abs(it?.raw?.original_balance ?? 0);
+      if (orig > 0) return Math.min(100, Math.round((v / orig) * 100));
+    }
+    // For others: scale to the nearest round number above 2× the value
+    const mag = Math.pow(10, Math.floor(Math.log10(v)));
+    const target = Math.ceil(v / mag) * mag * 2;
     return Math.min(100, Math.round((v / target) * 100));
   }
   gaugeDash(id: string): number {

@@ -254,20 +254,22 @@ const AI_PROVIDERS = [
                   </div>
                 }
                 <div class="usage-row">
-                  @if (it.current_usage) {
-                    <span class="usage-stat">{{ it.current_usage.requests_count }} uso(s) este mês</span>
-                    @if (it.current_usage.cost_usd) {
-                      <span class="usage-stat">~US$ {{ it.current_usage.cost_usd | number:'1.2-2' }}</span>
-                    }
-                    <span class="usage-source">{{ it.current_usage.source === 'api' ? 'via API' : 'manual' }}</span>
+                  @if (it.current_usage && it.current_usage.requests_count > 0) {
+                    <div class="usage-pct-wrap">
+                      <div class="usage-pct-bar">
+                        <div class="usage-pct-fill" [style.width.%]="it.current_usage.requests_count" [class.usage-pct-fill--warn]="it.current_usage.requests_count >= 80"></div>
+                      </div>
+                      <span class="usage-pct-label">{{ it.current_usage.requests_count }}% usado</span>
+                    </div>
                   } @else {
                     <span class="usage-empty">Sem dados de uso este mês</span>
                   }
                 </div>
                 @if (manualFormId === it.id) {
                   <div class="manual-form">
-                    <input type="number" [(ngModel)]="manualUsage.requests_count" name="rc" class="fm-input fm-input--sm" placeholder="Nº de usos" />
-                    <input type="number" step="0.01" [(ngModel)]="manualUsage.cost_usd" name="cu" class="fm-input fm-input--sm" placeholder="Custo US$" />
+                    <input type="number" [(ngModel)]="manualUsage.requests_count" name="pct"
+                           class="fm-input fm-input--sm" min="0" max="100" placeholder="0" style="max-width:70px" />
+                    <span class="pct-symbol">%</span>
                     <button class="btn btn--primary btn--sm" (click)="saveManualUsage(it)">OK</button>
                     <button class="btn btn--ghost btn--sm" (click)="manualFormId = null">✕</button>
                   </div>
@@ -393,10 +395,14 @@ const AI_PROVIDERS = [
     .rec-label { font-size:.78rem; font-weight:700; color:#111; }
     .rec-msg   { font-size:.72rem; color:#6b7280; }
     .usage-row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; font-size:.78rem; }
-    .usage-stat { color:#374151; font-weight:600; }
-    .usage-source { color:#9ca3af; font-size:.68rem; background:#f3f4f6; padding:.1rem .35rem; border-radius:.25rem; }
+    .usage-pct-wrap { display:flex; align-items:center; gap:.5rem; width:100%; }
+    .usage-pct-bar { flex:1; height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden; }
+    .usage-pct-fill { height:100%; background:#2e7736; border-radius:3px; transition:width .3s; }
+    .usage-pct-fill--warn { background:#ef4444; }
+    .usage-pct-label { font-size:.75rem; font-weight:700; color:#374151; white-space:nowrap; }
     .usage-empty { color:#9ca3af; font-size:.78rem; }
     .manual-form { display:flex; gap:.35rem; align-items:center; flex-wrap:wrap; }
+    .pct-symbol { font-size:.85rem; font-weight:600; color:#374151; }
     .card-actions { display:flex; gap:.35rem; padding-top:.5rem; border-top:1px solid #f3f4f6; flex-wrap:wrap; }
 
     /* Buttons */
@@ -594,7 +600,7 @@ export class AiSubscriptionsComponent implements OnInit {
 
   toggleManualForm(it: any) {
     this.manualFormId = this.manualFormId === it.id ? null : it.id;
-    this.manualUsage = { requests_count: it.current_usage?.requests_count ?? null, cost_usd: it.current_usage?.cost_usd ?? null };
+    this.manualUsage = { requests_count: it.current_usage?.requests_count ?? null, cost_usd: 0 };
   }
 
   saveManualUsage(it: any) {
