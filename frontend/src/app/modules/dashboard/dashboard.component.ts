@@ -240,6 +240,78 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
             </div>
           }
 
+          <!-- ── Calculadora Dinâmica ── -->
+          @if (!loading()) {
+            <div class="card mt calc-card">
+              <p class="section-label" style="margin-top:0">Calculadora de Caixa</p>
+
+              <!-- Fluxo: saldo → receber → pagar -->
+              <div class="calc-flow">
+                <div class="calc-cell">
+                  <span class="calc-cell__lbl">Saldo atual</span>
+                  <span class="calc-cell__val" [class.calc-val--neg]="totalBalance() < 0">
+                    {{ totalBalance() | appCurrency }}
+                  </span>
+                </div>
+                <div class="calc-op calc-op--in">+</div>
+                <div class="calc-cell">
+                  <span class="calc-cell__lbl">A receber</span>
+                  <span class="calc-cell__val calc-val--in">{{ totalReceivable() | appCurrency }}</span>
+                </div>
+                <div class="calc-op calc-op--out">−</div>
+                <div class="calc-cell">
+                  <span class="calc-cell__lbl">A pagar</span>
+                  <span class="calc-cell__val calc-val--out">{{ totalPayable() | appCurrency }}</span>
+                </div>
+              </div>
+
+              <!-- Resultado projetado -->
+              <div class="calc-result" [class.calc-result--neg]="projectedCash() < 0">
+                <div class="calc-result__left">
+                  <span class="calc-result__eq">=</span>
+                  <span class="calc-result__lbl">Saldo projetado</span>
+                </div>
+                <span class="calc-result__val">{{ projectedCash() | appCurrency }}</span>
+              </div>
+
+              <!-- Simulador -->
+              <div class="calc-sim">
+                <p class="calc-sim__title">Simular impacto</p>
+                <div class="calc-sim__row">
+                  <div class="calc-sign-group">
+                    <button class="calc-sign"
+                            [class.calc-sign--active-pos]="simSign() === '+'"
+                            (click)="simSign.set('+')">+</button>
+                    <button class="calc-sign"
+                            [class.calc-sign--active-neg]="simSign() === '-'"
+                            (click)="simSign.set('-')">−</button>
+                  </div>
+                  <input class="calc-input" type="number" min="0" step="0.01"
+                         placeholder="Digite um valor…"
+                         [value]="simAmount() || ''"
+                         (input)="updateSimAmount($event)" />
+                  @if (simAmount() > 0) {
+                    <button class="calc-clear" (click)="simAmount.set(0)" title="Limpar">✕</button>
+                  }
+                </div>
+
+                @if (simAmount() > 0) {
+                  <div class="calc-sim__preview"
+                       [class.calc-sim__preview--pos]="simulatedCash() >= 0"
+                       [class.calc-sim__preview--neg]="simulatedCash() < 0">
+                    <span class="calc-sim__preview-lbl">Com simulação:</span>
+                    <span class="calc-sim__preview-val">{{ simulatedCash() | appCurrency }}</span>
+                    <span class="calc-sim__delta"
+                          [class.delta--pos]="simSign() === '+'"
+                          [class.delta--neg]="simSign() === '-'">
+                      {{ simSign() === '+' ? '▲' : '▼' }} {{ simAmount() | appCurrency }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
           <!-- Contas a receber -->
           @if (!loading() && receivableBills().length > 0) {
             <div class="card mt">
@@ -719,6 +791,95 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .result-val { font-size: 1.15rem; font-weight: 700; color: #16a34a; }
     .result-row.negative .result-val { color: #dc2626; }
 
+    /* ── Calculadora Dinâmica ── */
+    .calc-card { }
+
+    .calc-flow {
+      display: flex; align-items: stretch; gap: .35rem;
+      margin: .5rem 0 .65rem;
+    }
+    .calc-cell {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      text-align: center; background: #f8fafc; border-radius: .5rem;
+      padding: .55rem .4rem; min-width: 0;
+    }
+    .calc-cell__lbl {
+      font-size: .63rem; color: #9ca3af; text-transform: uppercase;
+      letter-spacing: .04em; margin-bottom: .2rem; white-space: nowrap;
+    }
+    .calc-cell__val {
+      font-size: .88rem; font-weight: 700; color: #111;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
+    }
+    .calc-val--in  { color: #16a34a; }
+    .calc-val--out { color: #dc2626; }
+    .calc-val--neg { color: #dc2626; }
+
+    .calc-op {
+      display: flex; align-items: center; font-size: 1.1rem; font-weight: 700;
+      color: #d1d5db; flex-shrink: 0; padding: 0 .1rem;
+    }
+    .calc-op--in  { color: #86efac; }
+    .calc-op--out { color: #fca5a5; }
+
+    .calc-result {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem .85rem; border-radius: .5rem;
+      background: #f0fdf4; border: 1.5px solid #bbf7d0;
+      margin-bottom: .75rem;
+    }
+    .calc-result--neg { background: #fef2f2; border-color: #fecaca; }
+    .calc-result__left { display: flex; align-items: center; gap: .5rem; }
+    .calc-result__eq { font-size: 1.25rem; font-weight: 700; color: #9ca3af; line-height: 1; }
+    .calc-result__lbl { font-size: .78rem; font-weight: 600; color: #374151; }
+    .calc-result__val { font-size: 1.05rem; font-weight: 700; color: #16a34a; }
+    .calc-result--neg .calc-result__val { color: #dc2626; }
+
+    /* Simulador */
+    .calc-sim { border-top: 1px solid #f3f4f6; padding-top: .65rem; }
+    .calc-sim__title {
+      font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
+      color: #9ca3af; margin: 0 0 .45rem;
+    }
+    .calc-sim__row { display: flex; align-items: center; gap: .4rem; }
+    .calc-sign-group { display: flex; border: 1.5px solid #e5e7eb; border-radius: .4rem; overflow: hidden; flex-shrink: 0; }
+    .calc-sign {
+      width: 30px; height: 30px; border: none; background: #fff;
+      font-size: .95rem; font-weight: 700; color: #9ca3af; cursor: pointer;
+      transition: all .12s; line-height: 1; display: flex; align-items: center; justify-content: center;
+    }
+    .calc-sign:hover { background: #f3f4f6; }
+    .calc-sign--active-pos { background: #16a34a !important; color: #fff !important; }
+    .calc-sign--active-neg { background: #dc2626 !important; color: #fff !important; }
+    .calc-input {
+      flex: 1; min-width: 0; padding: .38rem .6rem;
+      border: 1.5px solid #e5e7eb; border-radius: .4rem;
+      font-size: .85rem; color: #111; outline: none; transition: border-color .12s;
+    }
+    .calc-input:focus { border-color: #2e7736; }
+    .calc-clear {
+      width: 28px; height: 28px; border: none; background: #f3f4f6;
+      border-radius: .375rem; cursor: pointer; color: #9ca3af;
+      font-size: .75rem; flex-shrink: 0; transition: all .12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .calc-clear:hover { background: #fee2e2; color: #dc2626; }
+
+    .calc-sim__preview {
+      margin-top: .5rem; padding: .42rem .7rem; border-radius: .4rem;
+      background: #f8fafc; display: flex; align-items: center; gap: .5rem;
+      font-size: .8rem; border: 1px solid #e5e7eb;
+    }
+    .calc-sim__preview--pos { background: #f0fdf4; border-color: #bbf7d0; }
+    .calc-sim__preview--neg { background: #fef2f2; border-color: #fecaca; }
+    .calc-sim__preview-lbl { color: #6b7280; flex-shrink: 0; }
+    .calc-sim__preview-val { font-weight: 700; flex: 1; }
+    .calc-sim__preview--pos .calc-sim__preview-val { color: #16a34a; }
+    .calc-sim__preview--neg .calc-sim__preview-val { color: #dc2626; }
+    .calc-sim__delta { font-size: .72rem; font-weight: 600; white-space: nowrap; }
+    .delta--pos { color: #16a34a; }
+    .delta--neg { color: #dc2626; }
+
     /* Patrimônio chart */
     .patrimony-card { margin-top: 1.25rem; }
     .patrimony-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
@@ -859,6 +1020,22 @@ export class DashboardComponent implements OnInit {
   totalCardExpense = computed(() => this.cards().reduce((s, c) => s + (c.current_invoice ?? 0), 0));
   totalPayable     = computed(() => this.payableBills().reduce((s: number, b: any) => s + (b.amount ?? 0), 0));
   totalReceivable  = computed(() => this.receivableBills().reduce((s: number, b: any) => s + (b.amount ?? 0), 0));
+
+  // ── Calculadora dinâmica ──────────────────────────────────────────────────
+  simAmount = signal(0);
+  simSign   = signal<'+' | '-'>('+');
+
+  projectedCash = computed(() =>
+    this.totalBalance() + this.totalReceivable() - this.totalPayable()
+  );
+  simulatedCash = computed(() =>
+    this.projectedCash() + (this.simSign() === '+' ? 1 : -1) * this.simAmount()
+  );
+
+  updateSimAmount(e: Event): void {
+    const val = parseFloat((e.target as HTMLInputElement).value) || 0;
+    this.simAmount.set(Math.max(0, val));
+  }
 
   // Patrimony chart (multi-wallet)
   patrimonySnapshots = signal<any[]>([]);
