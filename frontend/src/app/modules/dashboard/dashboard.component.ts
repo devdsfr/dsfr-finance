@@ -125,6 +125,10 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               <span class="qa-icon">📥</span><span>{{ 'dashboard.import' | translate }}</span>
             </a>
           </div>
+          <button class="export-all-btn" (click)="exportAll()" [disabled]="exportingAll()">
+            @if (exportingAll()) { <span class="export-spinner">⏳</span> Exportando… }
+            @else { <span>📊</span> Exportar todos os dados }
+          </button>
         </div>
       </div>
 
@@ -574,6 +578,18 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .qa-btn--transfer .qa-icon { color: #94a3b8; border-color: #94a3b8; }
     .qa-btn--import .qa-icon  { color: #6366f1; border-color: #6366f1; }
 
+    .export-all-btn {
+      margin-top: .65rem; display: flex; align-items: center; gap: .4rem;
+      padding: .45rem 1rem; background: #217346; color: #fff;
+      border: none; border-radius: .4rem; font-size: .8rem; font-weight: 600;
+      cursor: pointer; transition: background .15s; white-space: nowrap; width: 100%;
+      justify-content: center;
+    }
+    .export-all-btn:hover:not(:disabled) { background: #185c38; }
+    .export-all-btn:disabled { opacity: .6; cursor: default; }
+    .export-spinner { animation: spin .8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* ── Body grid ── */
     .body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
     @media (max-width: 780px) { .body-grid { grid-template-columns: 1fr; } }
@@ -813,8 +829,9 @@ export class DashboardComponent implements OnInit {
 
   readonly C = 2 * Math.PI * 38; // SVG donut circumference ≈ 238.76
 
-  loading     = signal(true);
-  firstVisit  = signal(!sessionStorage.getItem('dash_visited'));
+  loading      = signal(true);
+  exportingAll = signal(false);
+  firstVisit   = signal(!sessionStorage.getItem('dash_visited'));
   income  = signal(0);
   expense = signal(0);
   balance = computed(() => this.income() - this.expense());
@@ -1050,5 +1067,222 @@ export class DashboardComponent implements OnInit {
     const cat = this.billCat(bill);
     if (cat?.icon) return '#f3f4f6';
     return cat?.color ?? fallback;
+  }
+
+  // ── Exportar todos os dados ───────────────────────────────────────────────
+  exportAll(): void {
+    if (this.exportingAll()) return;
+    this.exportingAll.set(true);
+
+    const dateStr  = new Date().toLocaleDateString('pt-BR');
+    const yearStr  = new Date().getFullYear().toString();
+    const filename = `dsfr-finance-completo-${yearStr}.xls`;
+
+    forkJoin({
+      txAll:  this.api.get<any>('/transactions?limit=1000').pipe(catchError(() => of({ data: [] }))),
+      debts:  this.api.get<any>('/debts').pipe(catchError(() => of({ data: [] }))),
+      subs:   this.api.get<any>('/ai-subscriptions').pipe(catchError(() => of({ data: [] }))),
+    }).subscribe({
+      next: res => {
+        const txs   = (res.txAll.data  ?? []) as any[];
+        const debts = (res.debts.data  ?? []) as any[];
+        const subs  = (res.subs.data   ?? []) as any[];
+        const pats  = this.patrimonySnapshots() as any[];
+
+        // ── helpers ──────────────────────────────────────────────────────────
+        const esc = (v: any) =>
+          String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const S = (v: any, style?: string) =>
+          `<Cell${style ? ` ss:StyleID="${style}"` : ''}><Data ss:Type="String">${esc(v)}</Data></Cell>`;
+        const N = (v: number, style = 'money') =>
+          `<Cell ss:StyleID="${style}"><Data ss:Type="Number">${v}</Data></Cell>`;
+        const CH = (cols: string[]) => cols.map(h => S(h,'ch')).join('');
+        const EMPTY = (n: number) => '<Cell/>'.repeat(n);
+
+        // ── indicadores ───────────────────────────────────────────────────────
+        const totalAcc  = this.totalBalance();
+        const mIncome   = this.income();
+        const mExpense  = this.expense();
+        const mBalance  = mIncome - mExpense;
+        const totalDebt = debts.reduce((s: number, d: any) => s + Math.abs(d.remaining_balance ?? 0), 0);
+        const totalSubs = subs.reduce((s: number, sub: any) => {
+          const m = sub.billing_cycle === 'annual' ? (sub.monthly_cost ?? 0) / 12 : (sub.monthly_cost ?? 0);
+          return s + m;
+        }, 0);
+
+        // ── SHEET 1 – Resumo ─────────────────────────────────────────────────
+        const sheetResumo = `<Worksheet ss:Name="Resumo">
+  <Table>
+   <Column ss:Width="220"/><Column ss:Width="160"/>
+   <Row ss:Height="22"><Cell ss:StyleID="title" ss:MergeAcross="1"><Data ss:Type="String">DSFR Finance — Visão Geral</Data></Cell></Row>
+   <Row><Cell ss:StyleID="sub"><Data ss:Type="String">Exportado em: ${esc(dateStr)}</Data></Cell></Row>
+   <Row/>
+   <Row>${CH(['Indicador','Valor'])}</Row>
+   <Row>${S('Saldo em Contas','sum')}${N(totalAcc, totalAcc >= 0 ? 'sumPos':'sumNeg')}</Row>
+   <Row>${S('Receitas do Mês Atual','sum')}${N(mIncome,'sumPos')}</Row>
+   <Row>${S('Despesas do Mês Atual','sum')}${N(mExpense,'sumNeg')}</Row>
+   <Row>${S('Saldo do Mês','sum')}${N(mBalance, mBalance >= 0 ? 'sumPos':'sumNeg')}</Row>
+   <Row>${S('Total em Dívidas','sum')}${N(totalDebt,'sumNeg')}</Row>
+   <Row>${S('Custo Mensal Assinaturas','sum')}${N(totalSubs,'sumNeg')}</Row>
+   <Row/>
+   <Row>${CH(['Contagem','Qtd'])}</Row>
+   <Row>${S('Lançamentos exportados')}${S(String(txs.length))}</Row>
+   <Row>${S('Dívidas cadastradas')}${S(String(debts.length))}</Row>
+   <Row>${S('Assinaturas ativas')}${S(String(subs.filter((s:any) => s.status==='active').length))}</Row>
+   <Row>${S('Snapshots de patrimônio')}${S(String(pats.length))}</Row>
+  </Table>
+ </Worksheet>`;
+
+        // ── SHEET 2 – Lançamentos ─────────────────────────────────────────────
+        const txLabel = (t: string) =>
+          t === 'expense' ? 'Despesa' : t === 'income' ? 'Receita' : 'Transferência';
+        const txRows = txs.map((tx: any) => {
+          const sign = tx.type === 'expense' ? -1 : 1;
+          return `<Row>
+   ${S(tx.date?.slice(0,10) ?? '')}
+   ${S(tx.description)}
+   ${S(tx.category?.name ?? '')}
+   ${S(txLabel(tx.type))}
+   ${N(sign * (tx.amount ?? 0), tx.type==='income' ? 'pos' : tx.type==='expense' ? 'neg' : 'money')}
+   ${S(tx.paid ? 'Pago' : 'Pendente')}
+   ${S((tx.tags ?? []).map((t:any) => t.name).join(', '))}
+  </Row>`;
+        }).join('');
+        const sheetTx = `<Worksheet ss:Name="Lançamentos">
+  <Table>
+   <Column ss:Width="90"/><Column ss:Width="200"/><Column ss:Width="140"/>
+   <Column ss:Width="100"/><Column ss:Width="120"/><Column ss:Width="80"/><Column ss:Width="160"/>
+   <Row ss:Height="22"><Cell ss:StyleID="title" ss:MergeAcross="6"><Data ss:Type="String">DSFR Finance — Lançamentos</Data></Cell></Row>
+   <Row><Cell ss:StyleID="sub"><Data ss:Type="String">Total: ${txs.length} lançamentos · Exportado em: ${esc(dateStr)}</Data></Cell></Row>
+   <Row/>
+   <Row>${CH(['Data','Descrição','Categoria','Tipo','Valor (R$)','Status','Tags'])}</Row>
+   ${txRows || `<Row>${S('Nenhum lançamento')}</Row>`}
+  </Table>
+ </Worksheet>`;
+
+        // ── SHEET 3 – Dívidas ─────────────────────────────────────────────────
+        const debtRows = debts.map((d: any) => `<Row>
+   ${S(d.name)}
+   ${S(d.type ?? '')}
+   ${N(Math.abs(d.remaining_balance ?? 0),'neg')}
+   ${N(Math.abs(d.original_balance  ?? 0),'money')}
+   ${N(d.interest_rate ?? 0,'pct')}
+   ${N(d.monthly_payment ?? 0,'money')}
+   ${S(d.remaining_installments ?? '')}
+   ${S(d.amortization_type ?? '')}
+  </Row>`).join('');
+        const sheetDebts = `<Worksheet ss:Name="Dívidas">
+  <Table>
+   <Column ss:Width="160"/><Column ss:Width="120"/><Column ss:Width="130"/>
+   <Column ss:Width="130"/><Column ss:Width="100"/><Column ss:Width="130"/>
+   <Column ss:Width="130"/><Column ss:Width="120"/>
+   <Row ss:Height="22"><Cell ss:StyleID="title" ss:MergeAcross="7"><Data ss:Type="String">DSFR Finance — Dívidas</Data></Cell></Row>
+   <Row><Cell ss:StyleID="sub"><Data ss:Type="String">Exportado em: ${esc(dateStr)}</Data></Cell></Row>
+   <Row/>
+   <Row>${CH(['Nome','Tipo','Saldo Devedor','Valor Original','Taxa (% a.m.)','Parcela Mensal','Parcelas Rest.','Amortização'])}</Row>
+   ${debtRows || `<Row>${S('Nenhuma dívida cadastrada')}</Row>`}
+   <Row/>
+   <Row>${S('Total em Dívidas','sum')}${EMPTY(1)}<Cell ss:StyleID="sumNeg"><Data ss:Type="Number">${totalDebt}</Data></Cell></Row>
+  </Table>
+ </Worksheet>`;
+
+        // ── SHEET 4 – Patrimônio ──────────────────────────────────────────────
+        const patRows = pats
+          .slice().sort((a:any,b:any) => a.month.localeCompare(b.month))
+          .map((p: any) => `<Row>
+   ${S(p.month)}
+   ${S(p.wallet_name ?? 'Geral')}
+   ${N(p.total ?? 0,'pos')}
+  </Row>`).join('');
+        const sheetPat = `<Worksheet ss:Name="Patrimônio">
+  <Table>
+   <Column ss:Width="100"/><Column ss:Width="180"/><Column ss:Width="150"/>
+   <Row ss:Height="22"><Cell ss:StyleID="title" ss:MergeAcross="2"><Data ss:Type="String">DSFR Finance — Evolução do Patrimônio</Data></Cell></Row>
+   <Row><Cell ss:StyleID="sub"><Data ss:Type="String">Exportado em: ${esc(dateStr)}</Data></Cell></Row>
+   <Row/>
+   <Row>${CH(['Mês','Carteira','Total (R$)'])}</Row>
+   ${patRows || `<Row>${S('Sem dados de patrimônio')}</Row>`}
+  </Table>
+ </Worksheet>`;
+
+        // ── SHEET 5 – Assinaturas ─────────────────────────────────────────────
+        const catName = (c: string) => ({
+          streaming:'Streaming', music:'Música', storage:'Armazenamento',
+          ai:'IA / ChatGPT', productivity:'Produtividade', games:'Games',
+          ecommerce:'E-commerce', other:'Outros'
+        } as any)[c] ?? c;
+        const subRows = subs.map((s: any) => {
+          const monthly = s.billing_cycle === 'annual'
+            ? (s.monthly_cost ?? 0) / 12
+            : (s.monthly_cost ?? 0);
+          return `<Row>
+   ${S(s.name)}
+   ${S(s.plan_name ?? '')}
+   ${S(catName(s.category ?? 'other'))}
+   ${S(s.billing_cycle === 'annual' ? 'Anual' : 'Mensal')}
+   ${N(monthly,'money')}
+   ${N(s.monthly_cost ?? 0,'money')}
+   ${S(s.billing_day ?? '')}
+   ${S(s.status === 'active' ? 'Ativa' : 'Cancelada')}
+  </Row>`;
+        }).join('');
+        const sheetSubs = `<Worksheet ss:Name="Assinaturas Tech">
+  <Table>
+   <Column ss:Width="160"/><Column ss:Width="130"/><Column ss:Width="130"/>
+   <Column ss:Width="80"/><Column ss:Width="130"/><Column ss:Width="130"/>
+   <Column ss:Width="100"/><Column ss:Width="80"/>
+   <Row ss:Height="22"><Cell ss:StyleID="title" ss:MergeAcross="7"><Data ss:Type="String">DSFR Finance — Assinaturas Tech</Data></Cell></Row>
+   <Row><Cell ss:StyleID="sub"><Data ss:Type="String">Exportado em: ${esc(dateStr)}</Data></Cell></Row>
+   <Row/>
+   <Row>${CH(['Nome','Plano','Categoria','Ciclo','Custo/Mês (R$)','Custo Total','Dia Cobrança','Status'])}</Row>
+   ${subRows || `<Row>${S('Nenhuma assinatura cadastrada')}</Row>`}
+   <Row/>
+   <Row>${S('Total mensal','sum')}${EMPTY(3)}<Cell ss:StyleID="sumNeg"><Data ss:Type="Number">${totalSubs}</Data></Cell></Row>
+  </Table>
+ </Worksheet>`;
+
+        // ── Estilos compartilhados ────────────────────────────────────────────
+        const styles = `<Styles>
+  <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14" ss:Color="#2e7736"/></Style>
+  <Style ss:ID="sub"><Font ss:Size="10" ss:Color="#6b7280" ss:Italic="1"/></Style>
+  <Style ss:ID="ch"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#2e7736" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="money"><NumberFormat ss:Format="#,##0.00"/></Style>
+  <Style ss:ID="pct"><NumberFormat ss:Format='0.00"%"'/></Style>
+  <Style ss:ID="pos"><Font ss:Color="#16a34a"/><NumberFormat ss:Format="#,##0.00"/></Style>
+  <Style ss:ID="neg"><Font ss:Color="#dc2626"/><NumberFormat ss:Format="#,##0.00"/></Style>
+  <Style ss:ID="sum"><Font ss:Bold="1"/><Interior ss:Color="#f8fafc" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="sumPos"><Font ss:Bold="1" ss:Color="#16a34a"/><Interior ss:Color="#f0fdf4" ss:Pattern="Solid"/><NumberFormat ss:Format="#,##0.00"/></Style>
+  <Style ss:ID="sumNeg"><Font ss:Bold="1" ss:Color="#dc2626"/><Interior ss:Color="#fef2f2" ss:Pattern="Solid"/><NumberFormat ss:Format="#,##0.00"/></Style>
+ </Styles>`;
+
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ ${styles}
+ ${sheetResumo}
+ ${sheetTx}
+ ${sheetDebts}
+ ${sheetPat}
+ ${sheetSubs}
+</Workbook>`;
+
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.toast.success(`"${filename}" exportado com sucesso!`);
+        this.exportingAll.set(false);
+      },
+      error: () => {
+        this.toast.error('Erro ao exportar dados. Tente novamente.');
+        this.exportingAll.set(false);
+      }
+    });
   }
 }
