@@ -416,6 +416,49 @@ const AI_PROVIDERS = [
     .btn--danger:hover { background:#fef2f2; }
     .btn--sm { padding:.25rem .55rem; font-size:.76rem; }
     .empty-state { text-align:center; color:#9ca3af; padding:2.5rem; background:#fff; border-radius:.5rem; box-shadow:0 1px 4px rgba(0,0,0,.07); }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .page-header h1 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sum-chip { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .sum-chip--total { background: rgba(74,222,128,.08) !important; border-color: #2e7736 !important; }
+    :host-context([data-theme="dark"]) .sum-chip .sum-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sum-chip .sum-val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sum-chip--total .sum-val { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .fm { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .fm-head,
+    :host-context([data-theme="dark"]) .fm-footer { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .fm-head h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .fm-close { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) label { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .inp,
+    :host-context([data-theme="dark"]) input,
+    :host-context([data-theme="dark"]) select,
+    :host-context([data-theme="dark"]) textarea { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .currency-prefix { background: #232d42 !important; border-color: #232d42 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cat-btn { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .cat-btn.active { background: rgba(34,197,94,.12) !important; border-color: #4ade80 !important; color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .sub-card,
+    :host-context([data-theme="dark"]) .item-card,
+    :host-context([data-theme="dark"]) .empty-state { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .sub-name,
+    :host-context([data-theme="dark"]) .item-name,
+    :host-context([data-theme="dark"]) .card-name,
+    :host-context([data-theme="dark"]) .card-cost { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sub-meta,
+    :host-context([data-theme="dark"]) .item-meta,
+    :host-context([data-theme="dark"]) .card-sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .item-icon { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .card-actions { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .btn--ghost { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .btn--danger:hover { background: rgba(239,68,68,.12) !important; }
+    :host-context([data-theme="dark"]) .rec-badge--good    { background: rgba(22,163,74,.12)  !important; border-color: #16a34a !important; }
+    :host-context([data-theme="dark"]) .rec-badge--warning { background: rgba(245,158,11,.12) !important; border-color: #f59e0b !important; }
+    :host-context([data-theme="dark"]) .rec-badge--bad     { background: rgba(220,38,38,.12)  !important; border-color: #dc2626 !important; }
+    :host-context([data-theme="dark"]) .rec-badge--unknown { background: #1e2638 !important; border-color: #374151 !important; }
+    :host-context([data-theme="dark"]) .rec-label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .rec-msg   { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .usage-bar { background: #232d42 !important; }
+
+
   `]
 })
 export class AiSubscriptionsComponent implements OnInit {
@@ -607,9 +650,4 @@ export class AiSubscriptionsComponent implements OnInit {
     this.api.post(`/ai-subscriptions/${it.id}/usage`, {
       requests_count: this.manualUsage.requests_count ?? 0,
       cost_usd: this.manualUsage.cost_usd ?? 0,
-    }).subscribe({
-      next: () => { this.toast.show('Uso registrado!', 'success'); this.manualFormId = null; this.load(); },
-      error: () => this.toast.show('Erro ao registrar uso.', 'error'),
-    });
-  }
-}
+    }).sub

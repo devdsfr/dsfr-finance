@@ -631,6 +631,40 @@ label { font-size: .78rem; font-weight: 500; color: #374151; }
 .adjust-hint { font-size: .8rem; color: #9ca3af; margin: 0; text-align: center; }
 
 .empty { text-align: center; color: #9ca3af; padding: 2.5rem 1rem; }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .content-card,
+    :host-context([data-theme="dark"]) .detail-card,
+    :host-context([data-theme="dark"]) .modal-panel { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .sidebar-link { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sidebar-link:hover { background: #1e2638 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sidebar-link.active { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .sidebar-divider { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .flat-item { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .flat-item:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .flat-item__name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .flat-item__sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .acc-head,
+    :host-context([data-theme="dark"]) .card-head { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .acc-name,
+    :host-context([data-theme="dark"]) .card-name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .balance-row { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .balance-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .invoice-current { background: #1e2638 !important; border-color: #2e7736 !important; }
+    :host-context([data-theme="dark"]) .invoice-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .invoice-row:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .inv-badge--closed { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .card-chip,
+    :host-context([data-theme="dark"]) .card-chip-wrap { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .preset-btn { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .preset-btn:hover { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .preset-btn.selected { border-color: #4ade80 !important; background: rgba(74,222,128,.12) !important; }
+    :host-context([data-theme="dark"]) .preset-icon { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) input,
+    :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) label { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .modal-form { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .modal-form h2 { color: #e2e8f5 !important; }
+
   `]
 })
 export class BankingComponent implements OnInit {

@@ -671,6 +671,42 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
     .fm-btn--save { background: #2e7736; color: #fff; }
     .fm-btn--save:hover { background: #236029; }
     .fm-btn--save:disabled { opacity: .6; cursor: default; }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .page-title { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .empty-state,
+    :host-context([data-theme="dark"]) .goal-card,
+    :host-context([data-theme="dark"]) .form-modal { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .gc-deadline { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .gc-deadline--urgent { background: rgba(220,38,38,.15) !important; color: #f87171 !important; }
+    :host-context([data-theme="dark"]) .gc-stat__label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .empty-state h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .gc-name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .gc-meta,
+    :host-context([data-theme="dark"]) .gc-stat__lbl { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .gc-stat__val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .gc-progress { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .gc-inner { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .gc-btn { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .gc-btn:hover { background: #1e2638 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .fm-panel,
+    :host-context([data-theme="dark"]) .fm-modal { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .fm-header { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .fm-header h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .fm-body { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .fm-close { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) label { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .fm-input,
+    :host-context([data-theme="dark"]) input,
+    :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .amount-wrap { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .icon-picker { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .icon-btn { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .icon-btn:hover { border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .type-opt { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .type-opt.active { border-color: #4ade80 !important; background: rgba(74,222,128,.1) !important; }
+    :host-context([data-theme="dark"]) .type-opt__label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .fm-btn--cancel { background: #1e2638 !important; color: #c5cdd9 !important; }
+
   `]
 })
 export class GoalsComponent implements OnInit {

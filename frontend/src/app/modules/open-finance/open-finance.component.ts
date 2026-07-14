@@ -131,6 +131,17 @@ import { CommonModule } from '@angular/common';
       background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
       border-radius: 999px; padding: .3rem .75rem; font-size: .8rem; font-weight: 600;
     }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .hero h1 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .hero p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .feature-card,
+    :host-context([data-theme="dark"]) .info-section { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .feature-card h3 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .feature-card p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .info-section h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .step { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .step strong { color: #e2e8f5 !important; }
+
   `]
 })
 export class OpenFinanceComponent {}

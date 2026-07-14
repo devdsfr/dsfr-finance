@@ -364,6 +364,28 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     .btn--primary:hover { background: #15803d; }
     .btn--ghost { background: #f3f4f6; color: #374151; }
     .btn--danger-ghost { background: none; color: #dc2626; margin-right: auto; }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .global-panel,
+    :host-context([data-theme="dark"]) .cat-list,
+    :host-context([data-theme="dark"]) .skeleton-wrap { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .nav-btn,
+    :host-context([data-theme="dark"]) .action-btn { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .nav-btn:hover,
+    :host-context([data-theme="dark"]) .action-btn:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .month-label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .panel-label,
+    :host-context([data-theme="dark"]) .cat-list__header { border-color: #232d42 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cat-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-icon { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .progress-bar { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .form-panel { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .form-panel h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .form-section { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .input { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .input:focus { border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .btn--ghost { background: #1e2638 !important; color: #c5cdd9 !important; }
+
   `]
 })
 export class SpendingLimitsComponent implements OnInit {

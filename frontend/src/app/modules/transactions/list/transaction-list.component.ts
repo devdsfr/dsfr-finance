@@ -307,6 +307,30 @@ interface DayGroup {
     .btn--sm { padding: .25rem .6rem; font-size: .78rem; }
     .btn--white { background: rgba(255,255,255,.9); color: #92400e; }
     .btn--ghost-white { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55); }
+
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .month-nav__arrow { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .month-nav__arrow:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .month-nav__label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .filter-input,
+    :host-context([data-theme="dark"]) .filter-select { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .tx-board { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .day-header { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .day-header__label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .tx-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tx-row:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .tx-name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .tx-sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .chip { background: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .act { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .act:hover { background: #1e2638 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .act--del:hover { background: rgba(248,113,113,.15) !important; color: #f87171 !important; }
+    :host-context([data-theme="dark"]) .pay-toggle { background: #161c28 !important; border-color: #232d42 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .pay-toggle--paid:hover { background: rgba(248,113,113,.1) !important; border-color: #f87171 !important; color: #f87171 !important; }
+    :host-context([data-theme="dark"]) .skel-tx-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .balance-footer { background: #161c28 !important; border-color: #232d42 !important; box-shadow: 0 -2px 12px rgba(0,0,0,.4) !important; }
+    :host-context([data-theme="dark"]) .balance-item__value { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .balance-divider { background: #232d42 !important; }
   `]
 })
 export class TransactionListComponent implements OnInit {

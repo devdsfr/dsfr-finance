@@ -429,6 +429,53 @@ const TYPE_LABEL: Record<SourceType, string> = {
   @media (max-width: 720px) {
     .widget-grid { grid-template-columns: 1fr; }
   }
+
+  /* ══ DARK THEME ══════════════════════════════════════════════════ */
+  :host-context([data-theme="dark"]) .widget { background: #161c28 !important; color: #e2e8f5; }
+  :host-context([data-theme="dark"]) .widget__title { color: #e2e8f5 !important; }
+  :host-context([data-theme="dark"]) .cdash-empty { background: #161c28 !important; border-color: #232d42 !important; }
+  :host-context([data-theme="dark"]) .cdash-empty__title { color: #e2e8f5 !important; }
+  :host-context([data-theme="dark"]) .cdash-empty__sub { color: #8393ad !important; }
+  :host-context([data-theme="dark"]) .btn-add-widget { background: rgba(34,197,94,.1) !important; border-color: rgba(34,197,94,.45) !important; color: #4ade80 !important; }
+  :host-context([data-theme="dark"]) .btn-add-widget:hover { background: rgba(34,197,94,.2) !important; }
+
+  /* Widget controls */
+  :host-context([data-theme="dark"]) .wbtn { background: #1e2638 !important; color: #8393ad !important; }
+  :host-context([data-theme="dark"]) .wbtn:hover { background: #232d42 !important; color: #e2e8f5 !important; }
+  :host-context([data-theme="dark"]) .wbtn--del:hover { background: rgba(248,113,113,.15) !important; color: #f87171 !important; }
+  :host-context([data-theme="dark"]) .widget-nodata { color: #4f5f76 !important; }
+  :host-context([data-theme="dark"]) .wskel {
+    background: linear-gradient(90deg, #1e2638 25%, #283248 50%, #1e2638 75%) !important;
+    background-size: 800px 100% !important;
+  }
+
+  /* Comparison widget */
+  :host-context([data-theme="dark"]) .cmp-label { color: #c5cdd9 !important; }
+  :host-context([data-theme="dark"]) .cmp-val { color: #e2e8f5 !important; }
+  :host-context([data-theme="dark"]) .cmp-bar { background: #1e2638 !important; }
+
+  /* Pie widget */
+  :host-context([data-theme="dark"]) .pie-leg-label { color: #c5cdd9 !important; }
+  :host-context([data-theme="dark"]) .pie-leg-pct { color: #8393ad !important; }
+
+  /* Gauge widget */
+  :host-context([data-theme="dark"]) .gauge-label { color: #c5cdd9 !important; }
+  :host-context([data-theme="dark"]) .gauge-pct { color: #8393ad !important; }
+
+  /* Config modal */
+  :host-context([data-theme="dark"]) .modal { background: #161c28 !important; color: #e2e8f5; }
+  :host-context([data-theme="dark"]) .modal__head h2 { color: #e2e8f5 !important; }
+  :host-context([data-theme="dark"]) .modal-close { color: #8393ad !important; }
+  :host-context([data-theme="dark"]) .fld label { color: #c5cdd9 !important; }
+  :host-context([data-theme="dark"]) .fld-hint { color: #8393ad !important; }
+  :host-context([data-theme="dark"]) .src-group__label { color: #4f5f76 !important; }
+  :host-context([data-theme="dark"]) .inp { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+  :host-context([data-theme="dark"]) .inp:focus { border-color: #4ade80 !important; }
+  :host-context([data-theme="dark"]) .style-opt { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
+  :host-context([data-theme="dark"]) .style-opt.active { background: rgba(34,197,94,.12) !important; border-color: #4ade80 !important; color: #4ade80 !important; }
+  :host-context([data-theme="dark"]) .src-chip { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
+  :host-context([data-theme="dark"]) .src-chip.selected { background: rgba(34,197,94,.12) !important; border-color: #4ade80 !important; color: #4ade80 !important; }
+  :host-context([data-theme="dark"]) .btn-secondary { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
   `]
 })
 export class ConfigurableDashboardComponent implements OnInit {

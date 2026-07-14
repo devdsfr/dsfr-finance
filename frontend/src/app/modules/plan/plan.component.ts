@@ -129,6 +129,23 @@ export const PREMIUM_LABELS: Record<string, string> = {
     .feature-row__icon { font-size: 1.1rem; flex-shrink: 0; width: 28px; text-align: center; }
     .feature-row__label { font-weight: 600; color: #111; font-size: .88rem; }
     .feature-row__desc { font-size: .78rem; color: #9ca3af; }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .plan-card,
+    :host-context([data-theme="dark"]) .features-detail { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .plan-card--highlight { border-color: #2e7736 !important; }
+    :host-context([data-theme="dark"]) .plan-card__head h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .plan-card__price { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .plan-card__price--free { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .current-badge { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .current-badge--premium { background: rgba(74,222,128,.12) !important; color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .feature-item { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .feature-item--locked { color: #4f5f76 !important; }
+    :host-context([data-theme="dark"]) .features-detail h3 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .feature-detail__name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .feature-detail__desc { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .plan-btn { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .plan-tag { background: #1e2638 !important; color: #c5cdd9 !important; }
+
   `]
 })
 export class PlanComponent implements OnInit {

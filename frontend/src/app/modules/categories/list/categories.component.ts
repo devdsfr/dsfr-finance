@@ -243,6 +243,34 @@ interface Category { id: string; name: string; color: string; icon: string; type
     .btn-archive:hover { background: #15803d; }
     .btn-cancel-link { background: none; border: none; color: #16a34a; font-size: .875rem; font-weight: 600; cursor: pointer; text-decoration: none; }
     .btn-cancel-link:hover { text-decoration: underline; }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .cat-card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .cat-tabs { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-tab { color: #8393ad !important; border-color: transparent !important; }
+    :host-context([data-theme="dark"]) .cat-tab.active { color: #4ade80 !important; border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .cat-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-row:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .cat-circle { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .cat-name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .cat-header h1 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .btn-new { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .btn-new:hover { background: rgba(74,222,128,.1) !important; }
+    :host-context([data-theme="dark"]) .cat-empty { color: #4f5f76 !important; }
+    :host-context([data-theme="dark"]) .skel { background: linear-gradient(90deg,#1e2638 25%,#283248 50%,#1e2638 75%) !important; }
+    :host-context([data-theme="dark"]) .modal { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .modal-header { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .modal-header h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .mh-close { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .modal-body { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .preview-circle { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) label { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) input { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .icon-grid button { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .icon-grid button:hover { border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .icon-grid button.selected { border-color: #4ade80 !important; background: rgba(74,222,128,.12) !important; }
+    :host-context([data-theme="dark"]) .modal-footer { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .btn-cancel { background: #1e2638 !important; color: #c5cdd9 !important; }
+
   `]
 })
 export class CategoriesComponent implements OnInit {

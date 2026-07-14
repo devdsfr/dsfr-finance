@@ -473,6 +473,35 @@ function months2text(n: number): string {
       .sim-results { grid-template-columns: 1fr; }
       .summary-row { flex-direction: column; }
     }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .sidebar { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .ds-main { background: #0d1117 !important; }
+    :host-context([data-theme="dark"]) .upsell-card,
+    :host-context([data-theme="dark"]) .scard,
+    :host-context([data-theme="dark"]) .panel { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .upsell-card h2,
+    :host-context([data-theme="dark"]) .panel h3,
+    :host-context([data-theme="dark"]) .scard__v,
+    :host-context([data-theme="dark"]) .detail__head h1 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .scard__l { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .debt-card { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .debt-card.active,
+    :host-context([data-theme="dark"]) .debt-card:hover { border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .debt-card__name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .debt-card__bar { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .sim-item { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .sim-item--neutral { background: rgba(245,158,11,.1) !important; border-color: rgba(245,158,11,.3) !important; }
+    :host-context([data-theme="dark"]) .sim-val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .tip { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tip--neutral { background: rgba(245,158,11,.08) !important; border-left-color: #f59e0b !important; }
+    :host-context([data-theme="dark"]) .tip strong { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .atable th { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .atable td { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .btn--outline { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .modal { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) input,
+    :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+
   `]
 })
 export class DebtStrategyComponent implements OnInit {

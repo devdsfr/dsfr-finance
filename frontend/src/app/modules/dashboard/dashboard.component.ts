@@ -954,6 +954,90 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .skel--val  { width: 120px; height: 1.6rem; vertical-align: middle; margin: .15rem 0; }
     .skel--row  { height: 44px; border-radius: .375rem; margin: .4rem 0; display: block; width: 100%; }
     .skel-rows  { margin: .5rem 0; }
+
+    /* ══ DARK THEME ═══════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .hero,
+    :host-context([data-theme="dark"]) .card,
+    :host-context([data-theme="dark"]) .fv-card { background: #161c28 !important; }
+
+    :host-context([data-theme="dark"]) .greeting { color: #8393ad; }
+    :host-context([data-theme="dark"]) .greeting strong { color: #e2e8f5; }
+    :host-context([data-theme="dark"]) .ms-sep { background: #232d42 !important; }
+
+    /* Borders */
+    :host-context([data-theme="dark"]) .acc-row,
+    :host-context([data-theme="dark"]) .bill-row,
+    :host-context([data-theme="dark"]) .card-row,
+    :host-context([data-theme="dark"]) .result-row,
+    :host-context([data-theme="dark"]) .lim-row,
+    :host-context([data-theme="dark"]) .card-limits,
+    :host-context([data-theme="dark"]) .calc-sim,
+    :host-context([data-theme="dark"]) .pat-wallet-grid { border-color: #232d42 !important; }
+
+    /* Text */
+    :host-context([data-theme="dark"]) .card__big,
+    :host-context([data-theme="dark"]) .acc-name,
+    :host-context([data-theme="dark"]) .card-name,
+    :host-context([data-theme="dark"]) .bill-name,
+    :host-context([data-theme="dark"]) .lim-name,
+    :host-context([data-theme="dark"]) .cat-pct,
+    :host-context([data-theme="dark"]) .cl-val,
+    :host-context([data-theme="dark"]) .pat-wcard__total { color: #e2e8f5 !important; }
+
+    :host-context([data-theme="dark"]) .card__sup,
+    :host-context([data-theme="dark"]) .section-label,
+    :host-context([data-theme="dark"]) .acc-type,
+    :host-context([data-theme="dark"]) .card-sub,
+    :host-context([data-theme="dark"]) .bill-date,
+    :host-context([data-theme="dark"]) .lim-detail,
+    :host-context([data-theme="dark"]) .cat-amt,
+    :host-context([data-theme="dark"]) .pat-wcard__name { color: #8393ad !important; }
+
+    :host-context([data-theme="dark"]) .cat-name,
+    :host-context([data-theme="dark"]) .bill-amt,
+    :host-context([data-theme="dark"]) .pat-legend-item { color: #c5cdd9 !important; }
+
+    /* Links & buttons */
+    :host-context([data-theme="dark"]) .manage-link { border-color: #232d42 !important; color: #8393ad !important; background: transparent; }
+    :host-context([data-theme="dark"]) .manage-link:hover { border-color: #4ade80 !important; color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .acc-icon--img,
+    :host-context([data-theme="dark"]) .card-icon--img { border-color: #232d42 !important; background: #1e2638 !important; }
+
+    /* Bill banners */
+    :host-context([data-theme="dark"]) .bill-banner--danger  { background: rgba(220,38,38,.18) !important; color: #f87171 !important; }
+    :host-context([data-theme="dark"]) .bill-banner--warning { background: rgba(217,119,6,.18)  !important; color: #fbbf24 !important; }
+
+    /* Calculadora */
+    :host-context([data-theme="dark"]) .calc-cell { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .calc-cell__val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .calc-result { background: rgba(34,197,94,.1) !important; border-color: rgba(34,197,94,.3) !important; }
+    :host-context([data-theme="dark"]) .calc-result--neg { background: rgba(248,113,113,.1) !important; border-color: rgba(248,113,113,.3) !important; }
+    :host-context([data-theme="dark"]) .calc-result__lbl { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .calc-sign-group { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .calc-sign { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .calc-sign:hover { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .calc-input { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .calc-input:focus { border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .calc-clear { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .calc-clear:hover { background: rgba(248,113,113,.15) !important; color: #f87171 !important; }
+    :host-context([data-theme="dark"]) .calc-sim__preview { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .calc-sim__preview--pos { background: rgba(34,197,94,.1) !important; border-color: rgba(34,197,94,.3) !important; }
+    :host-context([data-theme="dark"]) .calc-sim__preview--neg { background: rgba(248,113,113,.1) !important; border-color: rgba(248,113,113,.3) !important; }
+    :host-context([data-theme="dark"]) .calc-sim__preview-lbl { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .calc-op { color: #4f5f76 !important; }
+
+    /* Patrimônio cards */
+    :host-context([data-theme="dark"]) .pat-wcard { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .pat-wcard--total { background: rgba(34,197,94,.1) !important; border-color: rgba(34,197,94,.3) !important; }
+
+    /* First-visit skeleton overlay */
+    :host-context([data-theme="dark"]) .fv-overlay { background: #0d1117 !important; }
+    :host-context([data-theme="dark"]) .sk {
+      background: linear-gradient(90deg, #1e2638 25%, #283248 50%, #1e2638 75%) !important;
+    }
+    :host-context([data-theme="dark"]) .skel {
+      background: linear-gradient(90deg, #1e2638 25%, #283248 50%, #1e2638 75%) !important;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {

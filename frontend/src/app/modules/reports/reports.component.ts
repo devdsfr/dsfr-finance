@@ -695,6 +695,42 @@ type Gran = 'daily' | 'weekly' | 'monthly';
     }
     .skel--icon  { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: block; }
     .skel--text  { height: 14px; display: block; }
+    /* ══ DARK THEME ════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .rep-card,
+    :host-context([data-theme="dark"]) .cat-section,
+    :host-context([data-theme="dark"]) .card { background: #161c28 !important; color: #e2e8f5; }
+    :host-context([data-theme="dark"]) .section-title { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cat-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .view-btn { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .view-btn.active { background: #2e7736 !important; border-color: #2e7736 !important; color: #fff !important; }
+    :host-context([data-theme="dark"]) .rep__title { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .month-nav__arrow,
+    :host-context([data-theme="dark"]) .month-nav__btn { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .month-nav__arrow:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .month-label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .tab-nav { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tab-btn { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .tab-btn.active { color: #4ade80 !important; border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .filter-select,
+    :host-context([data-theme="dark"]) .filter-btn,
+    :host-context([data-theme="dark"]) .gran-toggle button { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .gran-toggle button + button { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .gran-toggle button.active { background: #1e2638 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .cat-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .cat-row__total { border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sticky-col { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .line-table th,
+    :host-context([data-theme="dark"]) .simple-table th,
+    :host-context([data-theme="dark"]) .flow-table th,
+    :host-context([data-theme="dark"]) th { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) td { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .simple-table td { color: #c5cdd9 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .month-col { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .skel {
+      background: linear-gradient(90deg, #1e2638 25%, #283248 50%, #1e2638 75%) !important;
+    }
+
   `]
 })
 export class ReportsComponent implements OnInit {
