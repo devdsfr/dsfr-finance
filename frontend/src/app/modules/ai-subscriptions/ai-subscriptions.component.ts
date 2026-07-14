@@ -650,4 +650,9 @@ export class AiSubscriptionsComponent implements OnInit {
     this.api.post(`/ai-subscriptions/${it.id}/usage`, {
       requests_count: this.manualUsage.requests_count ?? 0,
       cost_usd: this.manualUsage.cost_usd ?? 0,
-    }).sub
+    }).subscribe({
+      next: () => { this.toast.show('Uso registrado!', 'success'); this.manualFormId = null; this.load(); },
+      error: () => this.toast.show('Erro ao registrar uso.', 'error'),
+    });
+  }
+}
