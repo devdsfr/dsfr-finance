@@ -67,3 +67,255 @@ input, select, textarea, button {
   border-top: 1px solid #f3f4f6;
 }
 .skel-circle { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK THEME — Paleta naval profunda (estilo Investidor10)
+   Variáveis CSS disponíveis para ambos os temas
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:         #f4f6fb;
+  --surface:    #ffffff;
+  --surface-2:  #f0f4f9;
+  --border:     #e2e8f0;
+  --text:       #1a2035;
+  --text-2:     #5a6a83;
+  --text-3:     #94a3b8;
+  --positive:   #16a34a;
+  --negative:   #dc2626;
+  --accent:     #2e7736;
+  --shadow:     0 1px 6px rgba(0,0,0,.08);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.10);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:         #0d1117;
+  --surface:    #161c28;
+  --surface-2:  #1e2638;
+  --border:     #232d42;
+  --text:       #e2e8f5;
+  --text-2:     #8393ad;
+  --text-3:     #4f5f76;
+  --positive:   #22c55e;
+  --negative:   #f87171;
+  --accent:     #4ade80;
+  --shadow:     0 1px 6px rgba(0,0,0,.35);
+  --shadow-md:  0 4px 20px rgba(0,0,0,.50);
+}
+
+/* ── Base ────────────────────────────────────────────────────────── */
+[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+[data-theme="dark"] .app {
+  background: var(--bg) !important;
+}
+
+/* ── Cards & superfícies ─────────────────────────────────────────── */
+[data-theme="dark"] .card,
+[data-theme="dark"] .dash-card,
+[data-theme="dark"] .widget-card,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .section-card,
+[data-theme="dark"] .report-card,
+[data-theme="dark"] .goal-card,
+[data-theme="dark"] .debt-card,
+[data-theme="dark"] .sub-card,
+[data-theme="dark"] .limit-card,
+[data-theme="dark"] .account-card,
+[data-theme="dark"] .banking-card,
+[data-theme="dark"] .notif-card,
+[data-theme="dark"] .ms-item,
+[data-theme="dark"] .metric-card,
+[data-theme="dark"] .hero-card,
+[data-theme="dark"] .calc-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text);
+  box-shadow: var(--shadow) !important;
+}
+
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .section-header,
+[data-theme="dark"] .widget-head,
+[data-theme="dark"] .bill-header,
+[data-theme="dark"] .hero-section {
+  border-color: var(--border) !important;
+  color: var(--text);
+}
+
+/* ── Topnav dropdowns ────────────────────────────────────────────── */
+[data-theme="dark"] .lang-menu__dropdown,
+[data-theme="dark"] .user-menu__dropdown,
+[data-theme="dark"] .dropdown__menu {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.6) !important;
+}
+
+[data-theme="dark"] .lang-menu__dropdown button,
+[data-theme="dark"] .user-menu__dropdown a,
+[data-theme="dark"] .dropdown__menu a {
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] .lang-menu__dropdown button:hover,
+[data-theme="dark"] .user-menu__dropdown a:hover,
+[data-theme="dark"] .dropdown__menu a:hover {
+  background: var(--border) !important;
+}
+
+[data-theme="dark"] .lang-menu__dropdown button.active { color: #4ade80 !important; font-weight: 700; }
+[data-theme="dark"] .user-menu__dropdown hr { border-color: var(--border) !important; }
+[data-theme="dark"] .user-menu__dropdown button { color: #f87171 !important; }
+[data-theme="dark"] .user-menu__dropdown button:hover { background: var(--border) !important; }
+
+/* ── Mobile drawer ───────────────────────────────────────────────── */
+[data-theme="dark"] .drawer {
+  background: var(--surface) !important;
+  box-shadow: 4px 0 32px rgba(0,0,0,.6) !important;
+}
+
+[data-theme="dark"] .drawer__link { color: var(--text-2) !important; }
+[data-theme="dark"] .drawer__link:hover { background: var(--surface-2) !important; color: var(--text) !important; }
+[data-theme="dark"] .drawer__link--active { background: rgba(74,222,128,.12) !important; color: #4ade80 !important; }
+[data-theme="dark"] .drawer__label { color: var(--text-3) !important; }
+
+[data-theme="dark"] .drawer__langs button {
+  background: var(--surface-2) !important;
+  color: var(--text-2) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .drawer__langs button.active {
+  border-color: #4ade80 !important;
+  background: rgba(74,222,128,.15) !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .drawer__theme-btn {
+  background: var(--surface-2) !important;
+  color: var(--text-2) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .drawer__theme-btn.active {
+  border-color: #4ade80 !important;
+  background: rgba(74,222,128,.15) !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .drawer__footer { border-color: var(--border) !important; }
+[data-theme="dark"] .drawer__logout { background: rgba(248,113,113,.15) !important; color: #fca5a5 !important; }
+[data-theme="dark"] .drawer__langs { border-color: var(--border) !important; }
+
+/* ── Forms & inputs ──────────────────────────────────────────────── */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: #4ade80 !important;
+  box-shadow: 0 0 0 3px rgba(74,222,128,.18) !important;
+  outline: none;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: var(--text-3) !important; }
+
+/* ── Tabelas ─────────────────────────────────────────────────────── */
+[data-theme="dark"] table { color: var(--text-2); }
+[data-theme="dark"] th {
+  background: var(--surface-2) !important;
+  color: var(--text-3) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] td { border-color: var(--border) !important; color: var(--text); }
+[data-theme="dark"] tr:hover td { background: var(--surface-2) !important; }
+
+/* ── Skeleton shimmer (dark) ─────────────────────────────────────── */
+[data-theme="dark"] .skel,
+[data-theme="dark"] .skel-block {
+  background: linear-gradient(90deg, #1e2638 25%, #28334d 50%, #1e2638 75%) !important;
+  background-size: 1200px 100% !important;
+}
+[data-theme="dark"] .skel-card {
+  background: var(--surface) !important;
+  box-shadow: var(--shadow) !important;
+}
+[data-theme="dark"] .skel-row-item { border-color: var(--border) !important; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────── */
+[data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2a3a52; border-radius: 3px; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #374d6a; }
+
+/* ── Texto & divisores ───────────────────────────────────────────── */
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .label,
+[data-theme="dark"] .hint,
+[data-theme="dark"] .subtitle { color: var(--text-2) !important; }
+
+[data-theme="dark"] hr,
+[data-theme="dark"] .divider { border-color: var(--border) !important; }
+
+/* ── Plan pill ───────────────────────────────────────────────────── */
+[data-theme="dark"] .plan-pill { background: var(--surface-2); color: var(--text-2); }
+[data-theme="dark"] .plan-pill--premium { background: #166534; color: #bbf7d0; }
+
+/* ── Botões secundários ──────────────────────────────────────────── */
+[data-theme="dark"] .btn-outline,
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] button.secondary {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .btn-outline:hover,
+[data-theme="dark"] .btn-secondary:hover { background: var(--border) !important; }
+
+/* ── Valores positivos/negativos (dados financeiros) ────────────── */
+[data-theme="dark"] .positive,
+[data-theme="dark"] .income,
+[data-theme="dark"] .value-positive { color: #22c55e !important; }
+
+[data-theme="dark"] .negative,
+[data-theme="dark"] .expense,
+[data-theme="dark"] .value-negative { color: #f87171 !important; }
+
+/* ── Tags / badges ───────────────────────────────────────────────── */
+[data-theme="dark"] .badge,
+[data-theme="dark"] .tag,
+[data-theme="dark"] .chip {
+  background: var(--surface-2) !important;
+  color: var(--text-2) !important;
+  border-color: var(--border) !important;
+}
+
+/* ── Modal / overlay ─────────────────────────────────────────────── */
+[data-theme="dark"] .modal,
+[data-theme="dark"] .dialog,
+[data-theme="dark"] .popup {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,.65) !important;
+}
+
+/* ── Itens de lista (lançamentos, dívidas, etc.) ─────────────────── */
+[data-theme="dark"] .list-item,
+[data-theme="dark"] .tx-row,
+[data-theme="dark"] .bill-item,
+[data-theme="dark"] .debt-item,
+[data-theme="dark"] .sub-item {
+  border-color: var(--border) !important;
+  color: var(--text);
+}
+[data-theme="dark"] .list-item:hover,
+[data-theme="dark"] .tx-row:hover {
+  background: var(--surface-2) !important;
+}

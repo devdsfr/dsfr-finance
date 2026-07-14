@@ -6,6 +6,7 @@ import { ApiService } from '../core/services/api.service';
 import { PlanService } from '../core/services/plan.service';
 import { SettingsService, CURRENCIES, CURRENCY_SYMBOL, CurrencyCode } from '../core/services/settings.service';
 import { TranslationService } from '../core/services/translation.service';
+import { ThemeService } from '../core/services/theme.service';
 import { Lang } from '../core/i18n/translations';
 import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { ToastComponent } from '../shared/components/toast/toast.component';
@@ -86,6 +87,21 @@ import { filter } from 'rxjs/operators';
             </div>
           </div>
 
+          <!-- Theme toggle -->
+          <button class="theme-toggle" (click)="theme.toggle()" [class.theme-toggle--dark]="theme.isDark()" [title]="theme.isDark() ? 'Modo claro' : 'Modo escuro'" aria-label="Alternar tema">
+            <span class="tt-track">
+              <span class="tt-thumb">
+                @if (theme.isDark()) {
+                  <!-- Moon icon -->
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                } @else {
+                  <!-- Sun icon -->
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                }
+              </span>
+            </span>
+          </button>
+
           <a routerLink="/notifications" class="notif-btn" [title]="'nav.notifications' | translate">
             🔔
             @if (unreadCount() > 0) {
@@ -147,6 +163,12 @@ import { filter } from 'rxjs/operators';
               {{ c.value }}
             </button>
           }
+        </div>
+
+        <!-- Theme toggle (mobile) -->
+        <div class="drawer__langs drawer__theme-toggle">
+          <button (click)="theme.toggle()" class="drawer__theme-btn" [class.active]="!theme.isDark()">☀️ Claro</button>
+          <button (click)="theme.toggle()" class="drawer__theme-btn" [class.active]="theme.isDark()">🌙 Escuro</button>
         </div>
 
         <!-- Nav links -->
@@ -433,6 +455,51 @@ import { filter } from 'rxjs/operators';
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── Theme toggle (pill switch) ──────────────────── */
+    .theme-toggle {
+      background: none; border: none; cursor: pointer; padding: 0;
+      display: flex; align-items: center;
+    }
+    .tt-track {
+      position: relative;
+      width: 44px; height: 24px;
+      background: rgba(255,255,255,.18);
+      border-radius: 12px;
+      transition: background .25s;
+      display: flex; align-items: center;
+    }
+    .theme-toggle--dark .tt-track {
+      background: rgba(74,222,128,.25);
+    }
+    .theme-toggle:hover .tt-track { background: rgba(255,255,255,.28); }
+    .theme-toggle--dark:hover .tt-track { background: rgba(74,222,128,.38); }
+
+    .tt-thumb {
+      position: absolute;
+      left: 3px;
+      width: 18px; height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #f59e0b;
+      transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .25s, color .25s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+    .theme-toggle--dark .tt-thumb {
+      transform: translateX(20px);
+      background: #1e2638;
+      color: #c4b5fd;
+    }
+
+    /* ── Mobile drawer theme toggle ───────────────────── */
+    .drawer__theme-toggle { border-top: 1px solid #f3f4f6; }
+    .drawer__theme-btn {
+      flex: 1; padding: .5rem .75rem; background: #f3f4f6; border: 2px solid transparent;
+      border-radius: .375rem; font-size: .8rem; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .drawer__theme-btn.active { border-color: #2e7736; background: #f0fdf4; color: #2e7736; }
+
     /* ── Main ────────────────────────────────────────────── */
     .main { flex: 1; padding: 1.5rem 2rem; max-width: 1100px; margin: 0 auto; width: 100%; }
 
@@ -447,11 +514,12 @@ import { filter } from 'rxjs/operators';
   `]
 })
 export class ShellComponent implements OnInit {
-  auth = inject(AuthService);
-  plan = inject(PlanService);
+  auth     = inject(AuthService);
+  plan     = inject(PlanService);
   settings = inject(SettingsService);
-  i18n = inject(TranslationService);
-  private api = inject(ApiService);
+  i18n     = inject(TranslationService);
+  theme    = inject(ThemeService);
+  private api    = inject(ApiService);
   private router = inject(Router);
 
   unreadCount  = signal(0);
