@@ -503,11 +503,40 @@ export class ConfigurableDashboardComponent implements OnInit {
   draftTitle   = '';
 
   private storageKey = 'dsfr_dash_widgets';
+  private catalogKey = 'dsfr_dash_catalog';
+  private dataKey    = 'dsfr_dash_data';
 
   ngOnInit() {
     const uid = this.userId();
     this.storageKey = `dsfr_dash_widgets_${uid}`;
-    this.loadWidgets();
+    this.catalogKey = `dsfr_dash_catalog_${uid}`;
+    this.dataKey    = `dsfr_dash_data_${uid}`;
+    this.restoreCache();   // pinta widgets/catálogo do último estado, se houver
+    this.loadWidgets();    // atualiza em segundo plano
+  }
+
+  /** Restaura catálogo e dados dos widgets do cache local para exibição imediata. */
+  private restoreCache() {
+    try {
+      const cat = localStorage.getItem(this.catalogKey);
+      if (cat) this.catalog.set(JSON.parse(cat));   // catalogLoaded segue false → refaz em background
+    } catch {}
+    try {
+      const d = localStorage.getItem(this.dataKey);
+      if (d) {
+        const parsed = JSON.parse(d) as Record<string, WidgetData>;
+        // garante loading:false para não reexibir skeleton
+        Object.keys(parsed).forEach(k => parsed[k] = { ...parsed[k], loading: false });
+        this.data.set(parsed);
+      }
+    } catch {}
+  }
+
+  private persistCatalog() {
+    try { localStorage.setItem(this.catalogKey, JSON.stringify(this.catalog())); } catch {}
+  }
+  private persistData() {
+    try { localStorage.setItem(this.dataKey, JSON.stringify(this.data())); } catch {}
   }
 
   private userId(): string {
@@ -683,7 +712,8 @@ export class ConfigurableDashboardComponent implements OnInit {
   }
 
   private loadWidgetData(w: DashWidget) {
-    this.setWD(w.id, { loading: true });
+    // Só mostra skeleton se ainda não há nada em cache para este widget.
+    if (!this.data()[w.id]) this.setWD(w.id, { loading: true });
     // Catalog provides raw values for debt/ai and colors
     this.ensureCatalogThen(() => this.resolveWidget(w));
   }
@@ -709,6 +739,7 @@ export class ConfigurableDashboardComponent implements OnInit {
       this.catalog.set(items);
       this.catalogLoaded = true;
       this.loadingCatalog.set(false);
+      this.persistCatalog();
       cb();
     });
   }
@@ -723,6 +754,7 @@ export class ConfigurableDashboardComponent implements OnInit {
           loading: false,
           series: { months: months.map(m => m.label), lines: [{ label: src.label, color: src.color, points }] },
         });
+        this.persistData();
       });
     } else {
       // compare / pie → current value per source
@@ -731,6 +763,7 @@ export class ConfigurableDashboardComponent implements OnInit {
         catchError(() => of({ label: s.label, value: 0, color: s.color })),
       ))).subscribe(values => {
         this.setWD(w.id, { loading: false, values });
+        this.persistData();
       });
     }
   }

@@ -48,7 +48,11 @@ export class AuthService {
     const uid = this.currentUser()?.id;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    if (uid) localStorage.removeItem(`dash_cache_v1_${uid}`);
+    if (uid) {
+      localStorage.removeItem(`dash_cache_v1_${uid}`);
+      localStorage.removeItem(`dsfr_dash_catalog_${uid}`);
+      localStorage.removeItem(`dsfr_dash_data_${uid}`);
+    }
     this.currentUser.set(null);
     this.router.navigate(['/auth/login']);
   }
