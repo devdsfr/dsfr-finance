@@ -1,0 +1,11 @@
+{
+  "/api": {
+    "target": "https://finance-backend-vajj.onrender.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "info",
+    "headers": {
+      "Origin": "https://finance-backend-vajj.onrender.com"
+    }
+  }
+}

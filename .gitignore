@@ -1,0 +1,15 @@
+# Go
+backend/finance
+backend/.env
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+node_modules/
+
+# Docker
+.env
+
+# OS
+.DS_Store
+Thumbs.db

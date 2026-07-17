@@ -1,0 +1,261 @@
+basePath: /api/v1
+definitions:
+  services.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      totp_code:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  services.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: admin@dsfr.com
+    name: API Support
+  description: API de gestão financeira pessoal
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: DSFR Finance API
+  version: "1.0"
+paths:
+  /accounts:
+    get:
+      description: Retorna todas as contas do workspace
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar contas
+      tags:
+      - accounts
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova conta bancária
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar conta
+      tags:
+      - accounts
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica um usuário e retorna um token JWT
+      parameters:
+      - description: Credenciais de login
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/services.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user e token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Erro de validação
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Credenciais inválidas
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Fazer login
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova conta de usuário
+      parameters:
+      - description: Dados de registro
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/services.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: user e token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Erro de validação
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Usuário já existe
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Registrar novo usuário
+      tags:
+      - auth
+  /categories:
+    get:
+      description: Retorna todas as categorias do workspace
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar categorias
+      tags:
+      - categories
+  /credit-cards:
+    get:
+      description: Retorna todos os cartões de crédito do workspace
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar cartões de crédito
+      tags:
+      - credit-cards
+  /reports/flow:
+    get:
+      description: Retorna receitas vs despesas por mês
+      parameters:
+      - description: Mês específico (YYYY-MM)
+        in: query
+        name: month
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Relatório de fluxo mensal
+      tags:
+      - reports
+  /transactions:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista paginada de transações com filtros
+      parameters:
+      - description: ID da conta
+        in: query
+        name: account_id
+        type: string
+      - description: ID da categoria
+        in: query
+        name: category_id
+        type: string
+      - description: Tipo (expense, income, transfer)
+        in: query
+        name: type
+        type: string
+      - description: Filtrar por pago/não pago
+        in: query
+        name: paid
+        type: boolean
+      - default: 1
+        description: Página
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Itens por página
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: transactions e total
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Não autorizado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Erro interno
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar transações
+      tags:
+      - transactions
+securityDefinitions:
+  BearerAuth:
+    description: Digite "Bearer" seguido do token JWT
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
