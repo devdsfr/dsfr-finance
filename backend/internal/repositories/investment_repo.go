@@ -499,6 +499,3 @@ func (r *InvestmentRepository) History(workspaceID string) ([]*models.Investment
 	}
 	return out, nil
 }
-	}
-	return out, nil
-}
