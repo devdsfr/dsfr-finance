@@ -29,7 +29,29 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
           <span class="login-brand__name"><strong>DSFR</strong> finance</span>
         </div>
         <h2>{{ 'auth.login_title' | translate }}</h2>
-        @if (!needsMFA()) {
+        @if (mode() === 'forgot') {
+          <!-- Esqueci minha senha -->
+          @if (!forgotSent()) {
+            <form (ngSubmit)="forgot()" class="form">
+              <p class="hint-text">Informe seu e-mail e enviaremos um link para redefinir sua senha.</p>
+              <div class="form-group">
+                <label>{{ 'auth.email' | translate }}</label>
+                <input [(ngModel)]="email" name="femail" type="email" required class="input" />
+              </div>
+              @if (error()) { <div class="error">{{ error() }}</div> }
+              <button type="submit" class="btn btn--primary" [disabled]="loading()">
+                {{ loading() ? 'Enviando...' : 'Enviar link de redefinição' }}
+              </button>
+              <button type="button" class="btn btn--ghost" (click)="mode.set('login'); error.set('')">← Voltar ao login</button>
+            </form>
+          } @else {
+            <div class="sent-box">
+              <div class="sent-icon">✉️</div>
+              <p>Se <strong>{{ email }}</strong> estiver cadastrado, um link de redefinição foi enviado. Verifique sua caixa de entrada e o spam.</p>
+              <button type="button" class="btn btn--ghost" (click)="mode.set('login'); forgotSent.set(false)">← Voltar ao login</button>
+            </div>
+          }
+        } @else if (!needsMFA()) {
           <form (ngSubmit)="login()" class="form">
             <div class="form-group">
               <label>{{ 'auth.email' | translate }}</label>
@@ -43,6 +65,7 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
             <button type="submit" class="btn btn--primary" [disabled]="loading()">
               {{ loading() ? ('auth.logging_in' | translate) : ('auth.login_button' | translate) }}
             </button>
+            <button type="button" class="link-btn" (click)="mode.set('forgot'); error.set('')">Esqueci minha senha</button>
           </form>
         } @else {
           <!-- AC-MC-10: MFA step -->
@@ -82,6 +105,12 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
     .btn--ghost { background: none; color: #6b7280; text-align: center; }
     .error { color: #ef4444; font-size: .85rem; }
     .auth-link { display: block; text-align: center; margin-top: 1rem; font-size: .85rem; color: #6366f1; text-decoration: none; }
+    .link-btn { background: none; border: none; color: #6366f1; font-size: .82rem; cursor: pointer; text-align: center; padding: .2rem; }
+    .link-btn:hover { text-decoration: underline; }
+    .hint-text { font-size: .85rem; color: #6b7280; margin: 0 0 .25rem; line-height: 1.5; }
+    .sent-box { text-align: center; display: flex; flex-direction: column; gap: 1rem; align-items: center; }
+    .sent-icon { font-size: 2.5rem; }
+    .sent-box p { font-size: .88rem; color: #4b5563; line-height: 1.6; margin: 0; }
   `]
 })
 export class LoginComponent implements OnInit {
@@ -94,6 +123,8 @@ export class LoginComponent implements OnInit {
   loading = signal(false);
   error = signal('');
   needsMFA = signal(false);
+  mode = signal<'login' | 'forgot'>('login');
+  forgotSent = signal(false);
 
   ngOnInit(): void {
     // Acorda o backend (Render free tier) enquanto o usuário digita as credenciais,
@@ -118,6 +149,15 @@ export class LoginComponent implements OnInit {
     this.auth.login(this.email, this.password, this.totpCode).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: err => this.error.set(err.error?.error ?? this.i18n.t('auth.mfa_error_default'))
+    });
+  }
+
+  forgot(): void {
+    if (!this.email) { this.error.set('Informe seu e-mail.'); return; }
+    this.loading.set(true); this.error.set('');
+    this.auth.forgotPassword(this.email).subscribe({
+      next: () => { this.forgotSent.set(true); this.loading.set(false); },
+      error: err => { this.error.set(err.error?.error ?? 'Erro ao enviar o e-mail.'); this.loading.set(false); }
     });
   }
 }

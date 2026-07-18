@@ -20,6 +20,9 @@ type Config struct {
 	SMTPUser         string
 	SMTPPassword     string
 	SMTPFrom         string
+	ResendAPIKey     string
+	EmailFrom        string
+	AppURL           string
 	SpendingAlertPct float64
 	AppEnv           string
 	CORSOrigins      string
@@ -46,6 +49,9 @@ func Load() *Config {
 		SMTPUser:         getEnv("SMTP_USER", ""),
 		SMTPPassword:     getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:         getEnv("SMTP_FROM", "no-reply@finance.local"),
+		ResendAPIKey:     getEnv("RESEND_API_KEY", ""),
+		EmailFrom:        getEnv("EMAIL_FROM", "DSFR Finance <onboarding@resend.dev>"),
+		AppURL:           getEnv("APP_URL", "http://localhost:4200"),
 		SpendingAlertPct: alertPct,
 		AppEnv:           getEnv("APP_ENV", "development"),
 		CORSOrigins:      getEnv("CORS_ORIGINS", "http://localhost:4200"),

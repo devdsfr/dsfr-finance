@@ -63,7 +63,8 @@ func main() {
 	// ── Services ─────────────────────────────────────────────────────────────
 	notifSvc := services.NewNotificationService(db)
 	activitySvc := services.NewActivityService(db)
-	authSvc := services.NewAuthService(db, cfg.JWTSecret)
+	emailSvc := services.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
+	authSvc := services.NewAuthService(db, cfg.JWTSecret).WithEmail(emailSvc, cfg.AppURL)
 	txSvc := services.NewTransactionService(txRepo, spendingRepo, notifSvc, activitySvc)
 	aiUsageSvc, err := services.NewAIUsageService(cfg.EncryptionKey)
 	if err != nil {
@@ -111,6 +112,8 @@ func main() {
 	// Public
 	v1.POST("/auth/register", authH.Register)
 	v1.POST("/auth/login", authH.Login)
+	v1.POST("/auth/forgot-password", authH.ForgotPassword)
+	v1.POST("/auth/reset-password", authH.ResetPassword)
 
 	// Protected
 	auth := v1.Group("/", middleware.Auth(cfg.JWTSecret))

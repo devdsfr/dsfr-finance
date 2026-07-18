@@ -65,6 +65,14 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
+  forgotPassword(email: string): Observable<any> {
+    return this.api.post('/auth/forgot-password', { email });
+  }
+
+  resetPassword(token: string, password: string): Observable<any> {
+    return this.api.post('/auth/reset-password', { token, password });
+  }
+
   enableMFA(): Observable<{ provisioning_url: string }> {
     return this.api.post<any>('/auth/mfa/enable', {});
   }

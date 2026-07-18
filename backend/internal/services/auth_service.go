@@ -1,8 +1,13 @@
 package services
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/dsfr/finance/internal/models"
@@ -17,10 +22,19 @@ import (
 type AuthService struct {
 	db        *sql.DB
 	jwtSecret string
+	email     *EmailService
+	appURL    string
 }
 
 func NewAuthService(db *sql.DB, secret string) *AuthService {
 	return &AuthService{db: db, jwtSecret: secret}
+}
+
+// WithEmail wires the email service and public app URL for password reset flows.
+func (s *AuthService) WithEmail(email *EmailService, appURL string) *AuthService {
+	s.email = email
+	s.appURL = strings.TrimRight(appURL, "/")
+	return s
 }
 
 type RegisterRequest struct {
@@ -144,6 +158,110 @@ func (s *AuthService) ConfirmMFA(userID, code string) error {
 func (s *AuthService) DisableMFA(userID string) error {
 	_, err := s.db.Exec("UPDATE users SET mfa_enabled=false, mfa_secret=NULL WHERE id=$1", userID)
 	return err
+}
+
+// ── Password reset ──────────────────────────────────────────────────────────
+
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
+// RequestPasswordReset generates a reset token and emails a reset link.
+// It never reveals whether the email exists (returns nil for unknown emails).
+func (s *AuthService) RequestPasswordReset(email string) error {
+	var userID, name string
+	err := s.db.QueryRow("SELECT id, name FROM users WHERE email=$1", email).Scan(&userID, &name)
+	if err == sql.ErrNoRows {
+		return nil // silently succeed to avoid email enumeration
+	}
+	if err != nil {
+		return err
+	}
+
+	// Random 32-byte token, stored hashed.
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return err
+	}
+	token := hex.EncodeToString(raw)
+
+	_, err = s.db.Exec(
+		`INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+		 VALUES ($1, $2, $3)`,
+		userID, hashToken(token), time.Now().Add(time.Hour),
+	)
+	if err != nil {
+		return err
+	}
+
+	resetURL := fmt.Sprintf("%s/auth/reset-password?token=%s", s.appURL, token)
+
+	if s.email == nil || !s.email.Enabled() {
+		// Email not configured — log the link so the flow still works in dev.
+		log.Printf("[password-reset] email disabled; reset link for %s: %s", email, resetURL)
+		return nil
+	}
+
+	if err := s.email.Send(email, "Redefinição de senha — DSFR Finance", PasswordResetHTML(name, resetURL)); err != nil {
+		log.Printf("[password-reset] failed to send email to %s: %v", email, err)
+		return fmt.Errorf("não foi possível enviar o e-mail de redefinição")
+	}
+	return nil
+}
+
+// ResetPassword validates a reset token and sets a new password.
+func (s *AuthService) ResetPassword(token, newPassword string) error {
+	if len(newPassword) < 8 {
+		return fmt.Errorf("a senha deve ter no mínimo 8 caracteres")
+	}
+
+	var id, userID string
+	var expiresAt time.Time
+	var usedAt *time.Time
+	err := s.db.QueryRow(
+		`SELECT id, user_id, expires_at, used_at FROM password_reset_tokens
+		 WHERE token_hash=$1`,
+		hashToken(token),
+	).Scan(&id, &userID, &expiresAt, &usedAt)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("link de redefinição inválido")
+	}
+	if err != nil {
+		return err
+	}
+	if usedAt != nil {
+		return fmt.Errorf("este link já foi utilizado")
+	}
+	if time.Now().After(expiresAt) {
+		return fmt.Errorf("este link expirou, solicite um novo")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("UPDATE users SET password_hash=$1 WHERE id=$2", string(hash), userID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("UPDATE password_reset_tokens SET used_at=NOW() WHERE id=$1", id); err != nil {
+		return err
+	}
+	// Invalidate any other outstanding tokens for this user.
+	if _, err := tx.Exec(
+		"UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
+		userID,
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *AuthService) generateToken(userID, workspaceID string) (string, error) {

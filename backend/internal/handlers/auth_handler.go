@@ -70,6 +70,52 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": user, "token": token})
 }
 
+// ForgotPassword godoc
+// @Summary Solicitar redefinição de senha
+// @Description Envia um e-mail com link de redefinição de senha
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Router /auth/forgot-password [post]
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var body struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.svc.RequestPasswordReset(body.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// Always return success so we don't leak which emails are registered.
+	c.JSON(http.StatusOK, gin.H{"message": "Se o e-mail estiver cadastrado, um link de redefinição foi enviado."})
+}
+
+// ResetPassword godoc
+// @Summary Redefinir senha
+// @Description Define uma nova senha a partir de um token de redefinição
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Router /auth/reset-password [post]
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var body struct {
+		Token    string `json:"token" binding:"required"`
+		Password string `json:"password" binding:"required,min=8"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.svc.ResetPassword(body.Token, body.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Senha redefinida com sucesso."})
+}
+
 // EnableMFA — AC-MC-10
 func (h *AuthHandler) EnableMFA(c *gin.Context) {
 	userID := middleware.GetUserID(c)
