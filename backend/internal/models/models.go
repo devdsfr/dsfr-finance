@@ -386,3 +386,49 @@ type InvestmentConfigResponse struct {
 	MonthlyContribution float64            `json:"monthly_contribution"`
 	Classes             []*InvestmentClass `json:"classes"`
 }
+
+// ── Portfolios (carteiras) ──────────────────────────────────────────────────
+
+type PortfolioClass struct {
+	ClassName string  `json:"class_name"`
+	IdealPct  float64 `json:"ideal_pct"`
+}
+
+type InvestmentPortfolio struct {
+	ID           string            `json:"id"`
+	WorkspaceID  string            `json:"workspace_id"`
+	Name         string            `json:"name"`
+	Icon         string            `json:"icon"`
+	Color        string            `json:"color"`
+	DisplayOrder int               `json:"display_order"`
+	Classes      []*PortfolioClass `json:"classes"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
+}
+
+// ── Monthly entries ─────────────────────────────────────────────────────────
+
+type MonthClass struct {
+	ClassName    string  `json:"class_name"`
+	CurrentValue float64 `json:"current_value"`
+	Allocation   float64 `json:"allocation"`
+}
+
+type InvestmentMonthEntry struct {
+	ID           string        `json:"id"`
+	PortfolioID  string        `json:"portfolio_id"`
+	Month        string        `json:"month"` // YYYY-MM
+	Contribution float64       `json:"contribution"`
+	Classes      []*MonthClass `json:"classes"`
+	// True when the entry has not been saved yet and values were carried
+	// forward from the previous month.
+	Prefilled bool `json:"prefilled"`
+}
+
+// InvestmentHistoryPoint is one portfolio's totals for a given month.
+type InvestmentHistoryPoint struct {
+	Month        string  `json:"month"`
+	PortfolioID  string  `json:"portfolio_id"`
+	Contribution float64 `json:"contribution"`
+	TotalValue   float64 `json:"total_value"`
+}

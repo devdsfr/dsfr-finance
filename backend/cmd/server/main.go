@@ -233,6 +233,15 @@ func main() {
 		auth.POST("/investment-assets", middleware.RequirePremium(db), investmentH.CreateAsset)
 		auth.PUT("/investment-assets/:id", middleware.RequirePremium(db), investmentH.UpdateAsset)
 		auth.DELETE("/investment-assets/:id", middleware.RequirePremium(db), investmentH.DeleteAsset)
+
+		// Investment portfolios (carteiras) + histórico mensal — Premium
+		auth.GET("/investment-portfolios", middleware.RequirePremium(db), investmentH.ListPortfolios)
+		auth.POST("/investment-portfolios", middleware.RequirePremium(db), investmentH.CreatePortfolio)
+		auth.PUT("/investment-portfolios/:id", middleware.RequirePremium(db), investmentH.UpdatePortfolio)
+		auth.DELETE("/investment-portfolios/:id", middleware.RequirePremium(db), investmentH.DeletePortfolio)
+		auth.GET("/investment-months", middleware.RequirePremium(db), investmentH.GetMonth)
+		auth.PUT("/investment-months", middleware.RequirePremium(db), investmentH.SaveMonth)
+		auth.GET("/investment-history", middleware.RequirePremium(db), investmentH.History)
 	}
 
 	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
