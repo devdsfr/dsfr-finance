@@ -349,3 +349,40 @@ type ActiveInstallment struct {
 	AmountPerPart    float64 `json:"amount_per_parcel"`
 	TotalRemaining   float64 `json:"total_remaining"`
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// INVESTMENT STRATEGY
+// ────────────────────────────────────────────────────────────────────────────
+
+type InvestmentSettings struct {
+	WorkspaceID         string    `json:"workspace_id"`
+	MonthlyContribution float64   `json:"monthly_contribution"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+type InvestmentClass struct {
+	ID           string    `json:"id"`
+	WorkspaceID  string    `json:"workspace_id"`
+	ClassName    string    `json:"class_name"` // acoes | exterior | etfs | fiis | renda_fixa | criptomoedas
+	IdealPct     float64   `json:"ideal_pct"`
+	CurrentValue float64   `json:"current_value"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type InvestmentAsset struct {
+	ID           string    `json:"id"`
+	WorkspaceID  string    `json:"workspace_id"`
+	ClassName    string    `json:"class_name"`
+	Sector       string    `json:"sector"`
+	Ticker       string    `json:"ticker"`
+	DisplayOrder int       `json:"display_order"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// InvestmentConfigResponse bundles settings + classes for a single GET/PUT round-trip.
+type InvestmentConfigResponse struct {
+	MonthlyContribution float64            `json:"monthly_contribution"`
+	Classes             []*InvestmentClass `json:"classes"`
+}

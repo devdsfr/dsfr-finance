@@ -58,6 +58,7 @@ func main() {
 	reportRepo := repositories.NewReportRepository(db)
 	spendingRepo := repositories.NewSpendingRepository(db)
 	goalRepo := repositories.NewGoalRepository(db)
+	investmentRepo := repositories.NewInvestmentRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	notifSvc := services.NewNotificationService(db)
@@ -87,6 +88,7 @@ func main() {
 	settingsH := handlers.NewSettingsHandler(db)
 	patrimonySnapH := handlers.NewPatrimonySnapshotHandler(db)
 	goalH := handlers.NewGoalHandler(goalRepo)
+	investmentH := handlers.NewInvestmentHandler(investmentRepo)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -220,6 +222,14 @@ func main() {
 		auth.POST("/goals", goalH.Create)
 		auth.PUT("/goals/:id", goalH.Update)
 		auth.DELETE("/goals/:id", goalH.Delete)
+
+		// Investment Strategy — Premium
+		auth.GET("/investment-config", middleware.RequirePremium(db), investmentH.GetConfig)
+		auth.PUT("/investment-config", middleware.RequirePremium(db), investmentH.UpdateConfig)
+		auth.GET("/investment-assets", middleware.RequirePremium(db), investmentH.ListAssets)
+		auth.POST("/investment-assets", middleware.RequirePremium(db), investmentH.CreateAsset)
+		auth.PUT("/investment-assets/:id", middleware.RequirePremium(db), investmentH.UpdateAsset)
+		auth.DELETE("/investment-assets/:id", middleware.RequirePremium(db), investmentH.DeleteAsset)
 	}
 
 	r.GET("/api/v1/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })

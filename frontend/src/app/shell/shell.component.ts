@@ -47,6 +47,9 @@ import { filter } from 'rxjs/operators';
           <a routerLink="/debt-strategy"   routerLinkActive="active">
             {{ 'nav.debt_strategy' | translate }} @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
           </a>
+          <a routerLink="/investment-strategy" routerLinkActive="active">
+            Estratégia de Investimentos @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
+          </a>
           <a routerLink="/ai-subscriptions" routerLinkActive="active">
             {{ 'nav.ai_subscriptions' | translate }} @if (!plan.isPremium()) { <span class="lock-dot">🔒</span> }
           </a>
@@ -196,6 +199,11 @@ import { filter } from 'rxjs/operators';
           <a class="drawer__link" routerLink="/debt-strategy" routerLinkActive="drawer__link--active"
              (click)="drawerOpen.set(false)">
             📊 {{ 'nav.debt_strategy' | translate }}
+            @if (!plan.isPremium()) { <span class="drawer__lock">🔒</span> }
+          </a>
+          <a class="drawer__link" routerLink="/investment-strategy" routerLinkActive="drawer__link--active"
+             (click)="drawerOpen.set(false)">
+            ⚖️ Estratégia de Investimentos
             @if (!plan.isPremium()) { <span class="drawer__lock">🔒</span> }
           </a>
           <a class="drawer__link" routerLink="/ai-subscriptions" routerLinkActive="drawer__link--active"

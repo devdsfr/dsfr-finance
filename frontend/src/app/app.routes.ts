@@ -146,6 +146,10 @@ export const routes: Routes = [
       {
         path: 'goals',
         loadComponent: () => import('./modules/goals/goals.component').then(m => m.GoalsComponent)
+      },
+      {
+        path: 'investment-strategy',
+        loadComponent: () => import('./modules/investment-strategy/investment-strategy.component').then(m => m.InvestmentStrategyComponent)
       }
     ]
   },
