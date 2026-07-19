@@ -155,12 +155,14 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 		_ = s.repo.SetTags(txID, req.TagIDs)
 	}
 
-	// If repeat_months > 0, create copies for the following months
-	if req.RepeatMonths > 0 {
+	// repeat_months == 1 means "no repetition" (same semantics as Create), so only
+	// values above 1 generate copies — and the edited transaction already counts as
+	// the first occurrence, hence RepeatMonths-1 copies.
+	if req.RepeatMonths > 1 {
 		baseDate, err := time.Parse("2006-01-02", req.Date)
 		if err == nil {
 			groupID := uuid.New().String()
-			for i := 1; i <= req.RepeatMonths; i++ {
+			for i := 1; i <= req.RepeatMonths-1; i++ {
 				date := baseDate.AddDate(0, i, 0).Format("2006-01-02")
 				tx := &models.Transaction{
 					ID:               uuid.New().String(),

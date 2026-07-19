@@ -54,8 +54,16 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
               <input [(ngModel)]="form.date" name="date" type="date" class="date-input" required />
               <button type="button" class="paid-toggle"
                       [class.paid-toggle--active]="form.paid"
-                      [title]="form.type === 'income' ? 'Recebido' : 'Pago'"
-                      (click)="form.paid = !form.paid">👍</button>
+                      [attr.aria-pressed]="form.paid"
+                      [title]="form.paid ? 'Clique para desmarcar' : 'Clique para marcar como ' + (form.type === 'income' ? 'recebido' : 'pago')"
+                      (click)="form.paid = !form.paid">
+                <span class="paid-toggle__box">{{ form.paid ? '✓' : '' }}</span>
+                <span class="paid-toggle__label">
+                  {{ form.paid
+                      ? (form.type === 'income' ? 'Recebido' : 'Pago')
+                      : (form.type === 'income' ? 'Marcar recebido' : 'Marcar pago') }}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -412,12 +420,22 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
     }
     .date-input:focus { border-color: #22c55e; }
     .paid-toggle {
-      background: #f3f4f6; border: none; border-radius: 50%;
-      width: 32px; height: 32px; cursor: pointer; font-size: 1rem;
-      display: flex; align-items: center; justify-content: center;
-      opacity: .4; transition: opacity .15s, background .15s;
+      display: flex; align-items: center; gap: .4rem;
+      background: #fff; border: 1px solid #d1d5db; border-radius: 9999px;
+      padding: .3rem .7rem .3rem .4rem; cursor: pointer;
+      font-size: .78rem; font-weight: 600; color: #6b7280;
+      white-space: nowrap; transition: all .15s;
     }
-    .paid-toggle--active { opacity: 1; background: #dcfce7; }
+    .paid-toggle:hover { border-color: #22c55e; color: #15803d; }
+    .paid-toggle__box {
+      width: 16px; height: 16px; flex-shrink: 0;
+      border: 1.5px solid #9ca3af; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; line-height: 1; color: #fff; background: #fff;
+      transition: all .15s;
+    }
+    .paid-toggle--active { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+    .paid-toggle--active .paid-toggle__box { background: #22c55e; border-color: #22c55e; }
 
     /* ── Account chips ── */
     .chip-row {
