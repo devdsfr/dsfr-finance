@@ -17,6 +17,8 @@ interface Snapshot {
   variation_pct: number;
   variation_val: number;
   rentability: number;
+  /** Parcela desta carteira reservada como emergência (entra no termômetro). */
+  emergency_reserve: number;
   notes: string;
 }
 
@@ -25,7 +27,8 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
   wallet_name: wallet,
   total: 0, invested: 0, profit: 0,
   capital_gains: 0, dividends: 0, income_12m: 0,
-  variation_pct: 0, variation_val: 0, rentability: 0, notes: ''
+  variation_pct: 0, variation_val: 0, rentability: 0,
+  emergency_reserve: 0, notes: ''
 });
 
 @Component({
@@ -99,6 +102,11 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
       <div class="card">
         <span class="card-label">Rentabilidade total</span>
         <span class="card-value card-value--sm card-value--green">{{ latest()!.rentability | number:'1.2-2' }}%</span>
+      </div>
+      <div class="card card--reserve">
+        <span class="card-label">🛟 Reserva de Emergência</span>
+        <span class="card-value card-value--sm card-value--blue">{{ reserveTotal() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+        <span class="card-sub">{{ activeWallet() === '__all__' ? 'Somando todas as carteiras' : 'Nesta carteira' }}</span>
       </div>
     </div>
   }
@@ -226,6 +234,14 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
             </div>
           </div>
           <div class="form-row">
+            <div class="fg fg--reserve">
+              <label>🛟 Reserva de Emergência</label>
+              <input type="number" step="0.01" min="0" [(ngModel)]="form.emergency_reserve"
+                     name="emergency_reserve" class="input" placeholder="0.00" />
+              <small class="fg-hint">Quanto desta carteira é reserva de emergência (liquidez diária). Entra no Termômetro Financeiro da Visão Geral.</small>
+            </div>
+          </div>
+          <div class="form-row">
             <div class="fg">
               <label>Variação % mensal</label>
               <input type="number" step="0.01" [(ngModel)]="form.variation_pct" name="variation_pct" class="input" placeholder="1.98" />
@@ -268,6 +284,7 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
             <th>Investido</th>
             <th>Lucro</th>
             <th>Dividendos</th>
+            <th>🛟 Reserva</th>
             <th>Var. %</th>
             <th>Var. R$</th>
             <th>Rentab.</th>
@@ -285,6 +302,7 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
               <td>{{ s.invested | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
               <td class="td-green">{{ s.profit | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
               <td class="td-green">{{ s.dividends | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
+              <td class="td-reserve">{{ (s.emergency_reserve ?? 0) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
               <td>
                 <span [class.pos]="s.variation_pct >= 0" [class.neg]="s.variation_pct < 0">
                   {{ s.variation_pct >= 0 ? '+' : '' }}{{ s.variation_pct | number:'1.2-2' }}%
@@ -369,6 +387,11 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     .card--main .card-value { font-size: 1.75rem; color: #fff; }
     .card-value--sm { font-size: 1.05rem; }
     .card-value--green { color: #16a34a; }
+    .card-value--blue { color: #2563eb; }
+    .card--reserve { border: 1px solid #bfdbfe; background: #eff6ff; }
+    .fg--reserve { flex: 1; }
+    .fg-hint { display: block; margin-top: .3rem; font-size: .72rem; color: #6b7280; line-height: 1.45; }
+    .td-reserve { color: #2563eb; font-weight: 600; }
     .card-value--red   { color: #ef4444; }
     .card-sub { font-size: .8rem; color: #6b7280; }
     .card-badge { padding: .2rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 700; margin-left: auto; }
@@ -452,6 +475,10 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     :host-context([data-theme="dark"]) .chart-card,
     :host-context([data-theme="dark"]) .history-card { background: #161c28 !important; border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .card-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .card--reserve { background: rgba(37,99,235,.12) !important; border-color: rgba(37,99,235,.4) !important; }
+    :host-context([data-theme="dark"]) .card-value--blue,
+    :host-context([data-theme="dark"]) .td-reserve { color: #93c5fd !important; }
+    :host-context([data-theme="dark"]) .fg-hint { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .card-value { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .chart-title { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .btn--outline { background: #1e2638 !important; border-color: #2e7736 !important; }
@@ -527,6 +554,7 @@ export class PatrimonyEvolutionComponent implements OnInit {
         e.dividends     += snap.dividends;
         e.income_12m    += snap.income_12m;
         e.variation_val += snap.variation_val;
+        e.emergency_reserve += (snap.emergency_reserve ?? 0);
         // variation_pct and rentability: weighted average by total
         // (simple average for now)
         e.variation_pct  = (e.variation_pct + snap.variation_pct) / 2;
@@ -540,6 +568,9 @@ export class PatrimonyEvolutionComponent implements OnInit {
     const s = this.chartData();
     return s.length ? s[s.length - 1] : null;
   });
+
+  /** Reserva de emergência do mês mais recente (da carteira ativa ou somando todas). */
+  reserveTotal = computed(() => this.latest()?.emergency_reserve ?? 0);
 
   growth = computed(() => {
     const s = this.chartData();

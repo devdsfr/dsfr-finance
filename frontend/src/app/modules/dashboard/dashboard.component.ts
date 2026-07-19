@@ -1356,10 +1356,21 @@ export class DashboardComponent implements OnInit {
 
     const income  = this.income();
     const expense = this.expense();
-    const cash    = this.totalBalance();
     const cardBill = this.totalCardExpense();
     const limits   = this.spendingLimits();
     const overdue  = this.overduePayable();
+
+    // Reserva declarada nas carteiras do Patrimônio (mês mais recente registrado),
+    // somada ao saldo em conta para medir a cobertura de emergência.
+    const snaps = this.patrimonySnapshots();
+    let declaredReserve = 0;
+    if (snaps.length) {
+      const lastMonth = snaps.reduce((m: string, s: any) => (s.month > m ? s.month : m), '');
+      declaredReserve = snaps
+        .filter((s: any) => s.month === lastMonth)
+        .reduce((sum: number, s: any) => sum + (+s.emergency_reserve || 0), 0);
+    }
+    const cash = this.totalBalance() + declaredReserve;
 
     // Gasto médio mensal: usa o histórico de fluxo quando houver, senão o mês atual.
     const flow = this.monthlyFlow().filter(f => (f.expense ?? 0) > 0);
@@ -1407,16 +1418,19 @@ export class DashboardComponent implements OnInit {
     else                  { p2 = 0;  s2 = 'bad'; }
     pillars.push({
       key: 'reserve', name: 'Reserva de emergência',
-      detail: `${months.toFixed(1)} ${months === 1 ? 'mês' : 'meses'} de gastos`,
+      detail: declaredReserve > 0
+        ? `${months.toFixed(1)} ${months === 1 ? 'mês' : 'meses'} · inclui ${fmt(declaredReserve)} do patrimônio`
+        : `${months.toFixed(1)} ${months === 1 ? 'mês' : 'meses'} de gastos`,
       status: s2, lost: 25 - p2,
     });
     if (p2 < 25) {
       const target = avgExpense * 6;
+      const missing = Math.max(0, target - cash);
       tips.push({
         severity: months < 1 ? 'high' : months < 3 ? 'medium' : 'low',
         lost: 25 - p2,
         title: months < 1 ? 'Construa sua reserva de emergência' : 'Complete sua reserva até 6 meses',
-        body: `Seu caixa cobre ${months.toFixed(1)} ${months === 1 ? 'mês' : 'meses'} de gastos. O ideal são 6 meses (${fmt(target)}). Faltam ${fmt(Math.max(0, target - cash))} — guarde em algo com liquidez diária, separado da conta do dia a dia.`,
+        body: `Sua reserva cobre ${months.toFixed(1)} ${months === 1 ? 'mês' : 'meses'} de gastos${declaredReserve > 0 ? ` (saldo em conta + ${fmt(declaredReserve)} marcados no Patrimônio)` : ''}. O ideal são 6 meses (${fmt(target)}) — faltam ${fmt(missing)}.${declaredReserve === 0 ? ' Se você já tem uma reserva investida, informe o valor no campo "Reserva de Emergência" em Patrimônio para ela ser considerada aqui.' : ' Mantenha em algo com liquidez diária, separado da conta do dia a dia.'}`,
       });
     }
 
