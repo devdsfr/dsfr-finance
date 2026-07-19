@@ -41,6 +41,9 @@ type CreateTransactionRequest struct {
 	Installments     int      `json:"installments"`
 	// repeat_months: creates N copies with the full amount (for income/expense recurrence)
 	RepeatMonths     int      `json:"repeat_months"`
+	// scope controls how an edit propagates across a recurrence group:
+	// "one" (default), "future" (this and the following ones) or "all".
+	Scope            string   `json:"scope"`
 }
 
 func (s *TransactionService) Create(workspaceID, userID string, req CreateTransactionRequest) ([]*models.Transaction, error) {
@@ -155,6 +158,27 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 		_ = s.repo.SetTags(txID, req.TagIDs)
 	}
 
+	// Propagate to the rest of the recurrence group when requested.
+	if existing.InstallmentGroup != nil && (req.Scope == "future" || req.Scope == "all") {
+		fromDate := ""
+		if req.Scope == "future" {
+			// Only occurrences from the edited one onwards; past months stay untouched.
+			fromDate = existing.Date
+		}
+		if _, err := s.repo.UpdateSeries(existing, *existing.InstallmentGroup, fromDate); err != nil {
+			return nil, err
+		}
+		if req.TagIDs != nil {
+			if siblings, err := s.repo.ListByGroup(workspaceID, *existing.InstallmentGroup, fromDate); err == nil {
+				for _, sib := range siblings {
+					if sib.ID != txID {
+						_ = s.repo.SetTags(sib.ID, req.TagIDs)
+					}
+				}
+			}
+		}
+	}
+
 	// repeat_months == 1 means "no repetition" (same semantics as Create), so only
 	// values above 1 generate copies — and the edited transaction already counts as
 	// the first occurrence, hence RepeatMonths-1 copies.
@@ -253,6 +277,34 @@ func (s *TransactionService) MarkUnpaid(workspaceID, userID, txID string) (*mode
 	}
 	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)
 	return tx, nil
+}
+
+// DeleteScoped removes a transaction and, for "future"/"all", the rest of its
+// recurrence group. Returns the total number of deleted transactions.
+func (s *TransactionService) DeleteScoped(workspaceID, userID, txID, scope string) (int, error) {
+	existing, err := s.repo.GetByID(txID, workspaceID)
+	if err != nil || existing == nil {
+		return 0, fmt.Errorf("transaction not found")
+	}
+
+	var siblings int64
+	if existing.InstallmentGroup != nil && (scope == "future" || scope == "all") {
+		fromDate := ""
+		if scope == "future" {
+			fromDate = existing.Date
+		}
+		siblings, err = s.repo.DeleteSeries(txID, workspaceID, *existing.InstallmentGroup, fromDate)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	if err := s.repo.Delete(txID, workspaceID); err != nil {
+		return 0, err
+	}
+
+	go s.activitySvc.Log(workspaceID, userID, "delete", "transaction", &txID, nil)
+	return int(siblings) + 1, nil
 }
 
 // Duplicate creates a copy of an existing transaction (AC-UX-06)

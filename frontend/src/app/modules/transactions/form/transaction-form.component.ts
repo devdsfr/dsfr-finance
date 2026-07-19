@@ -7,6 +7,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { TagInputComponent } from '../../../shared/components/tag-input/tag-input.component';
 import { FileUploadComponent } from '../../../shared/components/file-upload/file-upload.component';
 import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
+import { RecurrenceScopeModalComponent, RecurrenceScope } from '../../../shared/components/recurrence-scope-modal/recurrence-scope-modal.component';
 
 interface Category { id: string; name: string; type: string; color?: string; icon?: string; }
 interface Account  { id: string; name: string; logo?: string; color?: string; }
@@ -15,7 +16,7 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
 @Component({
   selector: 'app-transaction-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TagInputComponent, FileUploadComponent, MoneyMaskDirective],
+  imports: [CommonModule, FormsModule, RouterModule, TagInputComponent, FileUploadComponent, MoneyMaskDirective, RecurrenceScopeModalComponent],
   template: `
     <div class="overlay" (click)="goBack()">
       <div class="modal" (click)="$event.stopPropagation()">
@@ -346,6 +347,13 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
         </form>
       </div>
     </div>
+
+    <app-recurrence-scope-modal
+      [visible]="askScope()"
+      mode="edit"
+      (confirmed)="onScopeConfirmed($event)"
+      (cancelled)="askScope.set(false); saving.set(false)">
+    </app-recurrence-scope-modal>
   `,
   styles: [`
     /* ── Overlay ── */
@@ -692,6 +700,8 @@ export class TransactionFormComponent implements OnInit {
 
   /* ── Expandable sections ── */
   showRepeat     = false;
+  /** Shows the "only this / this and next / all" dialog for recurring transactions. */
+  askScope       = signal(false);
   showNotes      = false;
   showAttachment = false;
   showTags       = false;
@@ -840,11 +850,31 @@ export class TransactionFormComponent implements OnInit {
     this.form.attachment_name = file ? file.name : null;
   }
 
+  /** True when the transaction being edited belongs to a recurrence/installment group. */
+  get isRecurring(): boolean {
+    return this.isEdit && !!this.form.installment_group_id;
+  }
+
   save(): void {
+    // Recurring transactions first ask how far the change should reach.
+    if (this.isRecurring) {
+      this.askScope.set(true);
+      return;
+    }
+    this.persist('one');
+  }
+
+  onScopeConfirmed(scope: RecurrenceScope): void {
+    this.askScope.set(false);
+    this.persist(scope);
+  }
+
+  private persist(scope: RecurrenceScope): void {
     this.saving.set(true);
     const tagIDs = (this.form.tags ?? []).map((t: any) => t.id);
     const payload = {
       ...this.form,
+      scope,
       tag_ids: tagIDs,
       account_id:           this.form.account_id           || null,
       credit_card_id:       this.form.credit_card_id       || null,

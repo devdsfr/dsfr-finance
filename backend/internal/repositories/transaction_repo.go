@@ -206,6 +206,81 @@ func (r *TransactionRepository) Delete(id, workspaceID string) error {
 	return err
 }
 
+// UpdateSeries applies the editable fields of tx to the other members of its
+// recurrence group. The date is deliberately NOT propagated: each occurrence
+// keeps its own month. When fromDate is non-empty only occurrences on/after it
+// are touched ("this and the following ones").
+// Returns how many rows were affected, excluding tx itself.
+func (r *TransactionRepository) UpdateSeries(tx *models.Transaction, groupID, fromDate string) (int64, error) {
+	q := `UPDATE transactions SET
+		account_id=$1, credit_card_id=$2, category_id=$3,
+		type=$4, amount=$5, description=$6, notes=$7,
+		updated_at=NOW()
+		WHERE workspace_id=$8 AND installment_group_id=$9 AND id <> $10`
+	args := []interface{}{
+		tx.AccountID, tx.CreditCardID, tx.CategoryID,
+		tx.Type, tx.Amount, tx.Description, tx.Notes,
+		tx.WorkspaceID, groupID, tx.ID,
+	}
+	if fromDate != "" {
+		q += " AND date >= $11"
+		args = append(args, fromDate)
+	}
+	res, err := r.db.Exec(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
+// ListByGroup returns the members of a recurrence group, optionally only those
+// on/after fromDate.
+func (r *TransactionRepository) ListByGroup(workspaceID, groupID, fromDate string) ([]*models.Transaction, error) {
+	q := `SELECT id, date FROM transactions
+	      WHERE workspace_id=$1 AND installment_group_id=$2`
+	args := []interface{}{workspaceID, groupID}
+	if fromDate != "" {
+		q += " AND date >= $3"
+		args = append(args, fromDate)
+	}
+	q += " ORDER BY date"
+
+	rows, err := r.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*models.Transaction
+	for rows.Next() {
+		t := &models.Transaction{}
+		if err := rows.Scan(&t.ID, &t.Date); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, nil
+}
+
+// DeleteSeries removes the other members of a recurrence group. When fromDate is
+// non-empty only occurrences on/after it are removed.
+// Returns how many rows were deleted, excluding the id passed in.
+func (r *TransactionRepository) DeleteSeries(id, workspaceID, groupID, fromDate string) (int64, error) {
+	q := `DELETE FROM transactions
+	      WHERE workspace_id=$1 AND installment_group_id=$2 AND id <> $3`
+	args := []interface{}{workspaceID, groupID, id}
+	if fromDate != "" {
+		q += " AND date >= $4"
+		args = append(args, fromDate)
+	}
+	res, err := r.db.Exec(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
 // AdjustAccountBalance adds delta to the account's stored balance (positive = add, negative = subtract)
 func (r *TransactionRepository) AdjustAccountBalance(accountID string, delta float64) error {
 	_, err := r.db.Exec(

@@ -130,13 +130,18 @@ func (h *TransactionHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, tx)
 }
 
+// Delete removes a transaction. For recurring ones, ?scope=future|all also
+// removes the rest of the series (default: only the given transaction).
 func (h *TransactionHandler) Delete(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)
-	if err := h.repo.Delete(c.Param("id"), wsID); err != nil {
+	userID := middleware.GetUserID(c)
+	scope := c.Query("scope")
+	deleted, err := h.svc.DeleteScoped(wsID, userID, c.Param("id"), scope)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusOK, gin.H{"deleted": deleted})
 }
 
 // MarkPaid marks a single transaction as paid (AC-UX-07)

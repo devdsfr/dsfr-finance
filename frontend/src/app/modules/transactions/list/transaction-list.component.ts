@@ -6,10 +6,14 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ImportOrganizzeComponent } from '../../import-organizze/import-organizze.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { RecurrenceScopeModalComponent } from '../../../shared/components/recurrence-scope-modal/recurrence-scope-modal.component';
 
 interface Transaction {
   id: string; description: string; amount: number; type: string;
   date: string; paid: boolean; ignored: boolean;
+  installment_group_id?: string | null;
+  installment_number?: number | null;
+  installment_total?: number | null;
   category?: { name: string; color?: string };
   tags?: { id: string; name: string; color?: string }[];
 }
@@ -23,7 +27,7 @@ interface DayGroup {
 @Component({
   selector: 'app-transaction-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ImportOrganizzeComponent, ConfirmModalComponent],
+  imports: [CommonModule, RouterModule, FormsModule, ImportOrganizzeComponent, ConfirmModalComponent, RecurrenceScopeModalComponent],
   template: `
     <!-- Overdue banner (AC-UX-01 / AC-UX-02) -->
     @if (overdueCount() > 0) {
@@ -107,6 +111,12 @@ interface DayGroup {
                       <span class="chip chip--tag" [style.background]="tag.color || '#8b5cf6'">{{ tag.name }}</span>
                     }
                     @if (tx.paid) { <span class="chip chip--paid">pago</span> }
+                    @if (tx.installment_group_id) {
+                      <span class="chip chip--recurring"
+                            [title]="tx.installment_total ? 'Parcela ' + tx.installment_number + '/' + tx.installment_total : 'Lançamento recorrente'">
+                        ↻ {{ tx.installment_total ? tx.installment_number + '/' + tx.installment_total : 'recorrente' }}
+                      </span>
+                    }
                   </div>
                 </div>
               </div>
@@ -162,6 +172,13 @@ interface DayGroup {
       (confirmed)="doDelete()"
       (cancelled)="confirmItem.set(null)">
     </app-confirm-modal>
+
+    <app-recurrence-scope-modal
+      [visible]="!!scopeTarget()"
+      mode="delete"
+      (confirmed)="onDeleteScopeConfirmed($event)"
+      (cancelled)="scopeTarget.set(null)">
+    </app-recurrence-scope-modal>
   `,
   styles: [`
     .overdue-banner {
@@ -239,6 +256,7 @@ interface DayGroup {
     .chip { font-size: .67rem; padding: .08rem .38rem; border-radius: 9999px; background: #e5e7eb; color: #374151; }
     .chip--tag { color: #fff; }
     .chip--paid { background: #dcfce7; color: #15803d; }
+    .chip--recurring { background: #ede9fe; color: #6d28d9; }
 
     .tx-amount { font-size: .92rem; font-weight: 600; color: #dc2626; white-space: nowrap; flex-shrink: 0; }
     .tx-amount--income { color: #16a34a; }
@@ -322,6 +340,7 @@ interface DayGroup {
     :host-context([data-theme="dark"]) .tx-name { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .tx-sub { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .chip { background: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .chip--recurring { background: rgba(139,92,246,.18) !important; color: #c4b5fd !important; }
     :host-context([data-theme="dark"]) .act { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .act:hover { background: #1e2638 !important; color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .act--del:hover { background: rgba(248,113,113,.15) !important; color: #f87171 !important; }
@@ -471,7 +490,15 @@ export class TransactionListComponent implements OnInit {
 
   confirmItem = signal<{ msg: string; action: () => void } | null>(null);
 
+  /** Recurring transaction pending a scope choice before deletion. */
+  scopeTarget = signal<Transaction | null>(null);
+
   deleteTx(tx: Transaction): void {
+    // Recurring ones ask whether to remove just this occurrence or the series.
+    if (tx.installment_group_id) {
+      this.scopeTarget.set(tx);
+      return;
+    }
     this.confirmItem.set({
       msg: `Tem certeza que deseja excluir <strong>"${tx.description}"</strong>?`,
       action: () => {
@@ -480,6 +507,18 @@ export class TransactionListComponent implements OnInit {
           this.load();
         });
       }
+    });
+  }
+
+  onDeleteScopeConfirmed(scope: 'one' | 'future' | 'all'): void {
+    const tx = this.scopeTarget();
+    this.scopeTarget.set(null);
+    if (!tx) return;
+
+    this.api.delete<any>(`/transactions/${tx.id}?scope=${scope}`).subscribe(res => {
+      const n = res?.deleted ?? 1;
+      this.toast.success(n > 1 ? `${n} lançamentos excluídos.` : 'Lançamento excluído.');
+      this.load();
     });
   }
 
