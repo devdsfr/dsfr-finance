@@ -132,6 +132,62 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
         </div>
       </div>
 
+      <!-- ── Termômetro Financeiro ────────────────────────────── -->
+      @if (!loading()) {
+        <div class="card thermo">
+          <div class="thermo__head">
+            <div>
+              <p class="card__sup">🌡️ Termômetro Financeiro</p>
+              <p class="thermo__verdict" [style.color]="health().color">{{ health().label }}</p>
+            </div>
+            <div class="thermo__score" [style.color]="health().color">
+              {{ health().score }}<span class="thermo__score-max">/100</span>
+            </div>
+          </div>
+
+          <!-- Barra do termômetro -->
+          <div class="thermo__bar">
+            <div class="thermo__track"></div>
+            <div class="thermo__marker" [style.left.%]="health().score">
+              <span class="thermo__pin" [style.background]="health().color"></span>
+            </div>
+          </div>
+          <div class="thermo__scale">
+            <span>Crítico</span><span>Risco</span><span>Atenção</span><span>Saudável</span><span>Excelente</span>
+          </div>
+
+          <!-- Pilares -->
+          <div class="thermo__pillars">
+            @for (p of health().pillars; track p.key) {
+              <div class="pillar" [class.pillar--good]="p.status === 'good'"
+                   [class.pillar--warn]="p.status === 'warn'"
+                   [class.pillar--bad]="p.status === 'bad'">
+                <span class="pillar__icon">{{ p.status === 'good' ? '✓' : p.status === 'warn' ? '!' : '✕' }}</span>
+                <div class="pillar__txt">
+                  <span class="pillar__name">{{ p.name }}</span>
+                  <span class="pillar__detail">{{ p.detail }}</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Dicas -->
+          <p class="section-label thermo__tips-label">💡 3 dicas para estabilizar sua vida financeira</p>
+          <div class="thermo__tips">
+            @for (t of health().tips; track $index; let i = $index) {
+              <div class="tip" [class.tip--urgent]="t.severity === 'high'"
+                   [class.tip--medium]="t.severity === 'medium'">
+                <span class="tip__num">{{ i + 1 }}</span>
+                <div>
+                  <strong class="tip__title">{{ t.title }}</strong>
+                  <p class="tip__body">{{ t.body }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
       <!-- ── Configurable dashboard (Meu Painel) ──────────────── -->
       <app-configurable-dashboard />
 
@@ -955,10 +1011,77 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .skel--row  { height: 44px; border-radius: .375rem; margin: .4rem 0; display: block; width: 100%; }
     .skel-rows  { margin: .5rem 0; }
 
+    /* ══ TERMÔMETRO FINANCEIRO ════════════════════════════════════════ */
+    .thermo { margin-bottom: 1.25rem; }
+    .thermo__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+    .thermo__verdict { font-size: 1.15rem; font-weight: 700; margin: .1rem 0 0; }
+    .thermo__score { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .thermo__score-max { font-size: .9rem; font-weight: 600; opacity: .55; }
+
+    .thermo__bar { position: relative; margin: 1.1rem 0 .35rem; height: 14px; }
+    .thermo__track {
+      height: 14px; border-radius: 9999px;
+      background: linear-gradient(90deg,#dc2626 0%,#f97316 25%,#f59e0b 45%,#22c55e 70%,#16a34a 100%);
+    }
+    .thermo__marker { position: absolute; top: -4px; transform: translateX(-50%); transition: left .5s cubic-bezier(.34,1.2,.64,1); }
+    .thermo__pin {
+      display: block; width: 22px; height: 22px; border-radius: 50%;
+      border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.28);
+    }
+    .thermo__scale { display: flex; justify-content: space-between; font-size: .65rem; color: #9ca3af; margin-bottom: 1.1rem; }
+
+    .thermo__pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .5rem; margin-bottom: 1.25rem; }
+    .pillar { display: flex; align-items: flex-start; gap: .5rem; padding: .6rem .7rem; border-radius: .45rem; background: #f9fafb; border-left: 3px solid #d1d5db; }
+    .pillar--good { background: #f0fdf4; border-left-color: #16a34a; }
+    .pillar--warn { background: #fffbeb; border-left-color: #f59e0b; }
+    .pillar--bad  { background: #fef2f2; border-left-color: #dc2626; }
+    .pillar__icon { font-weight: 800; font-size: .8rem; line-height: 1.25; flex-shrink: 0; }
+    .pillar--good .pillar__icon { color: #16a34a; }
+    .pillar--warn .pillar__icon { color: #f59e0b; }
+    .pillar--bad  .pillar__icon { color: #dc2626; }
+    .pillar__txt { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+    .pillar__name { font-size: .78rem; font-weight: 700; color: #111; }
+    .pillar__detail { font-size: .72rem; color: #6b7280; }
+
+    .thermo__tips-label { margin-top: 0; }
+    .thermo__tips { display: flex; flex-direction: column; gap: .5rem; }
+    .tip { display: flex; gap: .7rem; padding: .75rem .85rem; border-radius: .45rem; background: #f9fafb; border-left: 3px solid #9ca3af; }
+    .tip--urgent { background: #fef2f2; border-left-color: #dc2626; }
+    .tip--medium { background: #fffbeb; border-left-color: #f59e0b; }
+    .tip__num {
+      flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(0,0,0,.08); color: #374151;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 800;
+    }
+    .tip__title { display: block; font-size: .85rem; color: #111; margin-bottom: .15rem; }
+    .tip__body { margin: 0; font-size: .8rem; color: #4b5563; line-height: 1.55; }
+
+    @media (max-width: 640px) {
+      .thermo__score { font-size: 1.6rem; }
+      .thermo__scale span:nth-child(2), .thermo__scale span:nth-child(4) { display: none; }
+    }
+
     /* ══ DARK THEME ═══════════════════════════════════════════════════ */
     :host-context([data-theme="dark"]) .hero,
     :host-context([data-theme="dark"]) .card,
     :host-context([data-theme="dark"]) .fv-card { background: #161c28 !important; }
+
+    /* Termômetro financeiro */
+    :host-context([data-theme="dark"]) .thermo__scale { color: #4f5f76 !important; }
+    :host-context([data-theme="dark"]) .thermo__pin { border-color: #161c28 !important; }
+    :host-context([data-theme="dark"]) .pillar { background: #1e2638 !important; border-left-color: #374151 !important; }
+    :host-context([data-theme="dark"]) .pillar--good { background: rgba(22,163,74,.12) !important; border-left-color: #16a34a !important; }
+    :host-context([data-theme="dark"]) .pillar--warn { background: rgba(245,158,11,.12) !important; border-left-color: #f59e0b !important; }
+    :host-context([data-theme="dark"]) .pillar--bad  { background: rgba(220,38,38,.12) !important; border-left-color: #dc2626 !important; }
+    :host-context([data-theme="dark"]) .pillar__name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .pillar__detail { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .tip { background: #1e2638 !important; border-left-color: #374151 !important; }
+    :host-context([data-theme="dark"]) .tip--urgent { background: rgba(220,38,38,.12) !important; border-left-color: #dc2626 !important; }
+    :host-context([data-theme="dark"]) .tip--medium { background: rgba(245,158,11,.12) !important; border-left-color: #f59e0b !important; }
+    :host-context([data-theme="dark"]) .tip__num { background: rgba(255,255,255,.1) !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .tip__title { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .tip__body { color: #8393ad !important; }
 
     :host-context([data-theme="dark"]) .greeting { color: #8393ad; }
     :host-context([data-theme="dark"]) .greeting strong { color: #e2e8f5; }
@@ -1223,6 +1346,180 @@ export class DashboardComponent implements OnInit {
   upcomingReceivable = computed(() => {
     const t = new Date(); t.setHours(0, 0, 0, 0);
     return this.receivableBills().filter(b => new Date(b.date) >= t);
+  });
+
+  // ── Termômetro Financeiro ──────────────────────────────────────────────
+  // Pontua 5 pilares (0-100) a partir dos dados já carregados na tela e
+  // deriva as 3 dicas mais relevantes a partir dos pontos perdidos.
+  health = computed(() => {
+    const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const income  = this.income();
+    const expense = this.expense();
+    const cash    = this.totalBalance();
+    const cardBill = this.totalCardExpense();
+    const limits   = this.spendingLimits();
+    const overdue  = this.overduePayable();
+
+    // Gasto médio mensal: usa o histórico de fluxo quando houver, senão o mês atual.
+    const flow = this.monthlyFlow().filter(f => (f.expense ?? 0) > 0);
+    const avgExpense = flow.length
+      ? flow.reduce((s, f) => s + (f.expense ?? 0), 0) / flow.length
+      : expense;
+
+    type Status = 'good' | 'warn' | 'bad';
+    const pillars: { key: string; name: string; detail: string; status: Status; lost: number }[] = [];
+    const tips: { title: string; body: string; severity: 'high' | 'medium' | 'low'; lost: number }[] = [];
+
+    // 1) Sobra do mês (25 pts)
+    const leftover = income - expense;
+    const savingsRate = income > 0 ? leftover / income : 0;
+    let p1 = 0, s1: Status = 'bad', d1 = '';
+    if (income <= 0) {
+      p1 = 0; s1 = 'warn'; d1 = 'Sem receita no mês';
+    } else if (savingsRate >= 0.20) {
+      p1 = 25; s1 = 'good'; d1 = `Sobram ${(savingsRate * 100).toFixed(0)}% da receita`;
+    } else if (savingsRate >= 0.10) {
+      p1 = 18; s1 = 'good'; d1 = `Sobram ${(savingsRate * 100).toFixed(0)}% da receita`;
+    } else if (savingsRate > 0) {
+      p1 = 11; s1 = 'warn'; d1 = `Sobram só ${(savingsRate * 100).toFixed(0)}% da receita`;
+    } else {
+      p1 = 0; s1 = 'bad'; d1 = `Gastou ${fmt(Math.abs(leftover))} a mais`;
+    }
+    pillars.push({ key: 'flow', name: 'Sobra do mês', detail: d1, status: s1, lost: 25 - p1 });
+    if (p1 < 25) {
+      tips.push({
+        severity: p1 === 0 ? 'high' : 'medium',
+        lost: 25 - p1,
+        title: leftover < 0 ? 'Seu mês fechou no vermelho' : 'Aumente a sobra do mês',
+        body: leftover < 0
+          ? `Você gastou ${fmt(Math.abs(leftover))} além do que recebeu. Abra Relatórios, veja as 3 maiores categorias do mês e corte a que menos impacta seu dia a dia até o saldo voltar a ficar positivo.`
+          : `Hoje sobram ${(savingsRate * 100).toFixed(0)}% da sua receita. Mire em 20% (${fmt(income * 0.20)}/mês): assim que o salário cair, separe esse valor antes de gastar, em vez de guardar o que sobrar no fim do mês.`,
+      });
+    }
+
+    // 2) Reserva de emergência (25 pts)
+    const months = avgExpense > 0 ? cash / avgExpense : (cash > 0 ? 12 : 0);
+    let p2 = 0, s2: Status = 'bad';
+    if (months >= 6)      { p2 = 25; s2 = 'good'; }
+    else if (months >= 3) { p2 = 18; s2 = 'good'; }
+    else if (months >= 1) { p2 = 10; s2 = 'warn'; }
+    else                  { p2 = 0;  s2 = 'bad'; }
+    pillars.push({
+      key: 'reserve', name: 'Reserva de emergência',
+      detail: `${months.toFixed(1)} ${months === 1 ? 'mês' : 'meses'} de gastos`,
+      status: s2, lost: 25 - p2,
+    });
+    if (p2 < 25) {
+      const target = avgExpense * 6;
+      tips.push({
+        severity: months < 1 ? 'high' : months < 3 ? 'medium' : 'low',
+        lost: 25 - p2,
+        title: months < 1 ? 'Construa sua reserva de emergência' : 'Complete sua reserva até 6 meses',
+        body: `Seu caixa cobre ${months.toFixed(1)} ${months === 1 ? 'mês' : 'meses'} de gastos. O ideal são 6 meses (${fmt(target)}). Faltam ${fmt(Math.max(0, target - cash))} — guarde em algo com liquidez diária, separado da conta do dia a dia.`,
+      });
+    }
+
+    // 3) Contas em atraso (20 pts)
+    const overdueCount = overdue.length;
+    const overdueTotal = overdue.reduce((s: number, b: any) => s + (b.amount ?? 0), 0);
+    let p3 = 0, s3: Status = 'bad';
+    if (overdueCount === 0)      { p3 = 20; s3 = 'good'; }
+    else if (overdueCount === 1) { p3 = 10; s3 = 'warn'; }
+    else if (overdueCount === 2) { p3 = 5;  s3 = 'bad'; }
+    else                         { p3 = 0;  s3 = 'bad'; }
+    pillars.push({
+      key: 'overdue', name: 'Contas em atraso',
+      detail: overdueCount === 0 ? 'Nenhuma conta atrasada' : `${overdueCount} em atraso (${fmt(overdueTotal)})`,
+      status: s3, lost: 20 - p3,
+    });
+    if (p3 < 20) {
+      tips.push({
+        severity: 'high',
+        lost: 20 - p3,
+        title: 'Regularize as contas em atraso',
+        body: `Você tem ${overdueCount} ${overdueCount === 1 ? 'conta vencida' : 'contas vencidas'} somando ${fmt(overdueTotal)}. Juros e multa de atraso são os mais caros que existem — priorize essas antes de qualquer investimento e ative lembretes de vencimento.`,
+      });
+    }
+
+    // 4) Uso do cartão de crédito (15 pts)
+    const cardRatio = income > 0 ? cardBill / income : (cardBill > 0 ? 1 : 0);
+    let p4 = 0, s4: Status = 'bad';
+    if (cardRatio <= 0.20)      { p4 = 15; s4 = 'good'; }
+    else if (cardRatio <= 0.30) { p4 = 11; s4 = 'good'; }
+    else if (cardRatio <= 0.50) { p4 = 6;  s4 = 'warn'; }
+    else                        { p4 = 0;  s4 = 'bad'; }
+    pillars.push({
+      key: 'card', name: 'Uso do cartão',
+      detail: income > 0 ? `${(cardRatio * 100).toFixed(0)}% da receita` : fmt(cardBill),
+      status: s4, lost: 15 - p4,
+    });
+    if (p4 < 15 && cardBill > 0) {
+      tips.push({
+        severity: cardRatio > 0.5 ? 'high' : 'medium',
+        lost: 15 - p4,
+        title: 'Reduza o comprometimento com o cartão',
+        body: `Sua fatura (${fmt(cardBill)}) representa ${(cardRatio * 100).toFixed(0)}% da sua receita — o saudável é ficar até 30% (${fmt(income * 0.30)}). Evite novos parcelamentos até a fatura cair e prefira débito nas compras do dia a dia.`,
+      });
+    }
+
+    // 5) Limites de gastos (15 pts)
+    const exceeded = limits.filter((l: any) => (l.usage_pct ?? 0) >= 100);
+    const near     = limits.filter((l: any) => (l.usage_pct ?? 0) >= 80 && (l.usage_pct ?? 0) < 100);
+    let p5 = 0, s5: Status = 'bad', d5 = '';
+    if (limits.length === 0) {
+      p5 = 8; s5 = 'warn'; d5 = 'Nenhum limite definido';
+    } else if (exceeded.length === 0 && near.length === 0) {
+      p5 = 15; s5 = 'good'; d5 = `${limits.length} ${limits.length === 1 ? 'limite' : 'limites'} sob controle`;
+    } else if (exceeded.length === 0) {
+      p5 = 10; s5 = 'warn'; d5 = `${near.length} perto do limite`;
+    } else if (exceeded.length === 1) {
+      p5 = 5; s5 = 'bad'; d5 = '1 limite estourado';
+    } else {
+      p5 = 0; s5 = 'bad'; d5 = `${exceeded.length} limites estourados`;
+    }
+    pillars.push({ key: 'limits', name: 'Limites de gastos', detail: d5, status: s5, lost: 15 - p5 });
+    if (p5 < 15) {
+      tips.push({
+        severity: exceeded.length > 0 ? 'medium' : 'low',
+        lost: 15 - p5,
+        title: limits.length === 0 ? 'Defina limites por categoria' : 'Ajuste os limites estourados',
+        body: limits.length === 0
+          ? 'Você ainda não tem limites de gasto configurados. Comece pelas 2 categorias onde mais gasta: definir um teto mensal é o jeito mais simples de perceber o excesso antes do fim do mês.'
+          : `${exceeded.length > 0 ? `${exceeded.length} ${exceeded.length === 1 ? 'categoria passou' : 'categorias passaram'} do teto` : `${near.length} ${near.length === 1 ? 'categoria está' : 'categorias estão'} perto do teto`}. Revise em Limite de Gastos: ou o teto está irreal para sua rotina, ou é o gasto que precisa cair.`,
+      });
+    }
+
+    const score = Math.max(0, Math.min(100, Math.round(p1 + p2 + p3 + p4 + p5)));
+
+    let label = 'Crítico', color = '#dc2626';
+    if (score >= 80)      { label = 'Excelente'; color = '#16a34a'; }
+    else if (score >= 60) { label = 'Saudável';  color = '#22c55e'; }
+    else if (score >= 40) { label = 'Atenção';   color = '#f59e0b'; }
+    else if (score >= 20) { label = 'Risco';     color = '#f97316'; }
+
+    // Mantém as 3 dicas de maior impacto; completa com reforços quando estiver tudo bem.
+    const ranked = [...tips].sort((a, b) => b.lost - a.lost);
+    const filler = [
+      {
+        title: 'Automatize seus aportes',
+        body: 'Com as contas em dia e reserva formada, o próximo passo é fazer o dinheiro trabalhar: programe uma transferência automática no dia do salário para a carteira de investimentos.',
+        severity: 'low' as const, lost: 0,
+      },
+      {
+        title: 'Revise assinaturas recorrentes',
+        body: 'Serviços pouco usados corroem a sobra do mês em silêncio. Abra Assinaturas Tech e cancele o que não foi usado nos últimos 30 dias.',
+        severity: 'low' as const, lost: 0,
+      },
+      {
+        title: 'Defina um objetivo de médio prazo',
+        body: 'Metas concretas sustentam a disciplina. Cadastre um objetivo em Objetivos com valor e prazo — acompanhar o progresso é o que mantém o hábito.',
+        severity: 'low' as const, lost: 0,
+      },
+    ];
+    const finalTips = [...ranked, ...filler].slice(0, 3);
+
+    return { score, label, color, pillars, tips: finalTips };
   });
 
   chartSegments = computed(() => {
