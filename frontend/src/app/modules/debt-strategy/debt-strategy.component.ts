@@ -19,6 +19,13 @@ interface AmorRow {
   /** Competência projetada da parcela (parcela 1 = próximo mês). */
   dueLabel: string;
   dueYear: number;
+  /**
+   * Valor presente da parcela: quanto custa HOJE eliminar essa parcela específica,
+   * já descontados os juros que ainda não correram (CDC art. 52 §2º).
+   */
+  pv: number;
+  /** Soma dos valores presentes desta parcela até a última (quitar daqui até o fim). */
+  pvToEnd: number;
 }
 
 const TYPES: Record<string, string> = {
@@ -68,10 +75,20 @@ function amortTable(balance: number, r: number, pmt: number, cap = 600): AmorRow
     const amort = Math.min(pmt - interest, b);
     b = Math.max(0, b - amort);
     const due = dueDateFor(i);
+    // Última parcela costuma ser menor que as demais (resíduo do saldo).
+    const payment = amort + interest;
     result.push({
-      month: i, payment: pmt, interest, amort, balance: b,
+      month: i, payment, interest, amort, balance: b,
       dueLabel: due.label, dueYear: due.year,
+      pv: r > 0 ? payment / Math.pow(1 + r, i) : payment,
+      pvToEnd: 0,
     });
+  }
+  // Acumulado do fim para o começo: quanto custa hoje quitar daquela parcela até a última.
+  let acc = 0;
+  for (let i = result.length - 1; i >= 0; i--) {
+    acc += result[i].pv;
+    result[i].pvToEnd = acc;
   }
   return result;
 }
@@ -271,6 +288,12 @@ function months2text(n: number): string {
                         <th>Juros</th>
                         <th>Amort.</th>
                         <th>Saldo atual</th>
+                        <th class="pv-col" title="Quanto custa hoje eliminar só esta parcela, descontados os juros que ainda não correram">
+                          Quitar hoje
+                        </th>
+                        <th class="pv-col" title="Quanto custa hoje quitar desta parcela até a última">
+                          Daqui até o fim
+                        </th>
                         @if (simPayment > d.monthly_payment) {
                           <th class="sim-col">Saldo simulado</th>
                         }
@@ -285,6 +308,8 @@ function months2text(n: number): string {
                           <td class="red">{{ row.interest | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
                           <td class="green">{{ row.amort | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
                           <td>{{ row.balance | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
+                          <td class="pv-col pv">{{ row.pv | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
+                          <td class="pv-col pv-end">{{ row.pvToEnd | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
                           @if (simPayment > d.monthly_payment) {
                             <td class="sim-col green">
                               {{ simAmortRows()[row.month - 1]
@@ -300,10 +325,25 @@ function months2text(n: number): string {
                         <td colspan="2"><strong>Total</strong></td>
                         <td><strong>{{ amortTotals().paid | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</strong></td>
                         <td class="red"><strong>{{ amortTotals().interest | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</strong></td>
-                        <td colspan="{{ simPayment > d.monthly_payment ? 3 : 2 }}"></td>
+                        <td></td>
+                        <td class="pv-col"></td>
+                        <td class="pv-col pv-end">
+                          <strong>{{ amortTotals().pvAll | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</strong>
+                        </td>
+                        @if (simPayment > d.monthly_payment) { <td class="sim-col"></td> }
                       </tr>
                     </tfoot>
                   </table>
+                </div>
+
+                <div class="pv-note">
+                  <strong>💡 Como usar "Quitar hoje":</strong>
+                  é o valor presente da parcela — quanto custa hoje eliminá-la, já sem os juros que ainda não correram.
+                  Role até o fim, escolha de quais parcelas quer se livrar e use <em>Daqui até o fim</em> para saber
+                  quanto custa quitar daquele ponto em diante. Ao negociar, peça
+                  <strong>amortização com redução de prazo</strong> (abatendo as últimas parcelas) e o desconto dos
+                  juros não incorridos, previsto no art. 52 §2º do CDC. O banco pode cobrar de forma diferente da
+                  projeção — confirme o valor no extrato de quitação antes de pagar.
                 </div>
               }
 
@@ -494,6 +534,16 @@ function months2text(n: number): string {
     .atable thead th { position: sticky; top: 0; z-index: 1; }
     .atable tfoot td { position: sticky; bottom: 0; background: #f9fafb; border-top: 2px solid #e5e7eb; }
     .atable .due { text-align: left; color: #374151; font-weight: 600; white-space: nowrap; }
+    .atable .pv-col { background: #f5f3ff; }
+    .atable th.pv-col { background: #ede9fe; color: #6d28d9; }
+    .atable .pv { color: #7c3aed; font-weight: 600; }
+    .atable .pv-end { color: #6d28d9; font-weight: 700; }
+    .pv-note {
+      margin-top: .875rem; padding: .75rem .9rem; border-radius: .375rem;
+      background: #f5f3ff; border-left: 3px solid #7c3aed;
+      font-size: .78rem; color: #4b5563; line-height: 1.6;
+    }
+    .pv-note strong { color: #5b21b6; }
     .atable .year-start td { border-top: 2px solid #e5e7eb; }
     .atable th { background: #f9fafb; padding: .5rem .75rem; text-align: right; color: #6b7280; font-size: .72rem; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
     .atable th:first-child { text-align: left; }
@@ -564,6 +614,12 @@ function months2text(n: number): string {
     :host-context([data-theme="dark"]) .atable .year-start td { border-top-color: #374151 !important; }
     :host-context([data-theme="dark"]) .atable-sum { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .atable-sum strong { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .atable .pv-col { background: rgba(124,58,237,.10) !important; }
+    :host-context([data-theme="dark"]) .atable th.pv-col { background: rgba(124,58,237,.18) !important; color: #c4b5fd !important; }
+    :host-context([data-theme="dark"]) .atable .pv,
+    :host-context([data-theme="dark"]) .atable .pv-end { color: #c4b5fd !important; }
+    :host-context([data-theme="dark"]) .pv-note { background: rgba(124,58,237,.10) !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .pv-note strong { color: #c4b5fd !important; }
     :host-context([data-theme="dark"]) .btn--outline { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
     :host-context([data-theme="dark"]) .modal { background: #161c28 !important; }
     :host-context([data-theme="dark"]) input,
@@ -639,6 +695,8 @@ export class DebtStrategyComponent implements OnInit {
       count: rows.length,
       paid: rows.reduce((s, r) => s + r.payment, 0),
       interest: rows.reduce((s, r) => s + r.interest, 0),
+      // Soma dos valores presentes = custo de quitar tudo hoje (≈ saldo devedor).
+      pvAll: rows.length ? rows[0].pvToEnd : 0,
       lastLabel: rows.length ? rows[rows.length - 1].dueLabel : '—',
     };
   });
