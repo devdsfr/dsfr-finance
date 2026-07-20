@@ -14,7 +14,12 @@ interface Debt {
   monthly_rate: number; monthly_payment: number; remaining_months: number; notes: string;
 }
 
-interface AmorRow { month: number; payment: number; interest: number; amort: number; balance: number; }
+interface AmorRow {
+  month: number; payment: number; interest: number; amort: number; balance: number;
+  /** Competência projetada da parcela (parcela 1 = próximo mês). */
+  dueLabel: string;
+  dueYear: number;
+}
 
 const TYPES: Record<string, string> = {
   mortgage:      '🏠 Financiamento Imobiliário',
@@ -40,14 +45,33 @@ function fv(pmt: number, r: number, n: number): number {
   if (r === 0) return pmt * n;
   return pmt * ((Math.pow(1 + r, n) - 1) / r);
 }
-function amortTable(balance: number, r: number, pmt: number, rows = 12): AmorRow[] {
+const MONTH_ABBR = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+/** Competência da parcela n (parcela 1 = próximo mês). */
+function dueDateFor(n: number): { label: string; year: number } {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + n, 1);
+  return { label: `${MONTH_ABBR[d.getMonth()]}/${d.getFullYear()}`, year: d.getFullYear() };
+}
+
+/**
+ * Tabela de amortização completa — vai até a quitação, sem corte artificial.
+ * `cap` existe apenas como trava de segurança (50 anos).
+ */
+function amortTable(balance: number, r: number, pmt: number, cap = 600): AmorRow[] {
   const result: AmorRow[] = [];
   let b = balance;
-  for (let i = 1; i <= rows && b > 0.01; i++) {
+  for (let i = 1; i <= cap && b > 0.01; i++) {
     const interest = b * r;
+    // Parcela menor que os juros: a dívida nunca amortiza, não faz sentido projetar.
+    if (pmt <= interest) break;
     const amort = Math.min(pmt - interest, b);
     b = Math.max(0, b - amort);
-    result.push({ month: i, payment: pmt, interest, amort, balance: b });
+    const due = dueDateFor(i);
+    result.push({
+      month: i, payment: pmt, interest, amort, balance: b,
+      dueLabel: due.label, dueYear: due.year,
+    });
   }
   return result;
 }
@@ -225,37 +249,64 @@ function months2text(n: number): string {
 
             <!-- Amortization table -->
             <div class="panel">
-              <h3>📅 Próximas Parcelas — Comparativo</h3>
-              <table class="atable">
-                <thead>
-                  <tr>
-                    <th>Mês</th>
-                    <th>Parcela atual</th>
-                    <th>Juros</th>
-                    <th>Amort.</th>
-                    <th>Saldo atual</th>
-                    @if (simPayment > d.monthly_payment) {
-                      <th class="sim-col">Saldo simulado</th>
-                    }
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of amortRows(); track row.month) {
-                    <tr>
-                      <td>{{ row.month }}</td>
-                      <td>{{ row.payment | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
-                      <td class="red">{{ row.interest | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
-                      <td class="green">{{ row.amort | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
-                      <td>{{ row.balance | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
-                      @if (simPayment > d.monthly_payment) {
-                        <td class="sim-col green">
-                          {{ simAmortRows()[row.month - 1]?.balance | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
-                        </td>
+              <div class="atable-head">
+                <h3>📅 Próximas Parcelas — Comparativo</h3>
+                @if (amortTotals().count > 0) {
+                  <span class="atable-sum">
+                    {{ amortTotals().count }} parcelas · quitação em <strong>{{ amortTotals().lastLabel }}</strong>
+                  </span>
+                }
+              </div>
+
+              @if (amortRows().length === 0) {
+                <p class="sim-hint">⚠️ A parcela atual não cobre nem os juros do mês, então a dívida não amortiza. Revise o valor da parcela ou a taxa.</p>
+              } @else {
+                <div class="atable-scroll">
+                  <table class="atable">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Vencimento</th>
+                        <th>Parcela atual</th>
+                        <th>Juros</th>
+                        <th>Amort.</th>
+                        <th>Saldo atual</th>
+                        @if (simPayment > d.monthly_payment) {
+                          <th class="sim-col">Saldo simulado</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of amortRows(); track row.month) {
+                        <tr [class.year-start]="row.month > 1 && row.dueLabel.startsWith('jan/')">
+                          <td>{{ row.month }}</td>
+                          <td class="due">{{ row.dueLabel }}</td>
+                          <td>{{ row.payment | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
+                          <td class="red">{{ row.interest | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
+                          <td class="green">{{ row.amort | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
+                          <td>{{ row.balance | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</td>
+                          @if (simPayment > d.monthly_payment) {
+                            <td class="sim-col green">
+                              {{ simAmortRows()[row.month - 1]
+                                  ? (simAmortRows()[row.month - 1].balance | currency:'BRL':'symbol':'1.0-0':'pt-BR')
+                                  : 'quitado' }}
+                            </td>
+                          }
+                        </tr>
                       }
-                    </tr>
-                  }
-                </tbody>
-              </table>
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colspan="2"><strong>Total</strong></td>
+                        <td><strong>{{ amortTotals().paid | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</strong></td>
+                        <td class="red"><strong>{{ amortTotals().interest | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</strong></td>
+                        <td colspan="{{ simPayment > d.monthly_payment ? 3 : 2 }}"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              }
+
               @if (simPayment > d.monthly_payment) {
                 <small>* Rendimento calculado reinvestindo {{ simPayment - d.monthly_payment | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}/mês ao benchmark configurado</small>
               }
@@ -433,7 +484,17 @@ function months2text(n: number): string {
     .tip p { margin: 0; font-size: .8rem; color: #4b5563; line-height: 1.5; }
 
     /* Amortization table */
+    .atable-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .atable-head h3 { margin: 0; }
+    .atable-sum { font-size: .78rem; color: #6b7280; }
+    .atable-sum strong { color: #16a34a; }
+    /* Rola a projeção inteira mantendo o cabeçalho visível */
+    .atable-scroll { max-height: 460px; overflow-y: auto; border: 1px solid #f3f4f6; border-radius: .375rem; }
     .atable { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .atable thead th { position: sticky; top: 0; z-index: 1; }
+    .atable tfoot td { position: sticky; bottom: 0; background: #f9fafb; border-top: 2px solid #e5e7eb; }
+    .atable .due { text-align: left; color: #374151; font-weight: 600; white-space: nowrap; }
+    .atable .year-start td { border-top: 2px solid #e5e7eb; }
     .atable th { background: #f9fafb; padding: .5rem .75rem; text-align: right; color: #6b7280; font-size: .72rem; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
     .atable th:first-child { text-align: left; }
     .atable td { padding: .45rem .75rem; border-top: 1px solid #f3f4f6; text-align: right; }
@@ -497,6 +558,12 @@ function months2text(n: number): string {
     :host-context([data-theme="dark"]) .tip strong { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .atable th { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
     :host-context([data-theme="dark"]) .atable td { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .atable-scroll { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .atable tfoot td { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .atable .due { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .atable .year-start td { border-top-color: #374151 !important; }
+    :host-context([data-theme="dark"]) .atable-sum { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .atable-sum strong { color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .btn--outline { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
     :host-context([data-theme="dark"]) .modal { background: #161c28 !important; }
     :host-context([data-theme="dark"]) input,
@@ -558,11 +625,22 @@ export class DebtStrategyComponent implements OnInit {
 
   amortRows = computed(() => {
     const d = this.selected(); if (!d) return [];
-    return amortTable(d.remaining_balance, d.monthly_rate, d.monthly_payment, 12);
+    return amortTable(d.remaining_balance, d.monthly_rate, d.monthly_payment);
   });
   simAmortRows = computed(() => {
     const d = this.selected(); if (!d || !this.simPayment || this.simPayment <= d.monthly_payment) return [];
-    return amortTable(d.remaining_balance, d.monthly_rate, this.simPayment, 12);
+    return amortTable(d.remaining_balance, d.monthly_rate, this.simPayment);
+  });
+
+  /** Totais da projeção completa, para o rodapé da tabela. */
+  amortTotals = computed(() => {
+    const rows = this.amortRows();
+    return {
+      count: rows.length,
+      paid: rows.reduce((s, r) => s + r.payment, 0),
+      interest: rows.reduce((s, r) => s + r.interest, 0),
+      lastLabel: rows.length ? rows[rows.length - 1].dueLabel : '—',
+    };
   });
 
   strategy = computed(() => {
