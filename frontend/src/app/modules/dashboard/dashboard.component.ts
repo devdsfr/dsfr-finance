@@ -133,23 +133,38 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       </div>
 
       <!-- ── Termômetro Financeiro ────────────────────────────── -->
-      @if (!loading()) {
+      @if (!loading() && thermo(); as th) {
         <div class="card thermo">
           <div class="thermo__head">
-            <div>
+            <div class="thermo__title">
               <p class="card__sup">🌡️ Termômetro Financeiro</p>
-              <p class="thermo__verdict" [style.color]="health().color">{{ health().label }}</p>
+              <p class="thermo__verdict" [style.color]="th.color">{{ th.label }}</p>
+              <!-- Abas de meses -->
+              <div class="thermo__months">
+                @for (mo of thermoMonths(); track mo) {
+                  <button class="thermo__month"
+                          [class.thermo__month--active]="mo === selectedThermoMonth()"
+                          [class.thermo__month--current]="mo === currentThermoMonth()"
+                          (click)="selectedThermoMonth.set(mo)">
+                    {{ monthChipLabel(mo) }}
+                  </button>
+                }
+              </div>
             </div>
-            <div class="thermo__score" [style.color]="health().color">
-              {{ health().score }}<span class="thermo__score-max">/100</span>
+            <div class="thermo__score" [style.color]="th.color">
+              {{ th.score }}<span class="thermo__score-max">/100</span>
             </div>
           </div>
+
+          @if (thermoIsHistorical()) {
+            <div class="thermo__hist-tag">📅 Termômetro de {{ monthFullLabel(selectedThermoMonth()) }} (registro salvo)</div>
+          }
 
           <!-- Barra do termômetro -->
           <div class="thermo__bar">
             <div class="thermo__track"></div>
-            <div class="thermo__marker" [style.left.%]="health().score">
-              <span class="thermo__pin" [style.background]="health().color"></span>
+            <div class="thermo__marker" [style.left.%]="th.score">
+              <span class="thermo__pin" [style.background]="th.color"></span>
             </div>
           </div>
           <div class="thermo__scale">
@@ -158,7 +173,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
 
           <!-- Pilares -->
           <div class="thermo__pillars">
-            @for (p of health().pillars; track p.key) {
+            @for (p of th.pillars; track p.key ?? p.name) {
               <div class="pillar" [class.pillar--good]="p.status === 'good'"
                    [class.pillar--warn]="p.status === 'warn'"
                    [class.pillar--bad]="p.status === 'bad'">
@@ -174,7 +189,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
           <!-- Dicas -->
           <p class="section-label thermo__tips-label">💡 3 dicas para estabilizar sua vida financeira</p>
           <div class="thermo__tips">
-            @for (t of health().tips; track $index; let i = $index) {
+            @for (t of th.tips; track $index; let i = $index) {
               <div class="tip" [class.tip--urgent]="t.severity === 'high'"
                    [class.tip--medium]="t.severity === 'medium'">
                 <span class="tip__num">{{ i + 1 }}</span>
@@ -1014,9 +1029,25 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     /* ══ TERMÔMETRO FINANCEIRO ════════════════════════════════════════ */
     .thermo { margin-bottom: 1.25rem; }
     .thermo__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
-    .thermo__verdict { font-size: 1.15rem; font-weight: 700; margin: .1rem 0 0; }
+    .thermo__title { min-width: 0; }
+    .thermo__verdict { font-size: 1.15rem; font-weight: 700; margin: .1rem 0 .55rem; }
     .thermo__score { font-size: 2rem; font-weight: 800; line-height: 1; }
     .thermo__score-max { font-size: .9rem; font-weight: 600; opacity: .55; }
+    .thermo__months { display: flex; gap: .3rem; flex-wrap: wrap; }
+    .thermo__month {
+      background: #f3f4f6; border: 1px solid transparent; border-radius: 9999px;
+      padding: .18rem .6rem; font-size: .72rem; font-weight: 700; color: #6b7280;
+      cursor: pointer; text-transform: capitalize; transition: all .15s;
+    }
+    .thermo__month:hover { background: #e5e7eb; }
+    .thermo__month--active { background: #1a2035; color: #fff; }
+    .thermo__month--current { border-color: #2e7736; }
+    .thermo__month--current.thermo__month--active { background: #2e7736; border-color: #2e7736; }
+    .thermo__hist-tag {
+      display: inline-block; margin: -.25rem 0 .85rem; padding: .25rem .6rem;
+      background: #eef2ff; color: #4338ca; border-radius: .375rem;
+      font-size: .74rem; font-weight: 600;
+    }
 
     .thermo__bar { position: relative; margin: 1.1rem 0 .35rem; height: 14px; }
     .thermo__track {
@@ -1069,6 +1100,11 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
 
     /* Termômetro financeiro */
     :host-context([data-theme="dark"]) .thermo__scale { color: #4f5f76 !important; }
+    :host-context([data-theme="dark"]) .thermo__month { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .thermo__month:hover { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .thermo__month--active { background: #4ade80 !important; color: #0d1117 !important; }
+    :host-context([data-theme="dark"]) .thermo__month--current { border-color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .thermo__hist-tag { background: rgba(99,102,241,.15) !important; color: #a5b4fc !important; }
     :host-context([data-theme="dark"]) .thermo__pin { border-color: #161c28 !important; }
     :host-context([data-theme="dark"]) .pillar { background: #1e2638 !important; border-left-color: #374151 !important; }
     :host-context([data-theme="dark"]) .pillar--good { background: rgba(22,163,74,.12) !important; border-left-color: #16a34a !important; }
@@ -1536,6 +1572,76 @@ export class DashboardComponent implements OnInit {
     return { score, label, color, pillars, tips: finalTips };
   });
 
+  // ── Histórico mensal do termômetro ──────────────────────────────────────
+  thermoSnapshots = signal<any[]>([]);
+  currentThermoMonth = signal<string>(
+    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+  );
+  selectedThermoMonth = signal<string>(this.currentThermoMonth());
+
+  /** Meses disponíveis: os que têm registro salvo + o mês atual, em ordem. */
+  thermoMonths = computed(() => {
+    const set = new Set<string>(this.thermoSnapshots().map(s => s.month));
+    set.add(this.currentThermoMonth());
+    return Array.from(set).sort();
+  });
+
+  thermoIsHistorical = computed(() => this.selectedThermoMonth() !== this.currentThermoMonth());
+
+  /** Termômetro exibido: ao vivo no mês atual, ou o registro salvo do mês selecionado. */
+  thermo = computed(() => {
+    if (!this.thermoIsHistorical()) return this.health();
+    const snap = this.thermoSnapshots().find(s => s.month === this.selectedThermoMonth());
+    if (!snap) return this.health();
+    return {
+      score: snap.score, label: snap.label, color: snap.color,
+      pillars: snap.pillars ?? [], tips: snap.tips ?? [],
+    };
+  });
+
+  private readonly MONTH_ABBR_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  private readonly MONTH_FULL_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  monthChipLabel(m: string): string {
+    const [y, mo] = m.split('-').map(Number);
+    return `${this.MONTH_ABBR_PT[mo - 1]}/${String(y).slice(2)}`;
+  }
+  monthFullLabel(m: string): string {
+    const [y, mo] = m.split('-').map(Number);
+    return `${this.MONTH_FULL_PT[mo - 1]} ${y}`;
+  }
+
+  /** Carrega o histórico salvo. */
+  private loadThermoHistory(): void {
+    this.api.get<any>('/thermometer-snapshots').subscribe({
+      next: r => this.thermoSnapshots.set(r.data ?? []),
+      error: () => {},
+    });
+  }
+
+  /**
+   * Salva/atualiza o termômetro do mês atual. Como roda a cada carregamento da
+   * Visão Geral, o valor gravado reflete sempre o estado mais recente do mês —
+   * no último dia do mês, é o fechamento.
+   */
+  private saveThermometer(): void {
+    const h = this.health();
+    const month = this.currentThermoMonth();
+    this.api.put<any>('/thermometer-snapshots', {
+      month, score: h.score, label: h.label, color: h.color,
+      pillars: h.pillars, tips: h.tips,
+    }).subscribe({
+      next: () => {
+        // Reflete localmente para as abas aparecerem sem novo GET.
+        const others = this.thermoSnapshots().filter(s => s.month !== month);
+        this.thermoSnapshots.set([...others, {
+          month, score: h.score, label: h.label, color: h.color,
+          pillars: h.pillars, tips: h.tips,
+        }]);
+      },
+      error: () => {},
+    });
+  }
+
   chartSegments = computed(() => {
     const C = this.C;
     let acc = 0;
@@ -1563,6 +1669,9 @@ export class DashboardComponent implements OnInit {
     //    para o usuário não ver a tela em branco enquanto o backend responde.
     const hadCache = this.restoreCache();
     if (hadCache) { this.loading.set(false); this.firstVisit.set(false); }
+
+    // Histórico do termômetro (para as abas de meses anteriores).
+    this.loadThermoHistory();
 
     const now = new Date();
     const y = now.getFullYear();
@@ -1629,6 +1738,8 @@ export class DashboardComponent implements OnInit {
       const flow: any[] = res.flow.data ?? [];
       this.monthlyFlow.set(flow.slice(-6));
       this.saveCache();
+      // Com todos os insumos do termômetro carregados, grava o mês atual.
+      this.saveThermometer();
     });
   }
 

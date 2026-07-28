@@ -94,6 +94,7 @@ func main() {
 	goalH := handlers.NewGoalHandler(goalRepo)
 	investmentH := handlers.NewInvestmentHandler(investmentRepo)
 	oauthH := handlers.NewOAuthHandler(oauthSvc, cfg.AppURL)
+	thermometerH := handlers.NewThermometerHandler(db)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -231,6 +232,10 @@ func main() {
 		auth.POST("/goals", goalH.Create)
 		auth.PUT("/goals/:id", goalH.Update)
 		auth.DELETE("/goals/:id", goalH.Delete)
+
+		// Financial thermometer — snapshot mensal para histórico
+		auth.GET("/thermometer-snapshots", thermometerH.List)
+		auth.PUT("/thermometer-snapshots", thermometerH.Upsert)
 
 		// Investment Strategy — Premium
 		auth.GET("/investment-config", middleware.RequirePremium(db), investmentH.GetConfig)
