@@ -133,7 +133,8 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       </div>
 
       <!-- ── Termômetro Financeiro ────────────────────────────── -->
-      @if (!loading() && thermo(); as th) {
+      @if (!loading()) {
+       @if (thermo(); as th) {
         <div class="card thermo">
           <div class="thermo__head">
             <div class="thermo__title">
@@ -173,7 +174,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
 
           <!-- Pilares -->
           <div class="thermo__pillars">
-            @for (p of th.pillars; track p.key ?? p.name) {
+            @for (p of th.pillars; track p.name) {
               <div class="pillar" [class.pillar--good]="p.status === 'good'"
                    [class.pillar--warn]="p.status === 'warn'"
                    [class.pillar--bad]="p.status === 'bad'">
@@ -201,6 +202,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
             }
           </div>
         </div>
+       }
       }
 
       <!-- ── Configurable dashboard (Meu Painel) ──────────────── -->
