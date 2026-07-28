@@ -1,12 +1,13 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { Lang } from '../../../core/i18n/translations';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -29,6 +30,22 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
           <span class="login-brand__name"><strong>DSFR</strong> finance</span>
         </div>
         <h2>{{ 'auth.login_title' | translate }}</h2>
+
+        @if (mode() === 'login' && !needsMFA()) {
+          <!-- Login social -->
+          <div class="social">
+            <a class="social-btn" [href]="oauthUrl('google')">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22 22-9.8 22-22c0-1.5-.2-2.6-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 4.1 29.6 2 24 2 15.6 2 8.4 6.8 6.3 14.7z"/><path fill="#4CAF50" d="M24 46c5.5 0 10.5-2.1 14.3-5.6l-6.6-5.6C29.7 36.4 27 37.5 24 37.5c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C8.3 41.1 15.6 46 24 46z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.6 5.6C41.9 36.3 46 31 46 24c0-1.5-.2-2.6-.4-3.5z"/></svg>
+              Entrar com conta Google
+            </a>
+            <a class="social-btn" [href]="oauthUrl('facebook')">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12c0-6.6-5.4-12-12-12S0 5.4 0 12c0 6 4.4 11 10.1 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.6 4.5-4.6 1.3 0 2.7.2 2.7.2v2.9h-1.5c-1.5 0-2 .9-2 1.9V12h3.3l-.5 3.5h-2.8v8.4C19.6 23 24 18 24 12z"/></svg>
+              Entrar com conta Facebook
+            </a>
+          </div>
+          <div class="divider"><span>ou</span></div>
+        }
+
         @if (mode() === 'forgot') {
           <!-- Esqueci minha senha -->
           @if (!forgotSent()) {
@@ -59,7 +76,18 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
             </div>
             <div class="form-group">
               <label>{{ 'auth.password' | translate }}</label>
-              <input [(ngModel)]="password" name="password" type="password" required class="input" />
+              <div class="pass-wrap">
+                <input [(ngModel)]="password" name="password" [type]="showPass() ? 'text' : 'password'" required class="input input--pass" />
+                <button type="button" class="pass-eye" (click)="showPass.set(!showPass())"
+                        [attr.aria-label]="showPass() ? 'Ocultar senha' : 'Mostrar senha'"
+                        [title]="showPass() ? 'Ocultar senha' : 'Mostrar senha'">
+                  @if (showPass()) {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  } @else {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
+                </button>
+              </div>
             </div>
             @if (error()) { <div class="error">{{ error() }}</div> }
             <button type="submit" class="btn btn--primary" [disabled]="loading()">
@@ -111,12 +139,36 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
     .sent-box { text-align: center; display: flex; flex-direction: column; gap: 1rem; align-items: center; }
     .sent-icon { font-size: 2.5rem; }
     .sent-box p { font-size: .88rem; color: #4b5563; line-height: 1.6; margin: 0; }
+
+    /* Social login */
+    .social { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1rem; }
+    .social-btn {
+      display: flex; align-items: center; justify-content: center; gap: .6rem;
+      padding: .65rem; border: 1px solid #d1d5db; border-radius: .5rem;
+      background: #fff; color: #374151; font-size: .88rem; font-weight: 600;
+      text-decoration: none; cursor: pointer; transition: background .15s, border-color .15s;
+    }
+    .social-btn:hover { background: #f9fafb; border-color: #9ca3af; }
+    .divider { display: flex; align-items: center; gap: .75rem; margin: 1rem 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+    .divider span { font-size: .8rem; color: #9ca3af; }
+
+    /* Password eye */
+    .pass-wrap { position: relative; }
+    .input--pass { width: 100%; padding-right: 2.5rem; box-sizing: border-box; }
+    .pass-eye {
+      position: absolute; right: .5rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: #9ca3af;
+      padding: .25rem; display: flex; align-items: center;
+    }
+    .pass-eye:hover { color: #4b5563; }
   `]
 })
 export class LoginComponent implements OnInit {
   private auth = inject(AuthService);
   private api = inject(ApiService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   i18n = inject(TranslationService);
 
   email = ''; password = ''; totpCode = '';
@@ -125,11 +177,21 @@ export class LoginComponent implements OnInit {
   needsMFA = signal(false);
   mode = signal<'login' | 'forgot'>('login');
   forgotSent = signal(false);
+  showPass = signal(false);
+
+  /** URL do backend que inicia o fluxo OAuth do provedor. */
+  oauthUrl(provider: 'google' | 'facebook'): string {
+    return `${environment.apiUrl}/auth/oauth/${provider}/login`;
+  }
 
   ngOnInit(): void {
     // Acorda o backend (Render free tier) enquanto o usuário digita as credenciais,
     // para o dashboard não esperar o cold start depois do login.
     this.api.warmUp();
+
+    // Erro devolvido pelo callback OAuth (ex.: provedor não configurado).
+    const oauthErr = this.route.snapshot.queryParamMap.get('oauth_error');
+    if (oauthErr) this.error.set(oauthErr);
   }
 
   setLang(lang: Lang): void { this.i18n.setLang(lang); }

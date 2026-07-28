@@ -65,6 +65,9 @@ func main() {
 	activitySvc := services.NewActivityService(db)
 	emailSvc := services.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
 	authSvc := services.NewAuthService(db, cfg.JWTSecret).WithEmail(emailSvc, cfg.AppURL)
+	oauthSvc := services.NewOAuthService(authSvc, cfg.APIURL, cfg.AppURL, cfg.JWTSecret,
+		services.OAuthProviderConfig{ClientID: cfg.GoogleClientID, ClientSecret: cfg.GoogleClientSecret},
+		services.OAuthProviderConfig{ClientID: cfg.FacebookClientID, ClientSecret: cfg.FacebookClientSecret})
 	txSvc := services.NewTransactionService(txRepo, spendingRepo, notifSvc, activitySvc)
 	aiUsageSvc, err := services.NewAIUsageService(cfg.EncryptionKey)
 	if err != nil {
@@ -90,6 +93,7 @@ func main() {
 	patrimonySnapH := handlers.NewPatrimonySnapshotHandler(db)
 	goalH := handlers.NewGoalHandler(goalRepo)
 	investmentH := handlers.NewInvestmentHandler(investmentRepo)
+	oauthH := handlers.NewOAuthHandler(oauthSvc, cfg.AppURL)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -114,6 +118,8 @@ func main() {
 	v1.POST("/auth/login", authH.Login)
 	v1.POST("/auth/forgot-password", authH.ForgotPassword)
 	v1.POST("/auth/reset-password", authH.ResetPassword)
+	v1.GET("/auth/oauth/:provider/login", oauthH.Login)
+	v1.GET("/auth/oauth/:provider/callback", oauthH.Callback)
 
 	// Protected
 	auth := v1.Group("/", middleware.Auth(cfg.JWTSecret))

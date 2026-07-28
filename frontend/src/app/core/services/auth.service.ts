@@ -65,6 +65,24 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
+  /**
+   * Estabelece a sessão a partir de um token recebido via OAuth e carrega o
+   * perfil do usuário. Usado pela página /auth/callback.
+   */
+  setSessionFromToken(token: string): Observable<any> {
+    localStorage.setItem('token', token);
+    return this.api.get<any>('/me').pipe(
+      tap(user => {
+        const u: AuthUser = {
+          id: user.id, name: user.name, email: user.email,
+          mfa_enabled: !!user.mfa_enabled,
+        };
+        localStorage.setItem('user', JSON.stringify(u));
+        this.currentUser.set(u);
+      })
+    );
+  }
+
   forgotPassword(email: string): Observable<any> {
     return this.api.post('/auth/forgot-password', { email });
   }

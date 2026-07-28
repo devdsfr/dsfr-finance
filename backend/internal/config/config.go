@@ -23,6 +23,11 @@ type Config struct {
 	ResendAPIKey     string
 	EmailFrom        string
 	AppURL           string
+	APIURL           string
+	GoogleClientID     string
+	GoogleClientSecret string
+	FacebookClientID     string
+	FacebookClientSecret string
 	SpendingAlertPct float64
 	AppEnv           string
 	CORSOrigins      string
@@ -52,6 +57,11 @@ func Load() *Config {
 		ResendAPIKey:     getEnv("RESEND_API_KEY", ""),
 		EmailFrom:        getEnv("EMAIL_FROM", "DSFR Finance <onboarding@resend.dev>"),
 		AppURL:           getEnv("APP_URL", "http://localhost:4200"),
+		APIURL:           getEnv("API_URL", "http://localhost:8080"),
+		GoogleClientID:       getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret:   getEnv("GOOGLE_CLIENT_SECRET", ""),
+		FacebookClientID:     getEnv("FACEBOOK_CLIENT_ID", ""),
+		FacebookClientSecret: getEnv("FACEBOOK_CLIENT_SECRET", ""),
 		SpendingAlertPct: alertPct,
 		AppEnv:           getEnv("APP_ENV", "development"),
 		CORSOrigins:      getEnv("CORS_ORIGINS", "http://localhost:4200"),
