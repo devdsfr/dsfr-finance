@@ -119,6 +119,12 @@ func (s *TransactionService) Create(workspaceID, userID string, req CreateTransa
 		if len(req.TagIDs) > 0 {
 			_ = s.repo.SetTags(tx.ID, req.TagIDs)
 		}
+		// Lançamento já criado como pago impacta o saldo da conta na hora.
+		if tx.Paid {
+			if accID := s.resolveAccountID(workspaceID, tx.AccountID); accID != "" {
+				_ = s.repo.AdjustAccountBalance(accID, s.balanceImpact(tx.Type, tx.Amount))
+			}
+		}
 		created = append(created, tx)
 	}
 
@@ -137,6 +143,11 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 		return nil, fmt.Errorf("transaction not found")
 	}
 
+	// Snapshot do estado ANTES da edição, para reconciliar o saldo da conta.
+	oldPaid := existing.Paid
+	oldImpact := s.balanceImpact(existing.Type, existing.Amount)
+	oldAccountID := s.resolveAccountID(workspaceID, existing.AccountID)
+
 	existing.AccountID = req.AccountID
 	existing.CreditCardID = req.CreditCardID
 	existing.CategoryID = req.CategoryID
@@ -149,6 +160,9 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 		now := time.Now()
 		existing.PaidAt = &now
 	}
+	if !req.Paid {
+		existing.PaidAt = nil
+	}
 	existing.Paid = req.Paid
 
 	if err := s.repo.Update(existing); err != nil {
@@ -156,6 +170,20 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 	}
 	if req.TagIDs != nil {
 		_ = s.repo.SetTags(txID, req.TagIDs)
+	}
+
+	// Reconcilia o saldo: desfaz o impacto antigo (se estava pago) e aplica o
+	// novo (se está pago). Assim, editar valor/tipo/conta ou alternar o "pago"
+	// pelo modal mantém o Saldo Geral coerente — mesmo comportamento do toggle
+	// da lista (MarkPaid/MarkUnpaid).
+	if oldPaid && oldAccountID != "" {
+		_ = s.repo.AdjustAccountBalance(oldAccountID, -oldImpact)
+	}
+	if req.Paid {
+		newAccountID := s.resolveAccountID(workspaceID, req.AccountID)
+		if newAccountID != "" {
+			_ = s.repo.AdjustAccountBalance(newAccountID, s.balanceImpact(req.Type, req.Amount))
+		}
 	}
 
 	// Propagate to the rest of the recurrence group when requested.
@@ -214,6 +242,23 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 
 	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)
 	return existing, nil
+}
+
+// balanceImpact devolve quanto uma transação PAGA afeta o saldo da conta:
+// receita/transferência somam, despesa subtrai.
+func (s *TransactionService) balanceImpact(txType string, amount float64) float64 {
+	if txType == "expense" {
+		return -amount
+	}
+	return amount
+}
+
+// resolveAccountID usa a conta vinculada ou, na falta, a primeira do workspace.
+func (s *TransactionService) resolveAccountID(workspaceID string, accountID *string) string {
+	if accountID != nil && *accountID != "" {
+		return *accountID
+	}
+	return s.repo.GetFirstAccountID(workspaceID)
 }
 
 func (s *TransactionService) MarkPaid(workspaceID, userID, txID string) (*models.Transaction, error) {
@@ -296,6 +341,13 @@ func (s *TransactionService) DeleteScoped(workspaceID, userID, txID, scope strin
 		siblings, err = s.repo.DeleteSeries(txID, workspaceID, *existing.InstallmentGroup, fromDate)
 		if err != nil {
 			return 0, err
+		}
+	}
+
+	// Apagar um lançamento PAGO precisa reverter o impacto que ele teve no saldo.
+	if existing.Paid {
+		if accID := s.resolveAccountID(workspaceID, existing.AccountID); accID != "" {
+			_ = s.repo.AdjustAccountBalance(accID, -s.balanceImpact(existing.Type, existing.Amount))
 		}
 	}
 
