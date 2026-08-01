@@ -112,7 +112,7 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
       @if (hasUnpaid()) {
         <div class="inv-action">
           <button class="btn-pay" (click)="payInvoice()" [disabled]="payingInvoice()">
-            {{ payingInvoice() ? 'Pagando…' : 'Pagar fatura · ' + (currentTotal() | appCurrency) }}
+            {{ payingInvoice() ? 'Pagando…' : 'Pagar fatura · ' + (owedNow() | appCurrency) }}
           </button>
         </div>
       } @else if (isPaid()) {
@@ -289,8 +289,6 @@ export class CardInvoicesComponent implements OnInit {
 
   // Unpaid expense transactions that compose the current invoice
   unpaidTxns = computed(() => this.transactions().filter(t => t.type === 'expense' && !t.paid));
-  hasUnpaid  = computed(() => this.unpaidTxns().length > 0);
-  isPaid     = computed(() => this.currentTotal() > 0 && !this.hasUnpaid());
 
   // current month index within invoices array
   monthIdx = signal(0);
@@ -302,12 +300,29 @@ export class CardInvoicesComponent implements OnInit {
     return list[this.monthIdx()] ?? null;
   });
 
-  currentTotal = computed(() => Math.abs(this.currentMonth()?.total ?? 0));
-  prevTotal    = computed(() => {
-    const list = this.invoices();
-    const next = list[this.monthIdx() + 1];
-    return next ? Math.abs(next.total) : 0;
+  /** Gastos do próprio mês (paga + não paga). */
+  ownCharges = computed(() => Math.abs(this.currentMonth()?.total ?? 0));
+
+  /**
+   * Saldo do mês anterior = tudo que ficou em aberto nos meses anteriores.
+   * Faturas pagas não deixam saldo; as não pagas rolam para a atual.
+   */
+  prevTotal = computed(() => {
+    const cur = this.currentMonth();
+    if (!cur) return 0;
+    return this.invoices()
+      .filter(inv => inv.month < cur.month)
+      .reduce((s, inv) => s + Math.abs(inv.unpaid ?? 0), 0);
   });
+
+  /** Valor da fatura = gastos do mês + saldo não pago que veio dos meses anteriores. */
+  currentTotal = computed(() => this.ownCharges() + this.prevTotal());
+
+  /** O que ainda falta pagar: não pago do próprio mês + saldo anterior. */
+  owedNow = computed(() => Math.abs(this.currentMonth()?.unpaid ?? 0) + this.prevTotal());
+
+  hasUnpaid = computed(() => this.owedNow() > 0.005);
+  isPaid    = computed(() => this.currentTotal() > 0 && !this.hasUnpaid());
 
   monthLabel = computed(() => {
     const m = this.currentMonth();
@@ -375,6 +390,7 @@ export class CardInvoicesComponent implements OnInit {
       const list = raw.map(inv => ({
         month: inv.month,
         total: inv.expense ?? inv.total ?? 0,
+        unpaid: inv.unpaid ?? 0,
         count: Math.round(inv.net ?? inv.count ?? 0),
       }));
 
@@ -382,7 +398,7 @@ export class CardInvoicesComponent implements OnInit {
       const now = new Date();
       const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
       if (!list.find(i => i.month === curMonth)) {
-        list.unshift({ month: curMonth, total: 0, count: 0 });
+        list.unshift({ month: curMonth, total: 0, unpaid: 0, count: 0 });
       }
       list.sort((a, b) => b.month.localeCompare(a.month));
       this.invoices.set(list);
@@ -404,29 +420,51 @@ export class CardInvoicesComponent implements OnInit {
   }
 
   payInvoice() {
-    const unpaid = this.unpaidTxns();
-    if (!unpaid.length || this.payingInvoice()) return;
+    if (this.payingInvoice() || !this.hasUnpaid()) return;
     this.payingInvoice.set(true);
-    forkJoin(
-      unpaid.map(t =>
-        this.api.patch<any>(`/transactions/${t.id}/pay`, {}).pipe(catchError(() => of(null)))
-      )
-    ).subscribe({
-      next: (results: any[]) => {
-        const failed = results.filter(r => r === null).length;
-        this.payingInvoice.set(false);
-        if (failed === 0) {
-          this.toast.success('Fatura paga com sucesso!');
-        } else {
-          this.toast.error(`${failed} lançamento(s) não puderam ser pagos.`);
-        }
-        this.loadTransactions();
-      },
-      error: () => {
-        this.payingInvoice.set(false);
-        this.toast.error('Erro ao pagar a fatura.');
-      },
-    });
+
+    // Paga TUDO em aberto neste cartão até o fim do mês selecionado — inclui o
+    // que rolou de meses anteriores, não só o mês atual.
+    const id  = this.selectedCardId();
+    const end = this.monthEnd();
+    this.api.get<any>(`/transactions?credit_card_id=${id}&type=expense&paid=false&date_to=${end}&limit=500`)
+      .subscribe({
+        next: (r: any) => {
+          const unpaid: any[] = r.data ?? [];
+          if (!unpaid.length) {
+            this.payingInvoice.set(false);
+            this.refreshInvoices();
+            return;
+          }
+          forkJoin(
+            unpaid.map(t =>
+              this.api.patch<any>(`/transactions/${t.id}/pay`, {}).pipe(catchError(() => of(null)))
+            )
+          ).subscribe({
+            next: (results: any[]) => {
+              const failed = results.filter(x => x === null).length;
+              this.payingInvoice.set(false);
+              if (failed === 0) this.toast.success('Fatura paga com sucesso!');
+              else this.toast.error(`${failed} lançamento(s) não puderam ser pagos.`);
+              this.refreshInvoices();
+            },
+            error: () => {
+              this.payingInvoice.set(false);
+              this.toast.error('Erro ao pagar a fatura.');
+            },
+          });
+        },
+        error: () => {
+          this.payingInvoice.set(false);
+          this.toast.error('Erro ao carregar a fatura.');
+        },
+      });
+  }
+
+  /** Recarrega os totais das faturas (o unpaid muda após pagar) mantendo o mês. */
+  private refreshInvoices() {
+    const currentMonthStr = this.currentMonth()?.month;
+    this.selectCard(this.selectedCardId(), currentMonthStr);
   }
 
   nextMonth() {

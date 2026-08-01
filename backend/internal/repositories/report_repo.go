@@ -194,6 +194,7 @@ func (r *ReportRepository) CardInvoiceHistory(workspaceID, cardID string) ([]mod
 	q := `
 		SELECT TO_CHAR(date,'YYYY-MM') AS month,
 		       COALESCE(SUM(amount),0) AS total,
+		       COALESCE(SUM(amount) FILTER (WHERE paid = false),0) AS unpaid,
 		       COUNT(*) AS cnt
 		FROM transactions
 		WHERE workspace_id=$1 AND credit_card_id=$2 AND type='expense'
@@ -207,7 +208,7 @@ func (r *ReportRepository) CardInvoiceHistory(workspaceID, cardID string) ([]mod
 	for rows.Next() {
 		var m models.MonthlyBalance
 		var cnt int
-		if err := rows.Scan(&m.Month, &m.Expense, &cnt); err != nil {
+		if err := rows.Scan(&m.Month, &m.Expense, &m.Unpaid, &cnt); err != nil {
 			return nil, err
 		}
 		m.Net = float64(cnt)

@@ -286,6 +286,9 @@ type MonthlyBalance struct {
 	Income  float64 `json:"income"`
 	Expense float64 `json:"expense"`
 	Net     float64 `json:"net"`
+	// Unpaid is the still-open portion of a card invoice for the month (used by
+	// the card invoice screen to roll an unpaid balance into the next month).
+	Unpaid float64 `json:"unpaid"`
 }
 
 type AccountBalance struct {
