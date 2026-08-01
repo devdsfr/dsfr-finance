@@ -1709,8 +1709,14 @@ export class DashboardComponent implements OnInit {
           )
         ).subscribe((results: any[]) => {
           this.cards.update(cards => cards.map((c, i) => {
-            const inv = (results[i].data ?? []).find((x: any) => x.month === curMonth);
-            return { ...c, current_invoice: inv ? Math.abs(inv.expense ?? 0) : 0 };
+            const list: any[] = results[i].data ?? [];
+            // Fatura atual = gastos do mês + saldo não pago que rolou dos meses anteriores.
+            const inv = list.find((x: any) => x.month === curMonth);
+            const ownCharges = inv ? Math.abs(inv.expense ?? 0) : 0;
+            const rolledUnpaid = list
+              .filter((x: any) => x.month < curMonth)
+              .reduce((s: number, x: any) => s + Math.abs(x.unpaid ?? 0), 0);
+            return { ...c, current_invoice: ownCharges + rolledUnpaid };
           }));
           this.saveCache();
         });
