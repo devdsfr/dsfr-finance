@@ -161,7 +161,7 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                 </div>
                 <div class="txn-info">
                   <div class="txn-desc">{{ t.description }}</div>
-                  <div class="txn-date">{{ t.date | date:'dd/MM/yyyy' }} · {{ t.category_name || 'Sem categoria' }}</div>
+                  <div class="txn-date">{{ t.date | date:'dd/MM/yyyy':'UTC' }} · {{ t.category_name || 'Sem categoria' }}</div>
                 </div>
                 <div class="txn-amount" [class.txn-expense]="t.type==='expense'" [class.txn-income]="t.type==='income'">
                   {{ t.type === 'expense' ? '-' : '+' }}{{ t.amount | appCurrency }}
@@ -331,18 +331,43 @@ export class CardInvoicesComponent implements OnInit {
     return `${PT_MONTHS[parseInt(month) - 1]} ${year}`;
   });
 
+  /** Dia de fechamento do cartão (1..31); 0/indefinido = mês-calendário (31). */
+  private closingDay(): number {
+    const c = this.selectedCard()?.closing_day;
+    return c && c > 0 ? c : 31;
+  }
+
+  // O ciclo da fatura da competência M vai do dia (fechamento+1) do mês M-1
+  // até o dia (fechamento) do mês M. Ex.: fechamento 25 → 26/jun a 25/jul = fatura de julho.
   monthStart = computed(() => {
     const m = this.currentMonth();
-    return m ? `${m.month}-01` : '';
+    if (!m) return '';
+    const [year, month] = m.month.split('-').map(Number);
+    const c = this.closingDay();
+    if (c >= 31) return `${m.month}-01`; // mês-calendário
+    // início = dia (c+1) do mês anterior
+    const prev = new Date(year, month - 2, c + 1); // month-2: mês anterior (0-based)
+    return this.iso(prev);
   });
 
   monthEnd = computed(() => {
     const m = this.currentMonth();
     if (!m) return '';
     const [year, month] = m.month.split('-').map(Number);
-    const last = new Date(year, month, 0).getDate();
-    return `${m.month}-${String(last).padStart(2,'0')}`;
+    const c = this.closingDay();
+    if (c >= 31) {
+      const last = new Date(year, month, 0).getDate();
+      return `${m.month}-${String(last).padStart(2,'0')}`;
+    }
+    // fim = dia (c) do próprio mês (limitado ao último dia do mês)
+    const lastDay = new Date(year, month, 0).getDate();
+    const end = new Date(year, month - 1, Math.min(c, lastDay));
+    return this.iso(end);
   });
+
+  private iso(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
 
   isCurrentMonth = computed(() => {
     const m = this.currentMonth();
@@ -357,11 +382,18 @@ export class CardInvoicesComponent implements OnInit {
     const m    = this.currentMonth();
     if (!card || !m) return '--';
     const [year, month] = m.month.split('-').map(Number);
-    // due is in the month AFTER closing
-    const dueMonth = month === 12 ? 1 : month + 1;
-    const dueYear  = month === 12 ? year + 1 : year;
-    const day = card.due_day || '--';
-    return `${String(day).padStart(2,'0')}/${String(dueMonth).padStart(2,'0')}/${String(dueYear).slice(-2)}`;
+    const dueDay  = card.due_day;
+    const closing = this.closingDay();
+    if (!dueDay) return '--';
+    // A fatura da competência M fecha no dia `closing` do mês M. O vencimento cai
+    // no mesmo mês quando o dia de vencimento é depois do fechamento (ex.: fecha 25,
+    // vence 30); senão, cai no mês seguinte (ex.: fecha 21, vence 1).
+    let dueMonth = month, dueYear = year;
+    if (dueDay <= closing) {
+      dueMonth = month === 12 ? 1 : month + 1;
+      dueYear  = month === 12 ? year + 1 : year;
+    }
+    return `${String(dueDay).padStart(2,'0')}/${String(dueMonth).padStart(2,'0')}/${String(dueYear).slice(-2)}`;
   });
 
   canGoNext = computed(() => this.monthIdx() < this.invoices().length - 1);

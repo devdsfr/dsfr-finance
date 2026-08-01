@@ -107,7 +107,7 @@ func (r *TransactionRepository) List(f TransactionFilter) ([]*models.Transaction
 
 	q := fmt.Sprintf(`
 		SELECT t.id, t.workspace_id, t.account_id, t.credit_card_id, t.category_id,
-		       t.type, t.amount, t.date, t.description, t.notes,
+		       t.type, t.amount, TO_CHAR(t.date,'YYYY-MM-DD'), t.description, t.notes,
 		       t.paid, t.paid_at, t.ignored,
 		       t.installment_group_id, t.installment_number, t.installment_total,
 		       t.transfer_account_id, t.attachment_url, t.attachment_name,
@@ -144,7 +144,7 @@ func (r *TransactionRepository) List(f TransactionFilter) ([]*models.Transaction
 
 func (r *TransactionRepository) GetByID(id, workspaceID string) (*models.Transaction, error) {
 	q := `SELECT id, workspace_id, account_id, credit_card_id, category_id,
-	             type, amount, date, description, notes,
+	             type, amount, TO_CHAR(date,'YYYY-MM-DD'), description, notes,
 	             paid, paid_at, ignored,
 	             installment_group_id, installment_number, installment_total,
 	             transfer_account_id, attachment_url, attachment_name,

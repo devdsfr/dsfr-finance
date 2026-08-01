@@ -830,7 +830,8 @@ export class TransactionFormComponent implements OnInit {
     if (id) {
       this.isEdit = true;
       this.api.get<any>(`/transactions/${id}`).subscribe(tx => {
-        this.form = { ...tx, installments: 1, tags: tx.tags ?? [] };
+        // A data pode vir com hora/UTC; o input type=date só aceita YYYY-MM-DD.
+        this.form = { ...tx, date: (tx.date ?? '').slice(0, 10), installments: 1, tags: tx.tags ?? [] };
         this.categoryId.set(tx.category_id || '');
       });
     }
@@ -840,6 +841,7 @@ export class TransactionFormComponent implements OnInit {
       this.api.get<any>(`/transactions/${duplicateId}`).subscribe(tx => {
         this.form = { ...tx, id: null, date: new Date().toISOString().slice(0, 10), installments: 1, tags: tx.tags ?? [] };
         this.categoryId.set(tx.category_id || '');
+        // (duplicação usa a data de hoje, já em YYYY-MM-DD)
       });
     }
   }

@@ -191,13 +191,21 @@ func (r *ReportRepository) ActiveInstallments(workspaceID string) ([]models.Acti
 
 // CardInvoiceHistory returns yearly invoice summary for a card (AC-FC-08)
 func (r *ReportRepository) CardInvoiceHistory(workspaceID, cardID string) ([]models.MonthlyBalance, error) {
+	// Agrupa por CICLO de fatura, não por mês-calendário: um lançamento feito
+	// depois do dia de fechamento (closing_day) entra na fatura do mês seguinte.
+	// Se closing_day não estiver definido (0/null), usa 31 = mesmo que mês-calendário.
 	q := `
-		SELECT TO_CHAR(date,'YYYY-MM') AS month,
-		       COALESCE(SUM(amount),0) AS total,
-		       COALESCE(SUM(amount) FILTER (WHERE paid = false),0) AS unpaid,
+		SELECT TO_CHAR(
+		         CASE WHEN EXTRACT(DAY FROM t.date)::int <= COALESCE(NULLIF(cc.closing_day,0), 31)
+		              THEN date_trunc('month', t.date)
+		              ELSE date_trunc('month', t.date) + interval '1 month'
+		         END, 'YYYY-MM') AS month,
+		       COALESCE(SUM(t.amount),0) AS total,
+		       COALESCE(SUM(t.amount) FILTER (WHERE t.paid = false),0) AS unpaid,
 		       COUNT(*) AS cnt
-		FROM transactions
-		WHERE workspace_id=$1 AND credit_card_id=$2 AND type='expense'
+		FROM transactions t
+		JOIN credit_cards cc ON cc.id = t.credit_card_id
+		WHERE t.workspace_id=$1 AND t.credit_card_id=$2 AND t.type='expense'
 		GROUP BY month ORDER BY month DESC`
 	rows, err := r.db.Query(q, workspaceID, cardID)
 	if err != nil {

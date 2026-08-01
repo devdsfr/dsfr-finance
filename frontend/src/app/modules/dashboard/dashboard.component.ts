@@ -272,7 +272,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                     <div class="bill-icon" [style.background]="billColor(bill, '#ef4444')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
-                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
+                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy':'UTC' }}</span>
                     </div>
                     <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
                     @if (!bill.paid) {
@@ -292,7 +292,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                     <div class="bill-icon" [style.background]="billColor(bill, '#6b7280')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
-                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
+                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy':'UTC' }}</span>
                     </div>
                     <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
                     @if (!bill.paid) {
@@ -399,7 +399,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                     <div class="bill-icon" [style.background]="billColor(bill, '#16a34a')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
-                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
+                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy':'UTC' }}</span>
                     </div>
                     <span class="bill-amt bill-amt--income">{{ bill.amount | appCurrency }}</span>
                     @if (!bill.paid) {
@@ -419,7 +419,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                     <div class="bill-icon" [style.background]="billColor(bill, '#16a34a')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
-                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy' }}</span>
+                      <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy':'UTC' }}</span>
                     </div>
                     <span class="bill-amt bill-amt--income">{{ bill.amount | appCurrency }}</span>
                     @if (!bill.paid) {
@@ -1708,13 +1708,19 @@ export class DashboardComponent implements OnInit {
             this.api.get<any>(`/reports/cards/${c.id}/invoices`).pipe(catchError(() => of({ data: [] })))
           )
         ).subscribe((results: any[]) => {
+          const today = now.getDate();
+          const nd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          const nextMonthStr = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}`;
           this.cards.update(cards => cards.map((c, i) => {
             const list: any[] = results[i].data ?? [];
-            // Fatura atual = gastos do mês + saldo não pago que rolou dos meses anteriores.
-            const inv = list.find((x: any) => x.month === curMonth);
+            // Ciclo aberto: se hoje já passou do fechamento, a fatura em aberto é a do mês seguinte.
+            const closing = (c.closing_day && c.closing_day > 0) ? c.closing_day : 31;
+            const openMonth = today <= closing ? curMonth : nextMonthStr;
+            // Fatura atual = gastos do ciclo aberto + saldo não pago rolado dos ciclos anteriores.
+            const inv = list.find((x: any) => x.month === openMonth);
             const ownCharges = inv ? Math.abs(inv.expense ?? 0) : 0;
             const rolledUnpaid = list
-              .filter((x: any) => x.month < curMonth)
+              .filter((x: any) => x.month < openMonth)
               .reduce((s: number, x: any) => s + Math.abs(x.unpaid ?? 0), 0);
             return { ...c, current_invoice: ownCharges + rolledUnpaid };
           }));
