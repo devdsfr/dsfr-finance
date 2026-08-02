@@ -69,15 +69,23 @@ import { environment } from '../../../../environments/environment';
             </div>
           }
         } @else if (!needsMFA()) {
-          <form (ngSubmit)="login()" class="form">
+          <form (ngSubmit)="login()" class="form" novalidate>
             <div class="form-group">
               <label>{{ 'auth.email' | translate }}</label>
-              <input [(ngModel)]="email" name="email" type="email" required class="input" />
+              <input [(ngModel)]="email" name="email" type="email" autocomplete="email"
+                     class="input" [class.input--error]="triedSubmit() && emailError()"
+                     (blur)="emailTouched.set(true)" />
+              @if ((triedSubmit() || emailTouched()) && emailError()) {
+                <span class="field-error">{{ emailError() }}</span>
+              }
             </div>
             <div class="form-group">
               <label>{{ 'auth.password' | translate }}</label>
               <div class="pass-wrap">
-                <input [(ngModel)]="password" name="password" [type]="showPass() ? 'text' : 'password'" required class="input input--pass" />
+                <input [(ngModel)]="password" name="password" [type]="showPass() ? 'text' : 'password'"
+                       autocomplete="current-password"
+                       class="input input--pass" [class.input--error]="triedSubmit() && passError()"
+                       (blur)="passTouched.set(true)" />
                 <button type="button" class="pass-eye" (click)="showPass.set(!showPass())"
                         [attr.aria-label]="showPass() ? 'Ocultar senha' : 'Mostrar senha'"
                         [title]="showPass() ? 'Ocultar senha' : 'Mostrar senha'">
@@ -88,10 +96,17 @@ import { environment } from '../../../../environments/environment';
                   }
                 </button>
               </div>
+              @if ((triedSubmit() || passTouched()) && passError()) {
+                <span class="field-error">{{ passError() }}</span>
+              }
             </div>
             @if (error()) { <div class="error">{{ error() }}</div> }
+            @if (coldStart() && loading()) {
+              <div class="cold-start">⏳ Acordando o servidor… isso pode levar alguns segundos na primeira vez.</div>
+            }
             <button type="submit" class="btn btn--primary" [disabled]="loading()">
-              {{ loading() ? ('auth.logging_in' | translate) : ('auth.login_button' | translate) }}
+              @if (loading()) { <span class="spin"></span> {{ 'auth.logging_in' | translate }} }
+              @else { {{ 'auth.login_button' | translate }} }
             </button>
             <button type="button" class="link-btn" (click)="mode.set('forgot'); error.set('')">Esqueci minha senha</button>
           </form>
@@ -113,27 +128,42 @@ import { environment } from '../../../../environments/environment';
     </div>
   `,
   styles: [`
-    .auth-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; gap: 1rem; }
+    .auth-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(1200px 600px at 50% -10%, #eef7f0 0%, #f4f6fb 55%); gap: 1rem; padding: 1.5rem; }
     .lang-bar { display: flex; gap: .4rem; }
-    .lang-bar button { background: #fff; border: 2px solid transparent; border-radius: .375rem; padding: .3rem .55rem; font-size: 1.1rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-    .lang-bar button.active { border-color: #6366f1; }
-    .auth-card { background: #fff; border-radius: .75rem; padding: 2rem; width: 100%; max-width: 380px;
-                 box-shadow: 0 4px 20px rgba(0,0,0,.08); }
-    .login-brand { display: flex; align-items: center; justify-content: center; gap: .6rem; margin-bottom: 1.25rem; }
+    .lang-bar button { background: #fff; border: 2px solid transparent; border-radius: .5rem; padding: .3rem .55rem; font-size: 1.05rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); transition: border-color .15s; }
+    .lang-bar button.active { border-color: #2e7736; }
+    .auth-card { background: #fff; border-radius: 1rem; padding: 2.25rem 2rem; width: 100%; max-width: 388px;
+                 box-shadow: 0 12px 40px rgba(26,61,34,.10), 0 2px 8px rgba(0,0,0,.04); }
+    .login-brand { display: flex; align-items: center; justify-content: center; gap: .6rem; margin-bottom: 1.35rem; }
     .login-brand__name { font-size: 1.4rem; color: #1a3d22; }
     .login-brand__name strong { font-weight: 700; letter-spacing: .03em; }
     h1 { font-size: 1.5rem; text-align: center; margin: 0 0 .25rem; }
-    h2 { font-size: 1.1rem; text-align: center; color: #6b7280; margin: 0 0 1.5rem; font-weight: 400; }
-    .form { display: flex; flex-direction: column; gap: .875rem; }
-    .form-group { display: flex; flex-direction: column; gap: .25rem; }
-    .input { padding: .5rem .75rem; border: 1px solid #d1d5db; border-radius: .375rem; font-size: .9rem; }
+    h2 { font-size: 1.05rem; text-align: center; color: #6b7280; margin: 0 0 1.5rem; font-weight: 400; }
+    .form { display: flex; flex-direction: column; gap: .9rem; }
+    .form-group { display: flex; flex-direction: column; gap: .3rem; }
+    .form-group label { font-size: .8rem; font-weight: 600; color: #374151; }
+    .input { padding: .6rem .8rem; border: 1.5px solid #dfe3ea; border-radius: .55rem; font-size: .92rem; color: #1a2035;
+      background: #fff; transition: border-color .15s, box-shadow .15s; box-sizing: border-box; width: 100%; }
+    .input::placeholder { color: #9ca3af; }
+    .input:focus { outline: none; border-color: #2e7736; box-shadow: 0 0 0 3px rgba(46,119,54,.12); }
+    .input--error { border-color: #dc2626; }
+    .input--error:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
     .input--center { text-align: center; font-size: 1.25rem; letter-spacing: .3em; }
-    .btn { padding: .6rem; border-radius: .375rem; border: none; cursor: pointer; font-size: .9rem; }
-    .btn--primary { background: #6366f1; color: #fff; }
-    .btn--ghost { background: none; color: #6b7280; text-align: center; }
-    .error { color: #ef4444; font-size: .85rem; }
-    .auth-link { display: block; text-align: center; margin-top: 1rem; font-size: .85rem; color: #6366f1; text-decoration: none; }
-    .link-btn { background: none; border: none; color: #6366f1; font-size: .82rem; cursor: pointer; text-align: center; padding: .2rem; }
+    .field-error { font-size: .74rem; color: #dc2626; }
+    .btn { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .68rem; border-radius: .55rem; border: none; cursor: pointer; font-size: .92rem; font-weight: 600; transition: background .15s, opacity .15s; }
+    .btn--primary { background: #2e7736; color: #fff; box-shadow: 0 2px 8px rgba(46,119,54,.25); }
+    .btn--primary:hover:not(:disabled) { background: #276a2e; }
+    .btn--primary:disabled { opacity: .7; cursor: not-allowed; }
+    .btn--ghost { background: none; color: #6b7280; text-align: center; box-shadow: none; }
+    .btn--ghost:hover { color: #374151; }
+    .error { color: #b91c1c; font-size: .82rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: .5rem; padding: .5rem .65rem; }
+    .cold-start { font-size: .78rem; color: #92700d; background: #fffbeb; border: 1px solid #fde68a; border-radius: .5rem; padding: .5rem .65rem; line-height: 1.45; }
+    .spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .auth-link { display: block; text-align: center; margin-top: 1.15rem; font-size: .85rem; color: #2e7736; text-decoration: none; font-weight: 500; }
+    .auth-link:hover { text-decoration: underline; }
+    .link-btn { background: none; border: none; color: #2e7736; font-size: .82rem; cursor: pointer; text-align: center; padding: .2rem; font-weight: 500; }
     .link-btn:hover { text-decoration: underline; }
     .hint-text { font-size: .85rem; color: #6b7280; margin: 0 0 .25rem; line-height: 1.5; }
     .sent-box { text-align: center; display: flex; flex-direction: column; gap: 1rem; align-items: center; }
@@ -179,6 +209,28 @@ export class LoginComponent implements OnInit {
   forgotSent = signal(false);
   showPass = signal(false);
 
+  // ── Validação de formulário ──────────────────────────────────────────────
+  triedSubmit  = signal(false);
+  emailTouched = signal(false);
+  passTouched  = signal(false);
+  coldStart    = signal(false);
+  private coldTimer: any = null;
+
+  private readonly EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  /** Mensagem de erro do e-mail (vazio = válido). */
+  emailError(): string {
+    const v = this.email.trim();
+    if (!v) return 'Informe seu e-mail.';
+    if (!this.EMAIL_RE.test(v)) return 'E-mail inválido.';
+    return '';
+  }
+  passError(): string {
+    if (!this.password) return 'Informe sua senha.';
+    return '';
+  }
+  private formValid(): boolean { return !this.emailError() && !this.passError(); }
+
   /** URL do backend que inicia o fluxo OAuth do provedor. */
   oauthUrl(provider: 'google' | 'facebook'): string {
     return `${environment.apiUrl}/auth/oauth/${provider}/login`;
@@ -197,14 +249,44 @@ export class LoginComponent implements OnInit {
   setLang(lang: Lang): void { this.i18n.setLang(lang); }
 
   login(): void {
-    this.loading.set(true); this.error.set('');
-    this.auth.login(this.email, this.password).subscribe({
+    this.triedSubmit.set(true);
+    this.error.set('');
+    if (!this.formValid()) return; // erros por campo já são exibidos
+
+    this.startLoading();
+    this.auth.login(this.email.trim(), this.password).subscribe({
       next: res => {
-        if (res.mfa_required) { this.needsMFA.set(true); this.loading.set(false); return; }
+        this.stopLoading();
+        if (res.mfa_required) { this.needsMFA.set(true); return; }
         this.router.navigate(['/dashboard']);
       },
-      error: err => { this.error.set(err.error?.error ?? this.i18n.t('auth.login_error_default')); this.loading.set(false); }
+      error: err => {
+        this.stopLoading();
+        this.error.set(this.friendlyError(err));
+      }
     });
+  }
+
+  /** Inicia o loading e agenda o aviso de cold start (Render) após 4s. */
+  private startLoading(): void {
+    this.loading.set(true);
+    this.coldStart.set(false);
+    clearTimeout(this.coldTimer);
+    this.coldTimer = setTimeout(() => { if (this.loading()) this.coldStart.set(true); }, 4000);
+  }
+  private stopLoading(): void {
+    this.loading.set(false);
+    this.coldStart.set(false);
+    clearTimeout(this.coldTimer);
+  }
+
+  /** Traduz erros técnicos em mensagens claras para o usuário. */
+  private friendlyError(err: any): string {
+    if (err?.status === 0) return 'Não foi possível conectar ao servidor. Verifique sua internet e tente de novo.';
+    if (err?.status === 401 || err?.status === 400) return 'E-mail ou senha incorretos.';
+    if (err?.status === 429) return 'Muitas tentativas. Aguarde um momento e tente novamente.';
+    if (err?.status >= 500) return 'O servidor está com problemas no momento. Tente novamente em instantes.';
+    return err?.error?.error ?? this.i18n.t('auth.login_error_default');
   }
 
   loginMFA(): void {
@@ -215,11 +297,13 @@ export class LoginComponent implements OnInit {
   }
 
   forgot(): void {
-    if (!this.email) { this.error.set('Informe seu e-mail.'); return; }
-    this.loading.set(true); this.error.set('');
-    this.auth.forgotPassword(this.email).subscribe({
+    this.error.set('');
+    const emailErr = this.emailError();
+    if (emailErr) { this.error.set(emailErr); return; }
+    this.loading.set(true);
+    this.auth.forgotPassword(this.email.trim()).subscribe({
       next: () => { this.forgotSent.set(true); this.loading.set(false); },
-      error: err => { this.error.set(err.error?.error ?? 'Erro ao enviar o e-mail.'); this.loading.set(false); }
+      error: err => { this.error.set(this.friendlyError(err)); this.loading.set(false); }
     });
   }
 }
