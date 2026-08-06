@@ -158,6 +158,14 @@ export const routes: Routes = [
       {
         path: 'investment-strategy',
         loadComponent: () => import('./modules/investment-strategy/investment-strategy.component').then(m => m.InvestmentStrategyComponent)
+      },
+      {
+        path: 'commitments',
+        loadComponent: () => import('./modules/commitments/commitments.component').then(m => m.CommitmentsComponent)
+      },
+      {
+        path: 'forecast',
+        loadComponent: () => import('./modules/forecast/forecast.component').then(m => m.ForecastComponent)
       }
     ]
   },
