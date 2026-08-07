@@ -769,7 +769,7 @@ export class ReportsComponent implements OnInit {
 
   private readonly COLORS = [
     '#f59e0b','#ef4444','#8b5cf6','#3b82f6','#10b981',
-    '#f97316','#06b6d4','#ec4899','#84cc16','#6366f1'
+    '#f97316','#06b6d4','#ec4899','#84cc16','#2e7736'
   ];
 
   // ── Computed ──

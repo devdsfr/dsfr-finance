@@ -38,7 +38,7 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
       @for (c of cards(); track c.id) {
         <button class="card-tab" [class.active]="selectedCardId() === c.id" (click)="selectCard(c.id)">
           <div class="tab-icon" [class.tab-icon--bg]="c.hasBg"
-               [style.background]="c.hasBg ? 'transparent' : (c.siSlug ? (c.color||'#6366f1') : '#fff')"
+               [style.background]="c.hasBg ? 'transparent' : (c.siSlug ? (c.color||'#2e7736') : '#fff')"
                [style.border-color]="(c.hasBg||c.siSlug) ? 'transparent' : '#e5e7eb'">
             @if (c.asset) {
               <img [src]="'assets/banks/' + c.asset" [alt]="c.name"
@@ -46,7 +46,7 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
             } @else if (c.siSlug) {
               <img [src]="'https://cdn.simpleicons.org/' + c.siSlug + '/ffffff'" [alt]="c.name" class="tab-logo" />
             } @else {
-              <span class="tab-initial" [style.background]="c.color||'#6366f1'">{{ c.name[0] }}</span>
+              <span class="tab-initial" [style.background]="c.color||'#2e7736'">{{ c.name[0] }}</span>
             }
           </div>
           <span class="tab-name">{{ c.name }}</span>
@@ -59,7 +59,7 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
       <div class="inv-header">
         <div class="inv-card-info">
           <div class="inv-icon" [class.inv-icon--bg]="selectedCard()!.hasBg"
-               [style.background]="selectedCard()!.hasBg ? 'transparent' : (selectedCard()!.siSlug ? (selectedCard()!.color||'#6366f1') : '#fff')"
+               [style.background]="selectedCard()!.hasBg ? 'transparent' : (selectedCard()!.siSlug ? (selectedCard()!.color||'#2e7736') : '#fff')"
                [style.border-color]="(selectedCard()!.hasBg||selectedCard()!.siSlug) ? 'transparent' : '#e5e7eb'">
             @if (selectedCard()?.asset) {
               <img [src]="'assets/banks/' + selectedCard()!.asset" [alt]="selectedCard()!.name"
@@ -273,6 +273,15 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
       background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: .25rem; }
     .skel-p { height: 14px; display: block; }
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  
+    /* ══ DARK THEME ══ */
+    :host-context([data-theme="dark"]) .sum-panel, :host-context([data-theme="dark"]) .txn-section, :host-context([data-theme="dark"]) .card { background: #161c28 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) h1, :host-context([data-theme="dark"]) h2, :host-context([data-theme="dark"]) h3, :host-context([data-theme="dark"]) h4, :host-context([data-theme="dark"]) h5, :host-context([data-theme="dark"]) label, :host-context([data-theme="dark"]) strong, :host-context([data-theme="dark"]) b, :host-context([data-theme="dark"]) dt, :host-context([data-theme="dark"]) th { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) small, :host-context([data-theme="dark"]) .muted, :host-context([data-theme="dark"]) .sub, :host-context([data-theme="dark"]) .subtitle, :host-context([data-theme="dark"]) .desc, :host-context([data-theme="dark"]) .hint, :host-context([data-theme="dark"]) .label, :host-context([data-theme="dark"]) .caption, :host-context([data-theme="dark"]) .meta { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) thead th { background: #1e2638 !important; color: #8393ad !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) td, :host-context([data-theme="dark"]) tr { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) input, :host-context([data-theme="dark"]) select, :host-context([data-theme="dark"]) textarea { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .btn--outline { border-color: #2e7736 !important; color: #4ade80 !important; background: transparent !important; }
   `]
 })
 export class CardInvoicesComponent implements OnInit {

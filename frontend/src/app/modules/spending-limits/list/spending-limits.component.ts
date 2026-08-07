@@ -283,11 +283,11 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     .global-panel__val strong.over { color: #dc2626; }
     .global-panel__of { color: #9ca3af; font-size: .85rem; }
     .global-panel__meta { margin-top: .5rem; }
-    .forecast-link { font-size: .75rem; color: #6366f1; cursor: pointer; }
+    .forecast-link { font-size: .75rem; color: #2e7736; cursor: pointer; }
     .edit-inline-btn { background: none; border: none; color: #9ca3af; cursor: pointer;
       font-size: .9rem; padding: 0 .2rem; vertical-align: middle; line-height: 1; }
     .edit-inline-btn:hover { color: #374151; }
-    .add-global-btn { margin-top: .75rem; font-size: .78rem; color: #6366f1; background: none; border: none;
+    .add-global-btn { margin-top: .75rem; font-size: .78rem; color: #2e7736; background: none; border: none;
       cursor: pointer; font-weight: 600; padding: 0; }
 
     /* Progress bar */
@@ -357,7 +357,7 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     .form-group { display: flex; flex-direction: column; gap: .25rem; flex: 1; font-size: .82rem; color: #374151; font-weight: 600; }
     .input { padding: .5rem .75rem; border: 1.5px solid #e5e7eb; border-radius: .5rem; font-size: .875rem;
       outline: none; transition: border .12s; }
-    .input:focus { border-color: #6366f1; }
+    .input:focus { border-color: #2e7736; }
     .form-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .25rem; }
     .btn { padding: .45rem 1rem; border-radius: .5rem; border: none; cursor: pointer; font-size: .82rem; font-weight: 600; }
     .btn--primary { background: #16a34a; color: #fff; }

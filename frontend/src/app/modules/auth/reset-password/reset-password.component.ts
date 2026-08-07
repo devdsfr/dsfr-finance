@@ -68,7 +68,7 @@ import { AuthService } from '../../../core/services/auth.service';
     .btn { padding: .6rem; border-radius: .375rem; border: none; cursor: pointer; font-size: .9rem; font-weight: 600; }
     .btn--primary { background: #2e7736; color: #fff; }
     .btn--link { display: block; text-align: center; text-decoration: none; }
-    .link-btn { display: block; text-align: center; color: #6366f1; font-size: .82rem; text-decoration: none; padding: .2rem; }
+    .link-btn { display: block; text-align: center; color: #2e7736; font-size: .82rem; text-decoration: none; padding: .2rem; }
     .link-btn:hover { text-decoration: underline; }
     .error { color: #ef4444; font-size: .85rem; }
     .sent-box { text-align: center; display: flex; flex-direction: column; gap: 1rem; align-items: center; }

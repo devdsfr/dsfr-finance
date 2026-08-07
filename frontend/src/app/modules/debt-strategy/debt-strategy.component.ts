@@ -572,7 +572,7 @@ function months2text(n: number): string {
     .fg { display: flex; flex-direction: column; gap: .25rem; flex: 1; min-width: 160px; }
     .fg--sm { max-width: 200px; }
     .fg label { font-size: .8rem; font-weight: 500; color: #374151; }
-    .fg small { font-size: .7rem; color: #6366f1; min-height: 1rem; }
+    .fg small { font-size: .7rem; color: #2e7736; min-height: 1rem; }
     .input { padding: .45rem .75rem; border: 1px solid #d1d5db; border-radius: .375rem; font-size: .875rem; width: 100%; box-sizing: border-box; }
     .input--sm { max-width: 130px; }
     .input--ta { resize: vertical; min-height: 64px; }

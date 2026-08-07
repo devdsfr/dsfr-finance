@@ -209,7 +209,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
             <div class="flat-item" (click)="showCardDetail(c)">
               <div class="flat-icon flat-icon--card"
                    [class.flat-icon--hasbg]="c.hasBg"
-                   [style.background]="c.hasBg ? 'transparent' : (c.siSlug ? (c.color||'#6366f1') : '#fff')"
+                   [style.background]="c.hasBg ? 'transparent' : (c.siSlug ? (c.color||'#2e7736') : '#fff')"
                    [style.border-color]="(c.hasBg || c.siSlug) ? 'transparent' : '#e5e7eb'">
                 @if (c.asset) {
                   <img [src]="'assets/banks/' + c.asset" [alt]="c.name"
@@ -247,7 +247,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
         <div class="detail-hero">
           <div class="flat-icon flat-icon--card"
                [class.flat-icon--hasbg]="selectedCard()?.hasBg"
-               [style.background]="selectedCard()?.hasBg ? 'transparent' : (selectedCard()?.siSlug ? (selectedCard()?.color||'#6366f1') : '#fff')"
+               [style.background]="selectedCard()?.hasBg ? 'transparent' : (selectedCard()?.siSlug ? (selectedCard()?.color||'#2e7736') : '#fff')"
                [style.border-color]="(selectedCard()?.hasBg || selectedCard()?.siSlug) ? 'transparent' : '#e5e7eb'">
             @if (selectedCard()?.asset) {
               <img [src]="'assets/banks/' + selectedCard()!.asset" [alt]="selectedCard()!.name"
@@ -730,7 +730,7 @@ export class BankingComponent implements OnInit {
       const asset   = isAsset ? rawIcon : '';
       const siSlug  = isAsset ? '' : rawIcon;
       const hasBg   = isAsset ? (ASSET_HAS_BG[rawIcon] ?? false) : false;
-      return { ...x, color: x.color || '#6366f1', asset, siSlug, hasBg };
+      return { ...x, color: x.color || '#2e7736', asset, siSlug, hasBg };
     });
   }
 

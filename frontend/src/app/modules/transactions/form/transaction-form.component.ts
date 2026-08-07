@@ -75,7 +75,7 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
                 @if (selectedAccount.logo) {
                   <img class="chip-logo" [src]="selectedAccount.logo" [alt]="selectedAccount.name" (error)="onAccLogoError($event, selectedAccount)" />
                 } @else {
-                  <span class="chip-dot" [style.background]="selectedAccount.color || '#6366f1'"></span>
+                  <span class="chip-dot" [style.background]="selectedAccount.color || '#2e7736'"></span>
                 }
                 {{ selectedAccount.name }}
                 <button type="button" class="chip-x"
@@ -108,7 +108,7 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
                     @if (a.logo) {
                       <img class="acc-logo" [src]="a.logo" [alt]="a.name" (error)="onAccLogoError($event, a)" />
                     } @else {
-                      <span class="acc-dot" [style.background]="a.color || '#6366f1'"></span>
+                      <span class="acc-dot" [style.background]="a.color || '#2e7736'"></span>
                     }
                     {{ a.name }}
                   </div>
@@ -623,6 +623,40 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
     .fab-save:disabled { opacity: .6; cursor: default; transform: none; }
     .fab-save--income   { background: #16a34a; }
     .fab-save--transfer { background: #2563eb; box-shadow: 0 4px 16px rgba(37,99,235,.4); }
+
+    /* ══ DARK THEME ══ */
+    :host-context([data-theme="dark"]) .modal { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .type-bar { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .type-btn { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .modal-header h2,
+    :host-context([data-theme="dark"]) .repeat-tab--active { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .modal-header { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .close-btn { background: #1e2638 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .close-btn:hover { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .desc-input,
+    :host-context([data-theme="dark"]) .amount-input,
+    :host-context([data-theme="dark"]) .date-input,
+    :host-context([data-theme="dark"]) .cat-select,
+    :host-context([data-theme="dark"]) .cat-new-input,
+    :host-context([data-theme="dark"]) input,
+    :host-context([data-theme="dark"]) textarea,
+    :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .desc-input { background: transparent !important; }
+    :host-context([data-theme="dark"]) .amount-date-row,
+    :host-context([data-theme="dark"]) .section-divider { border-color: #232d42 !important; background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-select--open { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-dropdown { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat-item { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .cat-item:hover { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .cat-item--active { background: rgba(74,222,128,.12) !important; }
+    :host-context([data-theme="dark"]) .cat-footer,
+    :host-context([data-theme="dark"]) .cat-new-form { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .repeat-tabs { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .repeat-tab--active { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) .paid-toggle { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .paid-toggle__box { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .chip-logo { background: #232d42 !important; }
+    :host-context([data-theme="dark"]) label { color: #c5cdd9 !important; }
   `]
 })
 export class TransactionFormComponent implements OnInit {
@@ -686,7 +720,7 @@ export class TransactionFormComponent implements OnInit {
 
   catColors = [
     '#ef4444','#f97316','#f59e0b','#22c55e','#16a34a',
-    '#3b82f6','#6366f1','#8b5cf6','#ec4899','#6b7280','#111827',
+    '#3b82f6','#2e7736','#8b5cf6','#ec4899','#6b7280','#111827',
   ];
 
   filteredCats = computed(() => {
@@ -761,7 +795,7 @@ export class TransactionFormComponent implements OnInit {
     'mercado':           { icon: '🛒', color: '#f97316' },
     'outros':            { icon: '☰', color: '#6b7280' },
     'pets':              { icon: '🐾', color: '#d97706' },
-    'presentes':         { icon: '🎁', color: '#6366f1' },
+    'presentes':         { icon: '🎁', color: '#2e7736' },
     'roupas':            { icon: '👔', color: '#fb923c' },
     'saúde':             { icon: '➕', color: '#3b82f6' },
     'trabalho':          { icon: '💼', color: '#2563eb' },

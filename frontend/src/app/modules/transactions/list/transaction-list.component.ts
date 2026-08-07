@@ -240,7 +240,7 @@ interface DayGroup {
 
     .tx-bar { width: 3px; height: 34px; border-radius: 2px; background: #ef4444; flex-shrink: 0; }
     .tx-bar--income { background: #22c55e; }
-    .tx-bar--transfer { background: #6366f1; }
+    .tx-bar--transfer { background: #2e7736; }
 
     .tx-main { display: flex; align-items: center; gap: .55rem; flex: 1; min-width: 0; }
     .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }

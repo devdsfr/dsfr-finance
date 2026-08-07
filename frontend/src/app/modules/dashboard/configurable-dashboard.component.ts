@@ -41,7 +41,7 @@ interface WidgetData {
 }
 
 const PALETTE = [
-  '#6366f1','#f59e0b','#ef4444','#10b981','#3b82f6',
+  '#2e7736','#f59e0b','#ef4444','#10b981','#3b82f6',
   '#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16',
 ];
 const PT_MONTHS_SHORT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -932,7 +932,7 @@ export class ConfigurableDashboardComponent implements OnInit {
     return this.data()[id]?.values?.[0]?.label ?? '';
   }
   gaugeColor(id: string): string {
-    return this.data()[id]?.values?.[0]?.color ?? '#6366f1';
+    return this.data()[id]?.values?.[0]?.color ?? '#2e7736';
   }
   gaugePct(id: string): number {
     const v = this.gaugeValue(id);

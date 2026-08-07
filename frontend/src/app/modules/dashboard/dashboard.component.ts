@@ -479,17 +479,17 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                       <img [src]="'assets/banks/' + card.asset" [alt]="card.name" class="card-logo" />
                     </div>
                   } @else if (card.siSlug) {
-                    <div class="card-icon" [style.background]="card.color ?? '#6366f1'">
+                    <div class="card-icon" [style.background]="card.color ?? '#2e7736'">
                       <img [src]="'https://cdn.simpleicons.org/' + card.siSlug + '/ffffff'" [alt]="card.name" class="card-logo"
                            (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.textContent=card.name[0]" />
                     </div>
                   } @else if (card.logo) {
-                    <div class="card-icon card-icon--img" [style.border-color]="card.color ?? '#6366f1'">
+                    <div class="card-icon card-icon--img" [style.border-color]="card.color ?? '#2e7736'">
                       <img [src]="card.logo" [alt]="card.name" class="card-logo"
-                           (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.style.background=card.color??'#6366f1'; $any($event.target).parentElement.textContent=card.name[0]" />
+                           (error)="$any($event.target).style.display='none'; $any($event.target).parentElement.style.background=card.color??'#2e7736'; $any($event.target).parentElement.textContent=card.name[0]" />
                     </div>
                   } @else {
-                    <div class="card-icon" [style.background]="card.color ?? '#6366f1'">{{ card.name[0] }}</div>
+                    <div class="card-icon" [style.background]="card.color ?? '#2e7736'">{{ card.name[0] }}</div>
                   }
                   <div class="card-info">
                     <span class="card-name">{{ card.name }}</span>
@@ -721,7 +721,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .qa-btn--expense .qa-icon { color: #ef4444; border-color: #ef4444; }
     .qa-btn--income .qa-icon  { color: #22c55e; border-color: #22c55e; }
     .qa-btn--transfer .qa-icon { color: #94a3b8; border-color: #94a3b8; }
-    .qa-btn--import .qa-icon  { color: #6366f1; border-color: #6366f1; }
+    .qa-btn--import .qa-icon  { color: #2e7736; border-color: #2e7736; }
 
     .export-all-btn {
       margin-top: .65rem; display: flex; align-items: center; gap: .4rem;

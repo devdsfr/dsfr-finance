@@ -65,7 +65,7 @@ import { ToastService } from '../../../core/services/toast.service';
             @for (row of rows(); track row.tag) {
               <tr>
                 <td>
-                  <span class="badge" [style.background]="row.color || '#6366f1'">{{ row.tag }}</span>
+                  <span class="badge" [style.background]="row.color || '#2e7736'">{{ row.tag }}</span>
                 </td>
                 <td class="num">{{ row.count }}</td>
                 <td class="num">{{ row.total | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
@@ -90,7 +90,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .cta-card__body { display: flex; flex-direction: column; gap: .5rem; }
     .cta-card__body strong { font-size: 1rem; color: #111; }
     .cta-card__body p { margin: 0; color: #4b5563; font-size: .875rem; }
-    .cta-card__body em { font-style: normal; font-weight: 600; color: #6366f1; }
+    .cta-card__body em { font-style: normal; font-weight: 600; color: #2e7736; }
     .card { background: #fff; border-radius: .5rem; box-shadow: 0 1px 3px rgba(0,0,0,.07); overflow: hidden; }
     .table { width: 100%; border-collapse: collapse; }
     .table th { background: #f9fafb; padding: .75rem 1rem; text-align: left; font-size: .82rem; color: #6b7280; }
@@ -101,8 +101,17 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn { padding: .35rem .75rem; border-radius: .375rem; border: none; cursor: pointer; font-size: .82rem; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; }
     .btn--primary { background: #2e7736; color: #fff; }
     .btn--outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
-    .btn--outline:hover { border-color: #6366f1; color: #6366f1; }
+    .btn--outline:hover { border-color: #2e7736; color: #2e7736; }
     .btn--sm { padding: .25rem .6rem; font-size: .78rem; }
+  
+    /* ══ DARK THEME ══ */
+    :host-context([data-theme="dark"]) .card { background: #161c28 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) h1, :host-context([data-theme="dark"]) h2, :host-context([data-theme="dark"]) h3, :host-context([data-theme="dark"]) h4, :host-context([data-theme="dark"]) h5, :host-context([data-theme="dark"]) label, :host-context([data-theme="dark"]) strong, :host-context([data-theme="dark"]) b, :host-context([data-theme="dark"]) dt, :host-context([data-theme="dark"]) th { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) small, :host-context([data-theme="dark"]) .muted, :host-context([data-theme="dark"]) .sub, :host-context([data-theme="dark"]) .subtitle, :host-context([data-theme="dark"]) .desc, :host-context([data-theme="dark"]) .hint, :host-context([data-theme="dark"]) .label, :host-context([data-theme="dark"]) .caption, :host-context([data-theme="dark"]) .meta { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) thead th { background: #1e2638 !important; color: #8393ad !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) td, :host-context([data-theme="dark"]) tr { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) input, :host-context([data-theme="dark"]) select, :host-context([data-theme="dark"]) textarea { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .btn--outline { border-color: #2e7736 !important; color: #4ade80 !important; background: transparent !important; }
   `]
 })
 export class TagsReportComponent implements OnInit {
@@ -134,7 +143,7 @@ export class TagsReportComponent implements OnInit {
       for (const tx of txs) {
         for (const tag of (tx.tags ?? [])) {
           const k = tag.id;
-          if (!map.has(k)) map.set(k, { tag: tag.name, color: tag.color ?? '#6366f1', count: 0, total: 0 });
+          if (!map.has(k)) map.set(k, { tag: tag.name, color: tag.color ?? '#2e7736', count: 0, total: 0 });
           const e = map.get(k)!;
           e.count++;
           e.total += tx.type === 'expense' ? tx.amount : 0;

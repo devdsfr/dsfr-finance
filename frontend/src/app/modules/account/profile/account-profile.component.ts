@@ -170,11 +170,11 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
                   padding: .5rem 0; border-bottom: 1px solid #f3f4f6; font-size: .875rem; }
     .badge { background: #e0e7ff; color: #4338ca; padding: .1rem .45rem; border-radius: 9999px; font-size: .75rem; }
     .btn { padding: .4rem 1rem; border-radius: .375rem; border: none; cursor: pointer; font-size: .875rem; }
-    .btn--primary { background: #6366f1; color: #fff; }
+    .btn--primary { background: #2e7736; color: #fff; }
     .btn--danger { background: #fee2e2; color: #dc2626; }
     .btn--sm { padding: .25rem .6rem; font-size: .78rem; }
     .btn--outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
-    .btn--outline:hover { border-color: #6366f1; color: #6366f1; }
+    .btn--outline:hover { border-color: #2e7736; color: #2e7736; }
 
     .pref-field { display: flex; flex-direction: column; gap: .3rem; max-width: 280px; }
     .pref-field label { font-size: .82rem; font-weight: 500; color: #374151; }
@@ -186,7 +186,29 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
     .gdpr-row strong { font-size: .9rem; color: #111; }
     .gdpr-row p { margin: .2rem 0 0; font-size: .8rem; color: #6b7280; max-width: 420px; }
     .gdpr-row--danger strong { color: #dc2626; }
-    .section__desc a { color: #6366f1; }
+    .section__desc a { color: #2e7736; }
+    .btn--primary { background: #2e7736; }
+    .btn--outline:hover { border-color: #2e7736; color: #2e7736; }
+
+    /* ══ DARK THEME ══ */
+    :host-context([data-theme="dark"]) .section { background: #161c28 !important; box-shadow: 0 1px 3px rgba(0,0,0,.3) !important; }
+    :host-context([data-theme="dark"]) h2,
+    :host-context([data-theme="dark"]) h3,
+    :host-context([data-theme="dark"]) .gdpr-row strong { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .section__desc,
+    :host-context([data-theme="dark"]) .explainer-card p,
+    :host-context([data-theme="dark"]) .gdpr-row p,
+    :host-context([data-theme="dark"]) .pref-field label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .section__desc a { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .explainer-card { background: #1e2638 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .mfa-qr { background: #1e2638 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .input,
+    :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .member-row { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .gdpr-row { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .badge { background: rgba(99,102,241,.18) !important; color: #a5b4fc !important; }
+    :host-context([data-theme="dark"]) .btn--outline { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .btn--danger { background: rgba(220,38,38,.15) !important; color: #f87171 !important; }
   `]
 })
 export class AccountProfileComponent implements OnInit {

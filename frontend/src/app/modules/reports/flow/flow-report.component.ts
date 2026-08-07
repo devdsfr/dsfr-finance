@@ -68,7 +68,7 @@ import { ApiService } from '../../../core/services/api.service';
     .controls { display: flex; gap: .5rem; align-items: center; }
     .input { padding: .4rem .75rem; border: 1px solid #d1d5db; border-radius: .375rem; font-size: .875rem; }
     .btn { padding: .35rem .75rem; border-radius: .375rem; border: none; cursor: pointer; font-size: .82rem; }
-    .btn--outline { border: 1px solid #6366f1; color: #6366f1; background: none; }
+    .btn--outline { border: 1px solid #2e7736; color: #2e7736; background: none; }
     .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; }
     .summary-card { background: #fff; padding: 1rem 1.25rem; border-radius: .5rem; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
     .summary-card--income { border-left: 4px solid #22c55e; }
@@ -82,6 +82,15 @@ import { ApiService } from '../../../core/services/api.service';
     .income { color: #22c55e; }
     .expense { color: #ef4444; }
     .empty { text-align: center; color: #9ca3af; }
+  
+    /* ══ DARK THEME ══ */
+    :host-context([data-theme="dark"]) .card, :host-context([data-theme="dark"]) .summary-card { background: #161c28 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) h1, :host-context([data-theme="dark"]) h2, :host-context([data-theme="dark"]) h3, :host-context([data-theme="dark"]) h4, :host-context([data-theme="dark"]) h5, :host-context([data-theme="dark"]) label, :host-context([data-theme="dark"]) strong, :host-context([data-theme="dark"]) b, :host-context([data-theme="dark"]) dt, :host-context([data-theme="dark"]) th { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) small, :host-context([data-theme="dark"]) .muted, :host-context([data-theme="dark"]) .sub, :host-context([data-theme="dark"]) .subtitle, :host-context([data-theme="dark"]) .desc, :host-context([data-theme="dark"]) .hint, :host-context([data-theme="dark"]) .label, :host-context([data-theme="dark"]) .caption, :host-context([data-theme="dark"]) .meta { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) thead th { background: #1e2638 !important; color: #8393ad !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) td, :host-context([data-theme="dark"]) tr { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) input, :host-context([data-theme="dark"]) select, :host-context([data-theme="dark"]) textarea { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .btn--outline { border-color: #2e7736 !important; color: #4ade80 !important; background: transparent !important; }
   `]
 })
 export class FlowReportComponent implements OnInit {
