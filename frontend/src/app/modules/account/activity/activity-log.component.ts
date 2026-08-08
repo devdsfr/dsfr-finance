@@ -64,14 +64,16 @@ import { ApiService } from '../../../core/services/api.service';
     .btn { padding: .3rem .65rem; border-radius: .375rem; border: 1px solid #d1d5db; cursor: pointer; background: #fff; }
     .empty { text-align: center; padding: 2rem; color: #9ca3af; }
   
-    /* ══ DARK THEME ══ */
-    :host-context([data-theme="dark"]) .card, :host-context([data-theme="dark"]) .log-list, :host-context([data-theme="dark"]) .log-row { background: #161c28 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) h1, :host-context([data-theme="dark"]) h2, :host-context([data-theme="dark"]) h3, :host-context([data-theme="dark"]) h4, :host-context([data-theme="dark"]) h5, :host-context([data-theme="dark"]) label, :host-context([data-theme="dark"]) strong, :host-context([data-theme="dark"]) b, :host-context([data-theme="dark"]) dt, :host-context([data-theme="dark"]) th { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) small, :host-context([data-theme="dark"]) .muted, :host-context([data-theme="dark"]) .sub, :host-context([data-theme="dark"]) .subtitle, :host-context([data-theme="dark"]) .desc, :host-context([data-theme="dark"]) .hint, :host-context([data-theme="dark"]) .label, :host-context([data-theme="dark"]) .caption, :host-context([data-theme="dark"]) .meta { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) thead th { background: #1e2638 !important; color: #8393ad !important; border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) td, :host-context([data-theme="dark"]) tr { border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) input, :host-context([data-theme="dark"]) select, :host-context([data-theme="dark"]) textarea { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .btn--outline { border-color: #2e7736 !important; color: #4ade80 !important; background: transparent !important; }
+
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .input { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .log-list { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .log-row { border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .log-entity { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .log-user { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .log-time { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .btn { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .empty { color: #8393ad !important; }
   `]
 })
 export class ActivityLogComponent implements OnInit {

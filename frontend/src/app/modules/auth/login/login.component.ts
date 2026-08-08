@@ -192,6 +192,17 @@ import { environment } from '../../../../environments/environment';
       padding: .25rem; display: flex; align-items: center;
     }
     .pass-eye:hover { color: #4b5563; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .lang-bar button { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .auth-card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .form-group label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .input { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .btn--ghost { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .hint-text { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .social-btn { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .divider span { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .pass-eye { color: #8393ad !important; }
   `]
 })
 export class LoginComponent implements OnInit {

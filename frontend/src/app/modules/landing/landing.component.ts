@@ -141,6 +141,25 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
     }
     .lp-footer a { color: #6b7280; text-decoration: none; }
     .lp-footer a:hover { color: #2e7736; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .landing { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .lp-header { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .lp-brand { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .lang-bar button { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .hero h1 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .hero p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .feature { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .feature strong { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .feature p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .pricing h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .plan-card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .plan-card h3 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .plan-price span { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .plan-price-alt { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .plan-card p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .lp-footer { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .lp-footer a { color: #8393ad !important; }
   `]
 })
 export class LandingComponent {

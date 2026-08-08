@@ -423,7 +423,6 @@ const AI_PROVIDERS = [
     :host-context([data-theme="dark"]) .sum-chip .sum-label { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .sum-chip .sum-val { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .sum-chip--total .sum-val { color: #4ade80 !important; }
-    :host-context([data-theme="dark"]) .fm { background: #161c28 !important; }
     :host-context([data-theme="dark"]) .fm-head,
     :host-context([data-theme="dark"]) .fm-footer { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .fm-head h2 { color: #e2e8f5 !important; }
@@ -450,15 +449,32 @@ const AI_PROVIDERS = [
     :host-context([data-theme="dark"]) .card-actions { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .btn--ghost { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
     :host-context([data-theme="dark"]) .btn--danger:hover { background: rgba(239,68,68,.12) !important; }
-    :host-context([data-theme="dark"]) .rec-badge--good    { background: rgba(22,163,74,.12)  !important; border-color: #16a34a !important; }
-    :host-context([data-theme="dark"]) .rec-badge--warning { background: rgba(245,158,11,.12) !important; border-color: #f59e0b !important; }
-    :host-context([data-theme="dark"]) .rec-badge--bad     { background: rgba(220,38,38,.12)  !important; border-color: #dc2626 !important; }
-    :host-context([data-theme="dark"]) .rec-badge--unknown { background: #1e2638 !important; border-color: #374151 !important; }
     :host-context([data-theme="dark"]) .rec-label { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .rec-msg   { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .usage-bar { background: #232d42 !important; }
 
 
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .upsell-card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .upsell-card h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .upsell-card p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sum-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sum-val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .form-modal { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .fm-head h3 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .fm-label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .fm-input { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .fm-hint { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .amount-wrap { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .group-title { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .group-total { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .skel-block { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .item-icon--logo { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .billing-day { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .usage-pct-bar { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .usage-pct-label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .usage-empty { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .pct-symbol { color: #e2e8f5 !important; }
   `]
 })
 export class AiSubscriptionsComponent implements OnInit {

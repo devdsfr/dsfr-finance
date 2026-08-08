@@ -274,14 +274,30 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     .skel-p { height: 14px; display: block; }
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   
-    /* ══ DARK THEME ══ */
-    :host-context([data-theme="dark"]) .sum-panel, :host-context([data-theme="dark"]) .txn-section, :host-context([data-theme="dark"]) .card { background: #161c28 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) h1, :host-context([data-theme="dark"]) h2, :host-context([data-theme="dark"]) h3, :host-context([data-theme="dark"]) h4, :host-context([data-theme="dark"]) h5, :host-context([data-theme="dark"]) label, :host-context([data-theme="dark"]) strong, :host-context([data-theme="dark"]) b, :host-context([data-theme="dark"]) dt, :host-context([data-theme="dark"]) th { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) small, :host-context([data-theme="dark"]) .muted, :host-context([data-theme="dark"]) .sub, :host-context([data-theme="dark"]) .subtitle, :host-context([data-theme="dark"]) .desc, :host-context([data-theme="dark"]) .hint, :host-context([data-theme="dark"]) .label, :host-context([data-theme="dark"]) .caption, :host-context([data-theme="dark"]) .meta { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) thead th { background: #1e2638 !important; color: #8393ad !important; border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) td, :host-context([data-theme="dark"]) tr { border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) input, :host-context([data-theme="dark"]) select, :host-context([data-theme="dark"]) textarea { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .btn--outline { border-color: #2e7736 !important; color: #4ade80 !important; background: transparent !important; }
+
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .card-tab { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tab-icon { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .inv-icon { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .inv-card-name { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .inv-badge--closed { color: #8393ad !important; background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .month-title { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .nav-arrow { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .inv-summary { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .sum-panel { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .sum-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sum-val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sum-val--date { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .pay-badge { color: #8393ad !important; background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .inv-meta { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .inv-meta strong { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .txn-section { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .txn-header { border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .txn-header h3 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .txn-desc { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .txn-date { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .txn-empty { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .loading-msg { color: #8393ad !important; }
   `]
 })
 export class CardInvoicesComponent implements OnInit {

@@ -142,6 +142,10 @@ import { CommonModule } from '@angular/common';
     :host-context([data-theme="dark"]) .step { color: #c5cdd9 !important; }
     :host-context([data-theme="dark"]) .step strong { color: #e2e8f5 !important; }
 
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .subtitle { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .step p { color: #8393ad !important; }
   `]
 })
 export class OpenFinanceComponent {}

@@ -40,7 +40,10 @@ type Gran = 'daily' | 'weekly' | 'monthly';
     <div class="toolbar">
       <div class="toolbar__left">
         <span class="toolbar__title">Categorias</span>
-        <button class="btn-filter">⊞ Filtros</button>
+        <button class="btn-filter" [class.btn-filter--on]="filterCount() > 0" (click)="filterOpen.set(!filterOpen())">
+          ⊞ Filtros
+          @if (filterCount() > 0) { <span class="filter-badge">{{ filterCount() }}</span> }
+        </button>
       </div>
       <div class="toolbar__right">
         <button class="view-btn" [class.active]="mode() === 'donut'" (click)="mode.set('donut')" title="Gráfico de rosca">
@@ -57,6 +60,46 @@ type Gran = 'daily' | 'weekly' | 'monthly';
         </button>
       </div>
     </div>
+    @if (filterOpen()) {
+      <div class="filter-panel">
+        <div class="filter-grid">
+          <div class="filter-field">
+            <label>Conta</label>
+            <select [value]="fAccount()" (change)="fAccount.set($any($event.target).value)">
+              <option value="">Todas as contas</option>
+              @for (a of accountsList(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Cartão de crédito</label>
+            <select [value]="fCard()" (change)="fCard.set($any($event.target).value)">
+              <option value="">Todos os cartões</option>
+              @for (c of cardsList(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Situação</label>
+            <select [value]="fStatus()" (change)="fStatus.set($any($event.target).value)">
+              <option value="all">Todos</option>
+              <option value="paid">Pagos / recebidos</option>
+              <option value="unpaid">Pendentes</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Valor mínimo (R$)</label>
+            <input type="number" min="0" step="1" placeholder="0"
+                   [value]="fMin()" (input)="fMin.set(+$any($event.target).value || 0)" />
+          </div>
+        </div>
+        <div class="filter-foot">
+          <span class="filter-info">
+            @if (filterCount() > 0) { {{ filteredTxs().length }} lançamento(s) no filtro }
+            @else { Nenhum filtro aplicado — mostrando todos os lançamentos }
+          </span>
+          <button class="filter-clear" (click)="clearFilters()" [disabled]="filterCount() === 0">Limpar filtros</button>
+        </div>
+      </div>
+    }
     <p class="card-note">Gastos de cartão com base na <span class="underline">data da compra</span></p>
 
     <!-- ─ donut mode ─ -->
@@ -698,19 +741,13 @@ type Gran = 'daily' | 'weekly' | 'monthly';
     /* ══ DARK THEME ════════════════════════════════════════════════ */
     :host-context([data-theme="dark"]) .rep-card,
     :host-context([data-theme="dark"]) .cat-section,
-    :host-context([data-theme="dark"]) .card { background: #161c28 !important; color: #e2e8f5; }
     :host-context([data-theme="dark"]) .section-title { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .cat-row { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .view-btn { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
     :host-context([data-theme="dark"]) .view-btn.active { background: #2e7736 !important; border-color: #2e7736 !important; color: #fff !important; }
     :host-context([data-theme="dark"]) .rep__title { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .month-nav__arrow,
-    :host-context([data-theme="dark"]) .month-nav__btn { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
-    :host-context([data-theme="dark"]) .month-nav__arrow:hover { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .month-label { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .tab-nav { border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) .tab-btn { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .tab-btn.active { color: #4ade80 !important; border-color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .filter-select,
     :host-context([data-theme="dark"]) .filter-btn,
     :host-context([data-theme="dark"]) .gran-toggle button { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
@@ -718,7 +755,6 @@ type Gran = 'daily' | 'weekly' | 'monthly';
     :host-context([data-theme="dark"]) .gran-toggle button.active { background: #1e2638 !important; color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .cat-row { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .cat-name { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .cat-row__total { border-color: #232d42 !important; color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .sticky-col { background: #161c28 !important; }
     :host-context([data-theme="dark"]) .line-table th,
     :host-context([data-theme="dark"]) .simple-table th,
@@ -726,11 +762,64 @@ type Gran = 'daily' | 'weekly' | 'monthly';
     :host-context([data-theme="dark"]) th { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
     :host-context([data-theme="dark"]) td { border-color: #232d42 !important; color: #c5cdd9 !important; }
     :host-context([data-theme="dark"]) .simple-table td { color: #c5cdd9 !important; border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) .month-col { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .skel {
       background: linear-gradient(90deg, #1e2638 25%, #283248 50%, #1e2638 75%) !important;
     }
 
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .nav-btn { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tabs { border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tab { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .toolbar__title { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .btn-filter { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .card-note { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cat-pct { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cat-amount { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .cat-total-row { color: #e2e8f5 !important; border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .gran-toggle { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .legend-item { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .line-table td { color: #8393ad !important; border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .line-table td.nonzero { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .line-table th.sticky-col { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .total-row td { border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .flow-card { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .flow-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .flow-val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .acc-row { border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .empty-msg { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .tags-cta { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .tags-cta__sub { color: #8393ad !important; }
+  
+    /* ── Painel de filtros ── */
+    .btn-filter--on { border-color: #2e7736 !important; color: #2e7736 !important; }
+    .filter-badge { display: inline-flex; align-items: center; justify-content: center;
+      min-width: 16px; height: 16px; padding: 0 4px; margin-left: .35rem; border-radius: 9999px;
+      background: #2e7736; color: #fff; font-size: .62rem; font-weight: 700; }
+    .filter-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem;
+      padding: 1rem; margin: .5rem 0 .25rem; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .85rem; }
+    .filter-field { display: flex; flex-direction: column; gap: .3rem; }
+    .filter-field label { font-size: .72rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .02em; }
+    .filter-field select, .filter-field input { padding: .45rem .6rem; border: 1px solid #d1d5db;
+      border-radius: .375rem; font-size: .82rem; background: #fff; color: #111; width: 100%; }
+    .filter-field select:focus, .filter-field input:focus { outline: none; border-color: #2e7736; }
+    .filter-foot { display: flex; justify-content: space-between; align-items: center;
+      gap: 1rem; margin-top: .85rem; padding-top: .75rem; border-top: 1px solid #f3f4f6; flex-wrap: wrap; }
+    .filter-info { font-size: .75rem; color: #6b7280; }
+    .filter-clear { background: none; border: 1px solid #d1d5db; border-radius: .375rem;
+      padding: .35rem .8rem; font-size: .78rem; font-weight: 600; color: #374151; cursor: pointer; }
+    .filter-clear:disabled { opacity: .45; cursor: default; }
+    .filter-clear:not(:disabled):hover { border-color: #2e7736; color: #2e7736; }
+    :host-context([data-theme="dark"]) .filter-panel { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .filter-field label,
+    :host-context([data-theme="dark"]) .filter-info { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .filter-field select,
+    :host-context([data-theme="dark"]) .filter-field input { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .filter-foot { border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .filter-clear { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .btn-filter--on { border-color: #4ade80 !important; color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .filter-badge { background: #4ade80 !important; color: #0d1117 !important; }
   `]
 })
 export class ReportsComponent implements OnInit {
@@ -748,9 +837,69 @@ export class ReportsComponent implements OnInit {
   loadingAccounts = signal(false);
   loadingTags     = signal(false);
 
-  expenseCats  = signal<any[]>([]);
-  incomeCats   = signal<any[]>([]);
-  txs          = signal<any[]>([]); // raw transactions for line chart
+  expenseCatsSrv = signal<any[]>([]);   // agregado vindo do backend (sem filtro)
+  incomeCatsSrv  = signal<any[]>([]);
+  txs            = signal<any[]>([]); // raw transactions for line chart
+
+  // ── Filtros (aba Categorias) ──
+  filterOpen   = signal(false);
+  fAccount     = signal('');
+  fCard        = signal('');
+  fStatus      = signal<'all' | 'paid' | 'unpaid'>('all');
+  fMin         = signal(0);
+  accountsList = signal<any[]>([]);
+  cardsList    = signal<any[]>([]);
+  catMap       = signal<Map<string, any>>(new Map());
+
+  filterCount = computed(() =>
+    (this.fAccount() ? 1 : 0) + (this.fCard() ? 1 : 0) +
+    (this.fStatus() !== 'all' ? 1 : 0) + (this.fMin() > 0 ? 1 : 0));
+
+  /** Transações do mês já com os filtros aplicados. */
+  filteredTxs = computed(() => {
+    const acc = this.fAccount(), card = this.fCard(), st = this.fStatus(), min = this.fMin();
+    return this.txs().filter(t => {
+      if (t.ignored) return false;
+      if (acc && t.account_id !== acc) return false;
+      if (card && t.credit_card_id !== card) return false;
+      if (st === 'paid' && !t.paid) return false;
+      if (st === 'unpaid' && t.paid) return false;
+      if (min > 0 && (t.amount ?? 0) < min) return false;
+      return true;
+    });
+  });
+
+  /** Sem filtro usa o agregado do backend; com filtro reagrupa as transações. */
+  expenseCats = computed(() =>
+    this.filterCount() === 0 ? this.expenseCatsSrv() : this.groupByCategory('expense'));
+  incomeCats = computed(() =>
+    this.filterCount() === 0 ? this.incomeCatsSrv() : this.groupByCategory('income'));
+
+  private groupByCategory(type: 'expense' | 'income') {
+    const map = this.catMap();
+    const acc = new Map<string, any>();
+    for (const t of this.filteredTxs()) {
+      if (t.type !== type) continue;
+      const cat  = t.category_id ? map.get(t.category_id) : null;
+      const name = cat?.name ?? 'Sem categoria';
+      if (!acc.has(name)) {
+        acc.set(name, { category_name: name, total: 0, count: 0, color: cat?.color, icon: cat?.icon });
+      }
+      const e = acc.get(name)!;
+      e.total += t.amount ?? 0;
+      e.count++;
+    }
+    return [...acc.values()]
+      .sort((a, b) => b.total - a.total)
+      .map((c, i) => ({ ...c, color: c.color || this.COLORS[i % this.COLORS.length] }));
+  }
+
+  clearFilters() {
+    this.fAccount.set('');
+    this.fCard.set('');
+    this.fStatus.set('all');
+    this.fMin.set(0);
+  }
 
   flowRows     = signal<any[]>([]);
   accountRows  = signal<any[]>([]);
@@ -942,7 +1091,7 @@ export class ReportsComponent implements OnInit {
   private buildLineData(type: 'expense' | 'income') {
     const g = this.gran();
     const [y, m] = this.currentMonth().split('-').map(Number);
-    const filtered = this.txs().filter(t => t.type === type && !t.ignored);
+    const filtered = this.filteredTxs().filter(t => t.type === type);
 
     // Get unique categories
     const catMap = new Map<string, string>(); // name -> color
@@ -982,7 +1131,7 @@ export class ReportsComponent implements OnInit {
   }
 
   // ── Data loading ──
-  ngOnInit() { this.loadCategories(); this.loadFlow(); }
+  ngOnInit() { this.loadCategories(); this.loadFlow(); this.loadFilterOptions(); }
 
   private loadCategories() {
     this.loading.set(true);
@@ -994,10 +1143,25 @@ export class ReportsComponent implements OnInit {
       inc: this.api.get<any>('/reports/categories', { from, to, type: 'income'  }).pipe(catchError(() => of({ data: [] }))),
       txs: this.api.get<any>('/transactions', { date_from: from, date_to: to, limit: 500 }).pipe(catchError(() => of({ data: [] }))),
     }).subscribe(({ exp, inc, txs }) => {
-      this.expenseCats.set((exp.data ?? []).map((c: any, i: number) => ({ ...c, color: c.color || this.COLORS[i % this.COLORS.length] })));
-      this.incomeCats.set((inc.data  ?? []).map((c: any, i: number) => ({ ...c, color: c.color || this.COLORS[i % this.COLORS.length] })));
+      this.expenseCatsSrv.set((exp.data ?? []).map((c: any, i: number) => ({ ...c, color: c.color || this.COLORS[i % this.COLORS.length] })));
+      this.incomeCatsSrv.set((inc.data  ?? []).map((c: any, i: number) => ({ ...c, color: c.color || this.COLORS[i % this.COLORS.length] })));
       this.txs.set(txs.data ?? []);
       this.loading.set(false);
+    });
+  }
+
+  /** Opções dos filtros: contas, cartões e mapa de categorias. */
+  private loadFilterOptions() {
+    forkJoin({
+      accs:  this.api.get<any>('/accounts').pipe(catchError(() => of({ data: [] }))),
+      cards: this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
+      cats:  this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
+    }).subscribe(({ accs, cards, cats }) => {
+      this.accountsList.set(accs.data ?? []);
+      this.cardsList.set(cards.data ?? []);
+      const m = new Map<string, any>();
+      (cats.data ?? []).forEach((c: any) => m.set(c.id, c));
+      this.catMap.set(m);
     });
   }
 

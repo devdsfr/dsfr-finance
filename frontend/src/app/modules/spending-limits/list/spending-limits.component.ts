@@ -381,11 +381,25 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     :host-context([data-theme="dark"]) .progress-bar { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .form-panel { background: #161c28 !important; border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .form-panel h2 { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .form-section { background: #1e2638 !important; border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .input { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .input:focus { border-color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .btn--ghost { background: #1e2638 !important; color: #c5cdd9 !important; }
 
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .global-panel__title { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .global-panel__val { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .global-panel__of { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .edit-inline-btn { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .progress-bar--empty .progress-bar__fill { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .cat-spend { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .cat-spend-only { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cat-of { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .action-btn--edit { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cat-empty { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .close-btn { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .form-cat-preview { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .form-group { color: #e2e8f5 !important; }
   `]
 })
 export class SpendingLimitsComponent implements OnInit {

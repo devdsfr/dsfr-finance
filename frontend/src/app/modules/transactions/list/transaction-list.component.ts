@@ -338,7 +338,6 @@ interface DayGroup {
     :host-context([data-theme="dark"]) .tx-row { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .tx-row:hover { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .tx-name { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .tx-sub { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .chip { background: #232d42 !important; color: #c5cdd9 !important; }
     :host-context([data-theme="dark"]) .chip--recurring { background: rgba(139,92,246,.18) !important; color: #c4b5fd !important; }
     :host-context([data-theme="dark"]) .act { color: #8393ad !important; }
@@ -350,6 +349,13 @@ interface DayGroup {
     :host-context([data-theme="dark"]) .balance-footer { background: #161c28 !important; border-color: #232d42 !important; box-shadow: 0 -2px 12px rgba(0,0,0,.4) !important; }
     :host-context([data-theme="dark"]) .balance-item__value { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .balance-divider { background: #232d42 !important; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .filter-input, .filter-select { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tx-name--ignored { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .tx-amount--ignored { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .empty-state { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .balance-item__label { color: #8393ad !important; }
   `]
 })
 export class TransactionListComponent implements OnInit {

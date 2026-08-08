@@ -682,14 +682,10 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
     :host-context([data-theme="dark"]) .empty-state h2 { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .gc-name { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .gc-meta,
-    :host-context([data-theme="dark"]) .gc-stat__lbl { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .gc-stat__val { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .gc-progress { background: #1e2638 !important; }
-    :host-context([data-theme="dark"]) .gc-inner { background: #1e2638 !important; border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .gc-btn { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .gc-btn:hover { background: #1e2638 !important; color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .fm-panel,
-    :host-context([data-theme="dark"]) .fm-modal { background: #161c28 !important; }
     :host-context([data-theme="dark"]) .fm-header { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .fm-header h2 { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .fm-body { border-color: #232d42 !important; }
@@ -699,7 +695,6 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
     :host-context([data-theme="dark"]) input,
     :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .amount-wrap { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .icon-picker { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .icon-btn { background: #161c28 !important; border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .icon-btn:hover { border-color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .type-opt { background: #161c28 !important; border-color: #232d42 !important; }
@@ -707,6 +702,19 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
     :host-context([data-theme="dark"]) .type-opt__label { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .fm-btn--cancel { background: #1e2638 !important; color: #c5cdd9 !important; }
 
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .page-sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .empty-state p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .gc-icon { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .gc-progress-bar { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .fm-footer { border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .fm-label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .fm-select { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .currency-prefix { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .type-opt__desc { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cs-opt { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cs-name { color: #8393ad !important; }
   `]
 })
 export class GoalsComponent implements OnInit {

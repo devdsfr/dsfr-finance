@@ -476,6 +476,9 @@ const TYPE_LABEL: Record<SourceType, string> = {
   :host-context([data-theme="dark"]) .src-chip { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
   :host-context([data-theme="dark"]) .src-chip.selected { background: rgba(34,197,94,.12) !important; border-color: #4ade80 !important; color: #4ade80 !important; }
   :host-context([data-theme="dark"]) .btn-secondary { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .section-label { color: #8393ad !important; }
   `]
 })
 export class ConfigurableDashboardComponent implements OnInit {

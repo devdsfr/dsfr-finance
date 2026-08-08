@@ -73,6 +73,12 @@ import { AuthService } from '../../../core/services/auth.service';
     .error { color: #ef4444; font-size: .85rem; }
     .sent-box { text-align: center; display: flex; flex-direction: column; gap: 1rem; align-items: center; }
     .sent-icon { font-size: 2.5rem; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .auth-page { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .auth-card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .msg { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .input { border-color: #232d42 !important; }
   `]
 })
 export class ResetPasswordComponent implements OnInit {

@@ -27,6 +27,10 @@ import { AuthService } from '../../../core/services/auth.service';
     .card p { color: #6b7280; font-size: .9rem; }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .wrap { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .card p { color: #8393ad !important; }
   `]
 })
 export class OAuthCallbackComponent implements OnInit {

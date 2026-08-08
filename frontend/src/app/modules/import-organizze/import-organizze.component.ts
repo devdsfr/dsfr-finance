@@ -345,6 +345,25 @@ type Step = 'idle' | 'preview' | 'done';
     .done-screen p { margin: .25rem; color: #374151; }
     .warn { color: #d97706; font-size: .85rem; }
     .err-line { color: #dc2626; font-size: .78rem; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .btn-import { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .modal { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .modal__head { border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .close-btn { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .spinner-wrap { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .spinner { border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .toolbar { background: #1e2638 !important; border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .source-btn { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .prev-table th { color: #8393ad !important; background: #1e2638 !important; border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cat { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .date { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .src { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .modal__foot { border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .total-info { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .btn--ghost { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .done-screen p { color: #e2e8f5 !important; }
   `]
 })
 export class ImportOrganizzeComponent {

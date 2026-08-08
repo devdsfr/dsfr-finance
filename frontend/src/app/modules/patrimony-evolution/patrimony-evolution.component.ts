@@ -483,9 +483,7 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     :host-context([data-theme="dark"]) .chart-title { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .btn--outline { background: #1e2638 !important; border-color: #2e7736 !important; }
     :host-context([data-theme="dark"]) .period-btn,
-    :host-context([data-theme="dark"]) .range-btn { background: #161c28 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
     :host-context([data-theme="dark"]) .period-btn.active,
-    :host-context([data-theme="dark"]) .range-btn.active { background: rgba(74,222,128,.12) !important; border-color: #4ade80 !important; color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .modal,
     :host-context([data-theme="dark"]) .confirm-modal { background: #161c28 !important; color: #e2e8f5; }
     :host-context([data-theme="dark"]) .modal-header { border-color: #232d42 !important; }
@@ -499,6 +497,22 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     :host-context([data-theme="dark"]) select,
     :host-context([data-theme="dark"]) textarea { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
 
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .subtitle { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .btn--ghost { color: #e2e8f5 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .wallet-tab { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .card-sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .chart-card--empty { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .chart-legend { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .modal-close { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .paste-label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .paste-area { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .fg label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .input { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .empty-state { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .confirm-msg { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .confirm-sub { color: #8393ad !important; }
   `]
 })
 export class PatrimonyEvolutionComponent implements OnInit {

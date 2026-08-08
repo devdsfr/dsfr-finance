@@ -311,7 +311,6 @@ interface NavGroup { key: string; label: string; items: NavItem[]; }
     :host-context([data-theme="dark"]) .nav-group__head { color: #6b7688 !important; }
     :host-context([data-theme="dark"]) .nav-item { color: #b3bdcc !important; }
     :host-context([data-theme="dark"]) .nav-item:hover { background: #1e2638 !important; color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .nav-item--active { background: rgba(74,222,128,.14) !important; color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .sidebar__footer { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .acct__trigger:hover { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .acct__menu { background: #161c28 !important; border-color: #232d42 !important; }
@@ -326,6 +325,12 @@ interface NavGroup { key: string; label: string; items: NavItem[]; }
     :host-context([data-theme="dark"]) .menu__dropdown button:hover { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .fab-action { background: #1e2638 !important; color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .tt-track { background: #232d42; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .caret { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .acct__menu a, .acct__menu button { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .plan-pill { color: #e2e8f5 !important; background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .tt-thumb { background: #161c28 !important; }
   `]
 })
 export class ShellComponent implements OnInit {

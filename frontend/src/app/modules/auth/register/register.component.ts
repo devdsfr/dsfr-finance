@@ -118,6 +118,13 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
     @keyframes spin { to { transform: rotate(360deg); } }
     .auth-link { display: block; text-align: center; margin-top: 1.15rem; font-size: .85rem; color: #2e7736; text-decoration: none; font-weight: 500; }
     .auth-link:hover { text-decoration: underline; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .lang-bar button { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .auth-card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .form-group label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .input { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .pass-eye { color: #8393ad !important; }
   `]
 })
 export class RegisterComponent {

@@ -209,27 +209,26 @@ const WEEK = ['D','S','T','Q','Q','S','S'];
 
     @media (max-width: 720px) { .cal-grid { grid-template-columns: 1fr; } }
 
-    /* ══ DARK THEME ══ */
-    :host-context([data-theme="dark"]) .card,
+
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .page-header h1 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sub { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .kpi { background: #161c28 !important; }
-    :host-context([data-theme="dark"]) .kpi--alert { background: rgba(220,38,38,.1) !important; border-color: rgba(220,38,38,.35) !important; }
-    :host-context([data-theme="dark"]) .page-header h1,
-    :host-context([data-theme="dark"]) .month-nav h2,
-    :host-context([data-theme="dark"]) .list-head h3,
-    :host-context([data-theme="dark"]) .row__desc { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .sub,
-    :host-context([data-theme="dark"]) .kpi__l,
-    :host-context([data-theme="dark"]) .kpi__sub,
-    :host-context([data-theme="dark"]) .row__date,
-    :host-context([data-theme="dark"]) .cal-legend span { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .nav-arrow { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .kpi__l { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .kpi__sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .month-nav h2 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .nav-arrow { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .cal-weekdays span { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .cal-day { background: #1e2638 !important; }
-    :host-context([data-theme="dark"]) .cal-day--has { background: #232d42 !important; border-color: #2c3852 !important; }
-    :host-context([data-theme="dark"]) .cal-day__num { color: #c5cdd9 !important; }
-    :host-context([data-theme="dark"]) .cal-day--sel { background: #2e7736 !important; }
-    :host-context([data-theme="dark"]) .cal-day--today { border-color: #4ade80 !important; }
-    :host-context([data-theme="dark"]) .row { border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) .clear-day { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .cal-day--has { background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .cal-day__num { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .cal-legend span { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .list-head h3 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .empty { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .row { border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .row__desc { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .row__date { color: #8393ad !important; }
   `]
 })
 export class CommitmentsComponent implements OnInit {

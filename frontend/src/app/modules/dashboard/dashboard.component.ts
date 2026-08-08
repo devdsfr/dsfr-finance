@@ -1199,6 +1199,19 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     :host-context([data-theme="dark"]) .skel {
       background: linear-gradient(90deg, #1e2638 25%, #283248 50%, #1e2638 75%) !important;
     }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .ms-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .qa-title { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .qa-btn { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .qa-btn--transfer .qa-icon { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .empty-msg { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .cl-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .flow-legend { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .flow-month-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .calc-cell__lbl { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .calc-result__eq { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .calc-sim__title { color: #8393ad !important; }
   `]
 })
 export class DashboardComponent implements OnInit {

@@ -158,21 +158,24 @@ const PT_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','
     .skel-block { height: 300px; background: linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: .75rem; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-    /* ══ DARK THEME ══ */
-    :host-context([data-theme="dark"]) .card,
+
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .page-header h1 { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .range-btn { color: #8393ad !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tabs { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .tab { color: #8393ad !important; background: #161c28 !important; }
     :host-context([data-theme="dark"]) .kpi { background: #161c28 !important; }
-    :host-context([data-theme="dark"]) .kpi--alert { border-color: rgba(220,38,38,.35) !important; }
-    :host-context([data-theme="dark"]) .page-header h1,
-    :host-context([data-theme="dark"]) .kpi__v,
-    :host-context([data-theme="dark"]) .ftable .bold { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .sub, :host-context([data-theme="dark"]) .kpi__l,
-    :host-context([data-theme="dark"]) .legend span, :host-context([data-theme="dark"]) .note { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .range-btn, :host-context([data-theme="dark"]) .tab { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .range-btn--active { background: #2e7736 !important; color: #fff !important; border-color: #2e7736 !important; }
-    :host-context([data-theme="dark"]) .tab--active { background: #4ade80 !important; color: #0d1117 !important; }
+    :host-context([data-theme="dark"]) .kpi__l { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .kpi__v { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .card { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .empty { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .legend span { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .chart { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .ftable th { background: #1e2638 !important; border-color: #232d42 !important; color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .ftable td { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .ftable th { color: #8393ad !important; background: #1e2638 !important; border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .ftable td { color: #e2e8f5 !important; border-top-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .ftable .bold { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .note { color: #8393ad !important; }
   `]
 })
 export class ForecastComponent implements OnInit {

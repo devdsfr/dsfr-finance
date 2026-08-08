@@ -625,6 +625,22 @@ function months2text(n: number): string {
     :host-context([data-theme="dark"]) input,
     :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
 
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .upsell-card p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .debt-card__type { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .debt-card__rate { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .empty-sidebar { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .welcome p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .scard__sub { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sim-field label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .hint { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sim-label { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .sim-hint { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .btn--ghost { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .fg label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .input { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .mform-actions { border-top-color: #232d42 !important; }
   `]
 })
 export class DebtStrategyComponent implements OnInit {

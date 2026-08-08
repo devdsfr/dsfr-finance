@@ -702,6 +702,10 @@ function computeAllocations(rows: { ideal_pct: number; current_value: number }[]
     :host-context([data-theme="dark"]) .icon-grid button.selected { border-color: #4ade80 !important; background: rgba(74,222,128,.12) !important; }
     :host-context([data-theme="dark"]) .skel-block { background: linear-gradient(90deg,#1e2638 25%,#283248 50%,#1e2638 75%) !important; }
     :host-context([data-theme="dark"]) .sec-empty { color: #4f5f76 !important; }
+  
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .upsell-card p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .chip-edit, .chip-del { color: #8393ad !important; }
   `]
 })
 export class InvestmentStrategyComponent implements OnInit {

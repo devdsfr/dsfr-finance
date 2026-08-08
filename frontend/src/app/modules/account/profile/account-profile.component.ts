@@ -190,25 +190,20 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
     .btn--primary { background: #2e7736; }
     .btn--outline:hover { border-color: #2e7736; color: #2e7736; }
 
-    /* ══ DARK THEME ══ */
-    :host-context([data-theme="dark"]) .section { background: #161c28 !important; box-shadow: 0 1px 3px rgba(0,0,0,.3) !important; }
-    :host-context([data-theme="dark"]) h2,
-    :host-context([data-theme="dark"]) h3,
+
+    /* ══ DARK THEME (auto) ══ */
+    :host-context([data-theme="dark"]) .section { background: #161c28 !important; }
+    :host-context([data-theme="dark"]) .section__desc { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .mfa-qr { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .explainer-card { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .explainer-card p { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .input { border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .member-row { border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .btn--outline { color: #e2e8f5 !important; background: #161c28 !important; border-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .pref-field label { color: #e2e8f5 !important; }
+    :host-context([data-theme="dark"]) .gdpr-row { border-top-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .gdpr-row strong { color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .section__desc,
-    :host-context([data-theme="dark"]) .explainer-card p,
-    :host-context([data-theme="dark"]) .gdpr-row p,
-    :host-context([data-theme="dark"]) .pref-field label { color: #8393ad !important; }
-    :host-context([data-theme="dark"]) .section__desc a { color: #4ade80 !important; }
-    :host-context([data-theme="dark"]) .explainer-card { background: #1e2638 !important; border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) .mfa-qr { background: #1e2638 !important; color: #c5cdd9 !important; }
-    :host-context([data-theme="dark"]) .input,
-    :host-context([data-theme="dark"]) select { background: #1e2638 !important; border-color: #232d42 !important; color: #e2e8f5 !important; }
-    :host-context([data-theme="dark"]) .member-row { border-color: #232d42 !important; color: #c5cdd9 !important; }
-    :host-context([data-theme="dark"]) .gdpr-row { border-color: #232d42 !important; }
-    :host-context([data-theme="dark"]) .badge { background: rgba(99,102,241,.18) !important; color: #a5b4fc !important; }
-    :host-context([data-theme="dark"]) .btn--outline { background: #1e2638 !important; border-color: #232d42 !important; color: #c5cdd9 !important; }
-    :host-context([data-theme="dark"]) .btn--danger { background: rgba(220,38,38,.15) !important; color: #f87171 !important; }
+    :host-context([data-theme="dark"]) .gdpr-row p { color: #8393ad !important; }
   `]
 })
 export class AccountProfileComponent implements OnInit {
