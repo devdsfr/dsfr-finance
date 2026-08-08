@@ -676,6 +676,10 @@ label { font-size: .78rem; font-weight: 500; color: #374151; }
     :host-context([data-theme="dark"]) .invoice-row:hover { background: #1e2638 !important; }
     :host-context([data-theme="dark"]) .inv-month,
     :host-context([data-theme="dark"]) .inv-val { color: #c5cdd9 !important; }
+    /* classes montadas dinamicamente por invBadge() */
+    :host-context([data-theme="dark"]) .inv-badge--paid    { background: rgba(74,222,128,.15) !important; color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .inv-badge--closed  { background: #232d42 !important; color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .inv-badge--current { background: rgba(96,165,250,.15) !important; color: #60a5fa !important; }
     :host-context([data-theme="dark"]) .modal-foot { border-top-color: #232d42 !important; }
     :host-context([data-theme="dark"]) label,
     :host-context([data-theme="dark"]) .checkbox-row { color: #c5cdd9 !important; }

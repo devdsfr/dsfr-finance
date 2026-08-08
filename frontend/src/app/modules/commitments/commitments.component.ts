@@ -210,6 +210,11 @@ const WEEK = ['D','S','T','Q','Q','S','S'];
     @media (max-width: 720px) { .cal-grid { grid-template-columns: 1fr; } }
 
 
+    /* classes montadas dinamicamente: grp__label--{{ key }} / row__bar--{{ status }} */
+    :host-context([data-theme="dark"]) .grp__label--overdue  { color: #f87171 !important; }
+    :host-context([data-theme="dark"]) .grp__label--today    { color: #fbbf24 !important; }
+    :host-context([data-theme="dark"]) .grp__label--upcoming { color: #8393ad !important; }
+
     /* ══ DARK THEME (auto) ══ */
     :host-context([data-theme="dark"]) .page-header h1 { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .sub { color: #8393ad !important; }

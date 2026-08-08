@@ -65,6 +65,11 @@ import { ApiService } from '../../../core/services/api.service';
     .empty { text-align: center; padding: 2rem; color: #9ca3af; }
   
 
+    /* classes montadas dinamicamente: log-action--{{ action }} */
+    :host-context([data-theme="dark"]) .log-action--create { background: rgba(22,163,74,.15) !important; color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .log-action--update { background: rgba(37,99,235,.15) !important; color: #60a5fa !important; }
+    :host-context([data-theme="dark"]) .log-action--delete { background: rgba(220,38,38,.15) !important; color: #f87171 !important; }
+
     /* ══ DARK THEME (auto) ══ */
     :host-context([data-theme="dark"]) .input { border-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .log-list { background: #161c28 !important; }

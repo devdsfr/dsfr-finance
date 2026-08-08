@@ -451,6 +451,11 @@ const AI_PROVIDERS = [
     :host-context([data-theme="dark"]) .btn--danger:hover { background: rgba(239,68,68,.12) !important; }
     :host-context([data-theme="dark"]) .rec-label { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .rec-msg   { color: #8393ad !important; }
+    /* classes montadas dinamicamente: rec-badge--{{ score }} */
+    :host-context([data-theme="dark"]) .rec-badge--good    { background: rgba(22,163,74,.12) !important; }
+    :host-context([data-theme="dark"]) .rec-badge--warning { background: rgba(245,158,11,.12) !important; }
+    :host-context([data-theme="dark"]) .rec-badge--bad     { background: rgba(220,38,38,.12) !important; }
+    :host-context([data-theme="dark"]) .rec-badge--unknown { background: #1e2638 !important; }
 
 
   

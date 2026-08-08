@@ -703,6 +703,12 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
     :host-context([data-theme="dark"]) .fm-btn--cancel { background: #1e2638 !important; color: #c5cdd9 !important; }
 
   
+    /* classes montadas dinamicamente: gc-badge--{{ type }} */
+    :host-context([data-theme="dark"]) .gc-badge--category  { background: rgba(124,58,237,.15) !important; color: #a78bfa !important; }
+    :host-context([data-theme="dark"]) .gc-badge--saving    { background: rgba(22,163,74,.15) !important;  color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .gc-badge--patrimony { background: rgba(37,99,235,.15) !important;  color: #60a5fa !important; }
+    :host-context([data-theme="dark"]) .gc-badge--debt      { background: rgba(220,38,38,.15) !important;  color: #f87171 !important; }
+
     /* ══ DARK THEME (auto) ══ */
     :host-context([data-theme="dark"]) .page-sub { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .empty-state p { color: #8393ad !important; }
