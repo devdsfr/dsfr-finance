@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
@@ -106,7 +106,10 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
       <div class="content-card">
         <div class="content-head">
           <h1 class="content-title">Contas</h1>
-          <button class="btn-add" (click)="openAccForm()">👛 Nova conta</button>
+          <div class="head-actions">
+            <button class="btn-import" (click)="goImport()">📄 Importar extrato</button>
+            <button class="btn-add" (click)="openAccForm()">👛 Nova conta</button>
+          </div>
         </div>
         @if (accounts().length === 0 && !loadingAccs()) {
           <div class="empty">Nenhuma conta cadastrada.</div>
@@ -151,6 +154,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
         <div class="detail-head">
           <button class="btn-back" (click)="view.set('list')">← Voltar</button>
           <div class="detail-actions">
+            <button class="btn-link btn-link--blue" (click)="goImport(selectedAcc()?.id)">Importar extrato</button>
             <button class="btn-link btn-link--green" (click)="editAcc(selectedAcc())">Editar</button>
             <button class="btn-link btn-link--red" (click)="archiveAcc(selectedAcc())">Excluir</button>
           </div>
@@ -490,6 +494,14 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
   transition: background .15s;
 }
 .btn-add:hover { background: #a7f3d0; }
+.head-actions { display: flex; align-items: center; gap: .6rem; }
+.btn-import {
+  display: flex; align-items: center; gap: .35rem;
+  background: none; color: #374151; border: 1px solid #d1d5db; border-radius: 9999px;
+  padding: .45rem 1.1rem; font-size: .82rem; font-weight: 600; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.btn-import:hover { border-color: #2e7736; color: #2e7736; }
 
 /* Flat list */
 .flat-list { display: flex; flex-direction: column; }
@@ -664,6 +676,8 @@ label { font-size: .78rem; font-weight: 500; color: #374151; }
     :host-context([data-theme="dark"]) .invoices-section hr { border-top-color: #232d42 !important; }
     :host-context([data-theme="dark"]) .btn-add { background: rgba(74,222,128,.15) !important; color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .btn-add:hover { background: rgba(74,222,128,.25) !important; }
+    :host-context([data-theme="dark"]) .btn-import { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .btn-import:hover { border-color: #4ade80 !important; color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .btn-back,
     :host-context([data-theme="dark"]) .btn-link--green { color: #4ade80 !important; }
     :host-context([data-theme="dark"]) .btn-link--blue { color: #60a5fa !important; }
@@ -694,6 +708,13 @@ label { font-size: .78rem; font-weight: 500; color: #374151; }
 export class BankingComponent implements OnInit {
   private api: ApiService     = inject(ApiService);
   private toast: ToastService = inject(ToastService);
+  private router: Router      = inject(Router);
+
+  /** Abre o importador de extrato, já com a conta selecionada quando houver. */
+  goImport(accountId?: string) {
+    this.router.navigate(['/import-statement'],
+      accountId ? { queryParams: { account: accountId } } : {});
+  }
 
   accounts      = signal<any[]>([]);
   cards         = signal<any[]>([]);

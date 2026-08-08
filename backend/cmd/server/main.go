@@ -87,6 +87,7 @@ func main() {
 	workspaceH := handlers.NewWorkspaceHandler(db)
 	debtH := handlers.NewDebtHandler(db)
 	importH := handlers.NewImportHandler(db)
+	stmtImportH := handlers.NewStatementImportHandler(db)
 	aiSubH := handlers.NewAISubscriptionHandler(db, aiUsageSvc)
 	planH := handlers.NewPlanHandler(db)
 	settingsH := handlers.NewSettingsHandler(db)
@@ -190,6 +191,10 @@ func main() {
 
 		// Import — Organizze PDF
 		auth.POST("/import/organizze", importH.ImportOrganizze)
+
+		// Import — extrato bancário OFX
+		auth.POST("/import/statement/analyze", stmtImportH.Analyze)
+		auth.POST("/import/statement", stmtImportH.Import)
 
 		// Debt Strategy — Premium
 		auth.GET("/debts", middleware.RequirePremium(db), debtH.List)

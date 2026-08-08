@@ -116,6 +116,10 @@ export const routes: Routes = [
         loadComponent: () => import('./modules/banking/banking.component').then(m => m.BankingComponent)
       },
       {
+        path: 'import-statement',
+        loadComponent: () => import('./modules/import-statement/import-statement.component').then(m => m.ImportStatementComponent)
+      },
+      {
         path: 'notifications',
         loadComponent: () => import('./modules/notifications/list/notifications-list.component').then(m => m.NotificationsListComponent)
       },
