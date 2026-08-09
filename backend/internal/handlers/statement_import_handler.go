@@ -3,11 +3,10 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/dsfr/finance/internal/middleware"
+	"github.com/dsfr/finance/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -37,56 +36,8 @@ type AnalyzedRow struct {
 	SuggestedCategoryName string `json:"suggested_category_name"`
 }
 
-// ── Normalização de descrição ───────────────────────────────────────────
-// O objetivo é reduzir "COMPRA CARTAO 1234 IFOOD *IFOOD SAO PAULO" a "IFOOD",
-// para que lançamentos do mesmo estabelecimento caiam na mesma chave.
-
-var nonAlpha = regexp.MustCompile(`[^A-Z ]+`)
-var spaces = regexp.MustCompile(` +`)
-
-// Palavras que aparecem em quase todo extrato e não identificam o estabelecimento.
-var noiseWords = map[string]bool{
-	"COMPRA": true, "CARTAO": true, "CART": true, "DEBITO": true, "CREDITO": true,
-	"PAGAMENTO": true, "PAGTO": true, "PAG": true, "PIX": true, "TED": true, "DOC": true,
-	"TRANSFERENCIA": true, "TRANSF": true, "ENVIADO": true, "RECEBIDO": true,
-	"SAQUE": true, "DEPOSITO": true, "TARIFA": true, "COMPRAS": true, "ELETRONICA": true,
-	"PARCELA": true, "REF": true, "DE": true, "DA": true, "DO": true, "PARA": true,
-	"LTDA": true, "ME": true, "SA": true, "EIRELI": true, "BR": true, "APP": true,
-}
-
-// foldAccents troca acentuadas por ASCII para que "CARTÃO" e "CARTAO"
-// gerem a mesma chave — sem isso o regex quebraria a palavra ao meio.
-var accentPairs = strings.NewReplacer(
-	"Á", "A", "À", "A", "Ã", "A", "Â", "A", "Ä", "A",
-	"É", "E", "Ê", "E", "È", "E", "Ë", "E",
-	"Í", "I", "Î", "I", "Ì", "I", "Ï", "I",
-	"Ó", "O", "Õ", "O", "Ô", "O", "Ò", "O", "Ö", "O",
-	"Ú", "U", "Û", "U", "Ù", "U", "Ü", "U",
-	"Ç", "C", "Ñ", "N",
-)
-
-// merchantKey extrai a assinatura do estabelecimento de uma descrição.
-func merchantKey(desc string) string {
-	s := accentPairs.Replace(strings.ToUpper(desc))
-	s = nonAlpha.ReplaceAllString(s, " ")
-	s = spaces.ReplaceAllString(s, " ")
-	s = strings.TrimSpace(s)
-
-	tokens := []string{}
-	for _, t := range strings.Fields(s) {
-		if len(t) < 3 || noiseWords[t] {
-			continue
-		}
-		tokens = append(tokens, t)
-		if len(tokens) == 2 { // duas palavras já identificam bem
-			break
-		}
-	}
-	if len(tokens) == 0 {
-		return ""
-	}
-	return strings.Join(tokens, " ")
-}
+// A normalização de descrição vive em services.MerchantKey, compartilhada
+// com o agente do WhatsApp — os dois aprendem da mesma memória de categorias.
 
 // buildCategoryMemory monta chave-de-estabelecimento → categoria mais usada,
 // a partir dos lançamentos que o usuário já categorizou.
@@ -116,7 +67,7 @@ func (h *StatementImportHandler) buildCategoryMemory(c *gin.Context, wsID string
 		if rows.Scan(&desc, &catID, &catName) != nil {
 			continue
 		}
-		key := merchantKey(desc)
+		key := services.MerchantKey(desc)
 		if key == "" {
 			continue
 		}
@@ -189,7 +140,7 @@ func (h *StatementImportHandler) Analyze(c *gin.Context) {
 		row := AnalyzedRow{StatementRow: t}
 		row.Duplicate = t.ExternalID != "" && existing[t.ExternalID]
 
-		if hit, ok := memory[merchantKey(t.Description)]; ok {
+		if hit, ok := memory[services.MerchantKey(t.Description)]; ok {
 			id := hit[0]
 			row.SuggestedCategoryID = &id
 			row.SuggestedCategoryName = hit[1]

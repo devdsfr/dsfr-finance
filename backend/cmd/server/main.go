@@ -74,6 +74,12 @@ func main() {
 		log.Fatalf("failed to init ai usage service: %v", err)
 	}
 
+	// Agente financeiro no WhatsApp
+	waSvc := services.NewWhatsAppService(cfg.WhatsAppToken, cfg.WhatsAppPhoneID, cfg.WhatsAppAppSecret)
+	aiClient := services.NewAIClient(cfg.AIAPIKey, cfg.AIModel)
+	financeProfileSvc := services.NewFinanceProfileService(db)
+	financeAgentSvc := services.NewFinanceAgentService(db, financeProfileSvc, aiClient)
+
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	authH := handlers.NewAuthHandler(authSvc)
 	txH := handlers.NewTransactionHandler(txSvc, txRepo)
@@ -96,6 +102,7 @@ func main() {
 	investmentH := handlers.NewInvestmentHandler(investmentRepo)
 	oauthH := handlers.NewOAuthHandler(oauthSvc, cfg.AppURL)
 	thermometerH := handlers.NewThermometerHandler(db)
+	whatsappH := handlers.NewWhatsAppHandler(db, waSvc, financeAgentSvc, cfg.WhatsAppVerifyToken)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -122,6 +129,11 @@ func main() {
 	v1.POST("/auth/reset-password", authH.ResetPassword)
 	v1.GET("/auth/oauth/:provider/login", oauthH.Login)
 	v1.GET("/auth/oauth/:provider/callback", oauthH.Callback)
+
+	// Webhook do WhatsApp — público porque a Meta não manda JWT.
+	// A autenticação é feita pela assinatura HMAC dentro do handler.
+	v1.GET("/webhooks/whatsapp", whatsappH.Verify)
+	v1.POST("/webhooks/whatsapp", whatsappH.Receive)
 
 	// Protected
 	auth := v1.Group("/", middleware.Auth(cfg.JWTSecret))
@@ -195,6 +207,11 @@ func main() {
 		// Import — extrato bancário OFX
 		auth.POST("/import/statement/analyze", stmtImportH.Analyze)
 		auth.POST("/import/statement", stmtImportH.Import)
+
+		// WhatsApp — pareamento do número
+		auth.GET("/whatsapp/link", whatsappH.GetLink)
+		auth.POST("/whatsapp/pairing-code", whatsappH.GeneratePairingCode)
+		auth.DELETE("/whatsapp/link", whatsappH.DeleteLink)
 
 		// Debt Strategy — Premium
 		auth.GET("/debts", middleware.RequirePremium(db), debtH.List)

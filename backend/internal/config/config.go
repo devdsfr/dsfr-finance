@@ -32,6 +32,15 @@ type Config struct {
 	AppEnv           string
 	CORSOrigins      string
 	EncryptionKey    string
+	// WhatsApp Cloud API
+	WhatsAppVerifyToken string
+	WhatsAppAppSecret   string
+	WhatsAppToken       string
+	WhatsAppPhoneID     string
+	// Agente financeiro (IA)
+	AIAPIKey          string
+	AIModel           string
+	AIMonthlyCallCap  int
 }
 
 func Load() *Config {
@@ -40,6 +49,7 @@ func Load() *Config {
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
 	alertPct, _ := strconv.ParseFloat(getEnv("SPENDING_ALERT_PCT", "80"), 64)
 	jwtSecret := getEnv("JWT_SECRET", "change-me-in-production")
+	aiCap, _ := strconv.Atoi(getEnv("AI_MONTHLY_CALL_LIMIT", "1000"))
 
 	return &Config{
 		Port:             getEnv("PORT", "8080"),
@@ -66,6 +76,15 @@ func Load() *Config {
 		AppEnv:           getEnv("APP_ENV", "development"),
 		CORSOrigins:      getEnv("CORS_ORIGINS", "http://localhost:4200"),
 		EncryptionKey:    getEnv("ENCRYPTION_KEY", jwtSecret),
+
+		WhatsAppVerifyToken: getEnv("WHATSAPP_VERIFY_TOKEN", ""),
+		WhatsAppAppSecret:   getEnv("WHATSAPP_APP_SECRET", ""),
+		WhatsAppToken:       getEnv("WHATSAPP_TOKEN", ""),
+		WhatsAppPhoneID:     getEnv("WHATSAPP_PHONE_ID", ""),
+
+		AIAPIKey:         getEnv("AI_API_KEY", ""),
+		AIModel:          getEnv("AI_MODEL", "claude-haiku-4-5-20251001"),
+		AIMonthlyCallCap: aiCap,
 	}
 }
 

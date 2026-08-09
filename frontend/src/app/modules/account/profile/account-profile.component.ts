@@ -33,6 +33,36 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
         <p class="section__desc">Todos os valores no app passam a ser exibidos nessa moeda.</p>
       </section>
 
+      <!-- Agente financeiro no WhatsApp -->
+      <section class="section">
+        <h2>Agente financeiro no WhatsApp</h2>
+        <p class="section__desc">
+          Registre gastos em dinheiro e peça opinião antes de comprar, direto pelo WhatsApp.
+          O agente ajuda com orçamento, dívidas e parcelamentos — não recomenda investimentos específicos.
+        </p>
+
+        @if (waLoading()) {
+          <p class="section__desc">Carregando…</p>
+        } @else if (waLinked()) {
+          <div class="wa-linked">
+            <span class="wa-badge">✅ Vinculado</span>
+            <span class="wa-phone">{{ waPhone() }}</span>
+            <button class="btn btn--outline" (click)="unlinkWhatsapp()">Desvincular</button>
+          </div>
+        } @else if (waCode()) {
+          <div class="wa-code-box">
+            <span class="wa-code">{{ waCode() }}</span>
+            <p class="wa-instructions">
+              Mande <strong>vincular {{ waCode() }}</strong> para o número do agente no WhatsApp.
+              O código vale por 10 minutos.
+            </p>
+            <button class="btn btn--outline" (click)="checkWhatsappLink()">Já enviei, verificar</button>
+          </div>
+        } @else {
+          <button class="btn btn--primary" (click)="generateWhatsappCode()">Gerar código de vínculo</button>
+        }
+      </section>
+
       <!-- MFA Section — AC-MC-10 -->
       <section class="section">
         <h2>Autenticação em Dois Fatores (2FA/MFA)</h2>
@@ -187,6 +217,20 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
     .gdpr-row p { margin: .2rem 0 0; font-size: .8rem; color: #6b7280; max-width: 420px; }
     .gdpr-row--danger strong { color: #dc2626; }
     .section__desc a { color: #2e7736; }
+
+    /* Agente do WhatsApp */
+    .wa-linked { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+    .wa-badge { font-size: .78rem; font-weight: 600; color: #166534; background: #dcfce7;
+      padding: .25rem .7rem; border-radius: 9999px; }
+    .wa-phone { font-size: .875rem; color: #374151; font-family: monospace; }
+    .wa-code-box { padding: 1rem; background: #f9fafb; border-radius: .5rem; text-align: center; }
+    .wa-code { font-size: 2rem; font-weight: 700; letter-spacing: .35rem; color: #2e7736; font-family: monospace; }
+    .wa-instructions { font-size: .82rem; color: #6b7280; margin: .5rem 0 .9rem; line-height: 1.5; }
+    :host-context([data-theme="dark"]) .wa-code-box { background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .wa-code { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .wa-instructions { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .wa-phone { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .wa-badge { background: rgba(74,222,128,.15) !important; color: #4ade80 !important; }
     .btn--primary { background: #2e7736; }
     .btn--outline:hover { border-color: #2e7736; color: #2e7736; }
 
@@ -222,10 +266,49 @@ export class AccountProfileComponent implements OnInit {
   readonly currencies = CURRENCIES;
   selectedCurrency: CurrencyCode = 'BRL';
 
+  // ── Agente do WhatsApp ──
+  waLoading = signal(true);
+  waLinked  = signal(false);
+  waPhone   = signal('');
+  waCode    = signal('');
+
   ngOnInit(): void {
     this.api.get<any>('/workspace/members').subscribe(r => this.members.set(r.data ?? []));
     if (!this.settings.loaded()) this.settings.load();
     this.selectedCurrency = this.settings.currency();
+    this.checkWhatsappLink();
+  }
+
+  checkWhatsappLink(): void {
+    this.waLoading.set(true);
+    this.api.get<any>('/whatsapp/link').subscribe({
+      next: r => {
+        this.waLinked.set(!!r.linked);
+        this.waPhone.set(r.phone ?? '');
+        if (r.linked) this.waCode.set('');
+        this.waLoading.set(false);
+      },
+      error: () => { this.waLinked.set(false); this.waLoading.set(false); },
+    });
+  }
+
+  generateWhatsappCode(): void {
+    this.api.post<any>('/whatsapp/pairing-code', {}).subscribe({
+      next: r => this.waCode.set(r.code),
+      error: () => this.toast.error('Não foi possível gerar o código.'),
+    });
+  }
+
+  unlinkWhatsapp(): void {
+    this.api.delete<any>('/whatsapp/link').subscribe({
+      next: () => {
+        this.waLinked.set(false);
+        this.waPhone.set('');
+        this.waCode.set('');
+        this.toast.success('Número desvinculado.');
+      },
+      error: () => this.toast.error('Não foi possível desvincular.'),
+    });
   }
 
   onCurrencyChange(code: CurrencyCode): void {
