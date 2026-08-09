@@ -102,7 +102,7 @@ func main() {
 	investmentH := handlers.NewInvestmentHandler(investmentRepo)
 	oauthH := handlers.NewOAuthHandler(oauthSvc, cfg.AppURL)
 	thermometerH := handlers.NewThermometerHandler(db)
-	whatsappH := handlers.NewWhatsAppHandler(db, waSvc, financeAgentSvc, cfg.WhatsAppVerifyToken)
+	whatsappH := handlers.NewWhatsAppHandler(db, waSvc, financeAgentSvc, cfg.WhatsAppVerifyToken, cfg.AppURL)
 
 	// ── Router ────────────────────────────────────────────────────────────────
 	r := gin.Default()
@@ -211,6 +211,7 @@ func main() {
 		// WhatsApp — pareamento do número
 		auth.GET("/whatsapp/link", whatsappH.GetLink)
 		auth.POST("/whatsapp/pairing-code", whatsappH.GeneratePairingCode)
+		auth.POST("/whatsapp/claim", whatsappH.ClaimOnboarding)
 		auth.DELETE("/whatsapp/link", whatsappH.DeleteLink)
 
 		// Debt Strategy — Premium

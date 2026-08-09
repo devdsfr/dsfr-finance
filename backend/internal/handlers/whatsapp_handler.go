@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,10 +26,11 @@ type WhatsAppHandler struct {
 	wa          *services.WhatsAppService
 	agent       *services.FinanceAgentService
 	verifyToken string
+	appURL      string
 }
 
-func NewWhatsAppHandler(db *sql.DB, wa *services.WhatsAppService, agent *services.FinanceAgentService, verifyToken string) *WhatsAppHandler {
-	return &WhatsAppHandler{db: db, wa: wa, agent: agent, verifyToken: verifyToken}
+func NewWhatsAppHandler(db *sql.DB, wa *services.WhatsAppService, agent *services.FinanceAgentService, verifyToken, appURL string) *WhatsAppHandler {
+	return &WhatsAppHandler{db: db, wa: wa, agent: agent, verifyToken: verifyToken, appURL: appURL}
 }
 
 // ── Webhook: verificação (GET) ──────────────────────────────────────────
@@ -137,10 +139,13 @@ func (h *WhatsAppHandler) process(messageID, phone, text string) {
 		phone).Scan(&linkID, &wsID, &verified)
 
 	if err == sql.ErrNoRows {
-		// Único caso em que atendemos desconhecido: tentativa de pareamento.
+		// Quem já tem conta pode parear com o código gerado no app.
 		if code := extractPairingCode(text); code != "" {
 			h.tryPair(ctx, phone, code)
+			return
 		}
+		// Caso contrário, é uma porta de entrada: convida a entrar no app.
+		h.sendOnboarding(ctx, phone)
 		return
 	}
 	if err != nil {
@@ -150,7 +155,9 @@ func (h *WhatsAppHandler) process(messageID, phone, text string) {
 	if !verified {
 		if code := extractPairingCode(text); code != "" {
 			h.tryPair(ctx, phone, code)
+			return
 		}
+		h.sendOnboarding(ctx, phone)
 		return
 	}
 
@@ -223,6 +230,101 @@ func (h *WhatsAppHandler) tryPair(ctx context.Context, phone, code string) {
 			"Já pode registrar gastos (“comprei um picolé de 8 reais”) ou pedir opinião "+
 			"(“vale a pena comprar um notebook de 4 mil em 10x?”).\n\n"+
 			"Ajudo com orçamento, dívidas e parcelamentos. Não recomendo investimentos específicos.")
+}
+
+// ── Entrada pelo WhatsApp (link mágico) ─────────────────────────────────
+
+// sendOnboarding cria um token de uso único amarrado ao telefone e manda o
+// link. O telefone vive dentro do token, no servidor — nunca na URL, para
+// não vazar o número em histórico de navegador ou referer.
+func (h *WhatsAppHandler) sendOnboarding(ctx context.Context, phone string) {
+	// Evita spam de link: no máximo um a cada 2 minutos por telefone.
+	var recent int
+	_ = h.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM whatsapp_onboarding_tokens
+		WHERE phone=$1 AND created_at > NOW() - interval '2 minutes'`, phone).Scan(&recent)
+	if recent > 0 {
+		return
+	}
+
+	token, err := randomToken()
+	if err != nil {
+		log.Printf("whatsapp: erro ao gerar token: %v", err)
+		return
+	}
+	if _, err := h.db.ExecContext(ctx, `
+		INSERT INTO whatsapp_onboarding_tokens (token, phone, expires_at)
+		VALUES ($1,$2,NOW() + interval '30 minutes')`, token, phone); err != nil {
+		log.Printf("whatsapp: erro ao salvar token: %v", err)
+		return
+	}
+
+	link := strings.TrimRight(h.appURL, "/") + "/wa/" + token
+	_ = h.wa.SendText(phone,
+		"Olá! Sou o agente financeiro do DSFR Finance. 👋\n\n"+
+			"Eu ajudo você a registrar gastos em dinheiro e a decidir se uma compra "+
+			"cabe no seu orçamento, olhando suas contas, dívidas e parcelamentos.\n\n"+
+			"Para começar, entre ou crie sua conta por aqui:\n"+link+"\n\n"+
+			"O link vale por 30 minutos e é só seu. Depois de entrar, volta aqui que eu já te reconheço.")
+}
+
+// POST /whatsapp/claim  { "token": "..." }  (autenticado)
+// Chamado pelo app depois que a pessoa logou pelo link. Fecha o vínculo.
+func (h *WhatsAppHandler) ClaimOnboarding(c *gin.Context) {
+	wsID := middleware.GetWorkspaceID(c)
+	userID := middleware.GetUserID(c)
+
+	var body struct {
+		Token string `json:"token" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Uso único e com prazo: consome o token na própria consulta.
+	var phone string
+	err := h.db.QueryRow(`
+		UPDATE whatsapp_onboarding_tokens
+		SET used_at = NOW()
+		WHERE token = $1 AND used_at IS NULL AND expires_at > NOW()
+		RETURNING phone`, body.Token).Scan(&phone)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "link inválido ou expirado"})
+		return
+	}
+
+	// Um telefone atende um workspace: reaproveita o registro se já existir.
+	_, err = h.db.Exec(`
+		INSERT INTO whatsapp_links
+		  (id, workspace_id, user_id, phone, verified, consent_at, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,true,NOW(),NOW(),NOW())
+		ON CONFLICT (phone) DO UPDATE
+		  SET workspace_id = EXCLUDED.workspace_id,
+		      user_id      = EXCLUDED.user_id,
+		      verified     = true,
+		      consent_at   = NOW(),
+		      pairing_code = NULL,
+		      code_expires = NULL,
+		      updated_at   = NOW()`,
+		uuid.New().String(), wsID, userID, phone)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Avisa no WhatsApp que já está valendo.
+	go func() {
+		_ = h.wa.SendText(phone,
+			"✅ Pronto, já te reconheço!\n\n"+
+				"Pode registrar gastos (“comprei um lanche de 25 reais”), pedir opinião "+
+				"(“vale a pena comprar um notebook de 4 mil em 10x?”) ou consultar "+
+				"(“saldo”, “quanto gastei esse mês”).\n\n"+
+				"Mande “ajuda” quando precisar. Eu ajudo com orçamento, dívidas e "+
+				"parcelamentos — não recomendo investimentos específicos.")
+	}()
+
+	c.JSON(http.StatusOK, gin.H{"ok": true, "phone": maskPhone(phone)})
 }
 
 // ── Endpoints autenticados (app) ────────────────────────────────────────
@@ -307,6 +409,15 @@ func randomCode() (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%06d", n.Int64()), nil
+}
+
+// randomToken gera 32 bytes aleatórios em hex — é o segredo do link mágico.
+func randomToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // maskPhone mostra só o final: 5511•••••4321

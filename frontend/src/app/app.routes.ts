@@ -34,6 +34,13 @@ export const routes: Routes = [
     ]
   },
 
+  // Landing do link mágico do WhatsApp — sem guard: precisa atender
+  // tanto quem já está logado quanto quem ainda vai se cadastrar.
+  {
+    path: 'wa/:token',
+    loadComponent: () => import('./modules/whatsapp/wa-connect.component').then(m => m.WaConnectComponent)
+  },
+
   // Public legal pages (GDPR) — no auth required
   {
     path: 'legal',

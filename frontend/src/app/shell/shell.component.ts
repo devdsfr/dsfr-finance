@@ -151,6 +151,12 @@ interface NavGroup { key: string; label: string; items: NavItem[]; }
         </header>
 
         <main class="content">
+          @if (waJustLinked()) {
+            <div class="wa-banner">
+              <span>💬 WhatsApp conectado! Volte à conversa e mande <strong>ajuda</strong> para começar.</span>
+              <button class="wa-banner__close" (click)="waJustLinked.set(false)" aria-label="Fechar">×</button>
+            </div>
+          }
           <router-outlet />
         </main>
       </div>
@@ -268,6 +274,12 @@ interface NavGroup { key: string; label: string; items: NavItem[]; }
     .theme-toggle--dark .tt-thumb { transform: translateX(20px); background: #1e2638; color: #c4b5fd; }
 
     .content { flex: 1; padding: 1.5rem 2rem; max-width: 1180px; margin: 0 auto; width: 100%; }
+    .wa-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      background: #dcfce7; color: #166534; border-radius: .5rem; padding: .7rem 1rem;
+      font-size: .85rem; margin-bottom: 1rem; }
+    .wa-banner__close { background: none; border: none; color: inherit; font-size: 1.2rem;
+      line-height: 1; cursor: pointer; padding: 0 .2rem; }
+    :host-context([data-theme="dark"]) .wa-banner { background: rgba(74,222,128,.15) !important; color: #4ade80 !important; }
 
     /* ── FAB ─────────────────────────────────────────────── */
     .fab {
@@ -344,6 +356,23 @@ export class ShellComponent implements OnInit {
 
   unreadCount  = signal(0);
   sidebarOpen  = signal(false);
+  waJustLinked = signal(false);
+
+  /**
+   * Fecha o vínculo do WhatsApp deixado pendente pelo link mágico.
+   * Roda aqui porque o login sempre cai no shell — vale para e-mail/senha
+   * e também para quem entrou por Google ou Facebook.
+   */
+  private claimPendingWhatsapp(): void {
+    const token = sessionStorage.getItem('wa_pending_token');
+    if (!token) return;
+    sessionStorage.removeItem('wa_pending_token');
+
+    this.api.post<any>('/whatsapp/claim', { token }).subscribe({
+      next: () => this.waJustLinked.set(true),
+      error: () => {}, // link expirado: o usuário pede outro pelo WhatsApp
+    });
+  }
   acctOpen     = signal(false);
   langMenuOpen = signal(false);
   currMenuOpen = signal(false);
@@ -409,6 +438,7 @@ export class ShellComponent implements OnInit {
   ngOnInit(): void {
     this.plan.load();
     this.settings.load();
+    this.claimPendingWhatsapp();
     this.api.get<any>('/notifications').subscribe(r => {
       const list: any[] = r.data ?? [];
       this.unreadCount.set(list.filter((n: any) => !n.read).length);
