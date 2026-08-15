@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { AssetsComponent } from './assets.component';
 
 interface Snapshot {
   id?: string;
@@ -34,16 +35,34 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
 @Component({
   selector: 'app-patrimony-evolution',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AssetsComponent],
   template: `
 <div class="page">
   <div class="page-header">
     <div>
       <h1>Evolução de Patrimônio</h1>
-      <p class="subtitle">Acompanhe seus investimentos mês a mês</p>
+      <p class="subtitle">Investimentos financeiros e bens físicos</p>
     </div>
-    <button class="btn btn--primary" (click)="openForm()">+ Registrar mês</button>
+    @if (tab() === 'investments') {
+      <button class="btn btn--primary" (click)="openForm()">+ Registrar mês</button>
+    }
   </div>
+
+  <!-- ── Abas principais ── -->
+  <div class="main-tabs">
+    <button class="main-tab" [class.active]="tab() === 'investments'" (click)="tab.set('investments')">
+      📈 Investimentos
+    </button>
+    <button class="main-tab" [class.active]="tab() === 'assets'" (click)="tab.set('assets')">
+      🏞️ Bens &amp; Propriedades
+    </button>
+  </div>
+
+  @if (tab() === 'assets') {
+    <app-assets />
+  }
+
+  @if (tab() === 'investments') {
 
   <!-- ── Wallet tabs ── -->
   @if (wallets().length > 0) {
@@ -328,6 +347,8 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     </div>
   }
 
+  } <!-- fim da aba Investimentos -->
+
   <!-- ── Delete confirmation modal ── -->
   @if (confirmDelete()) {
     <div class="modal-overlay" (click)="confirmDelete.set(null)">
@@ -363,6 +384,15 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
     .btn--sm { padding: .3rem .75rem; font-size: .8rem; }
 
     /* Wallet tabs */
+    .main-tabs { display: flex; gap: .25rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem; }
+    .main-tab { background: none; border: none; border-bottom: 2px solid transparent;
+      padding: .6rem 1rem; font-size: .88rem; font-weight: 600; color: #6b7280; cursor: pointer; }
+    .main-tab:hover { color: #2e7736; }
+    .main-tab.active { color: #2e7736; border-bottom-color: #2e7736; }
+    :host-context([data-theme="dark"]) .main-tabs { border-bottom-color: #232d42 !important; }
+    :host-context([data-theme="dark"]) .main-tab { color: #8393ad !important; }
+    :host-context([data-theme="dark"]) .main-tab.active { color: #4ade80 !important; border-bottom-color: #4ade80 !important; }
+
     .wallet-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
     .wallet-tab {
       padding: .35rem .9rem; border-radius: 999px; font-size: .82rem; font-weight: 600;
@@ -522,6 +552,9 @@ export class PatrimonyEvolutionComponent implements OnInit {
   loading  = signal(true);
   saving   = signal(false);
   showForm = signal(false);
+  /** Aba principal: investimentos financeiros ou bens físicos. */
+  tab = signal<'investments' | 'assets'>('investments');
+
   snapshots = signal<Snapshot[]>([]);
   activeWallet = signal<string>('__all__');
   form: Snapshot = EMPTY();

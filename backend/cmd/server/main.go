@@ -98,6 +98,7 @@ func main() {
 	planH := handlers.NewPlanHandler(db)
 	settingsH := handlers.NewSettingsHandler(db)
 	patrimonySnapH := handlers.NewPatrimonySnapshotHandler(db)
+	assetH := handlers.NewAssetHandler(db)
 	goalH := handlers.NewGoalHandler(goalRepo)
 	investmentH := handlers.NewInvestmentHandler(investmentRepo)
 	oauthH := handlers.NewOAuthHandler(oauthSvc, cfg.AppURL)
@@ -207,6 +208,15 @@ func main() {
 		// Import — extrato bancário OFX
 		auth.POST("/import/statement/analyze", stmtImportH.Analyze)
 		auth.POST("/import/statement", stmtImportH.Import)
+
+		// Bens e propriedades (lotes, terrenos, imóveis)
+		auth.GET("/assets", assetH.List)
+		auth.POST("/assets", assetH.Create)
+		auth.PUT("/assets/:id", assetH.Update)
+		auth.DELETE("/assets/:id", assetH.Delete)
+		auth.GET("/assets/:id/installments", assetH.Installments)
+		auth.GET("/assets/:id/valuations", assetH.Valuations)
+		auth.POST("/assets/:id/valuation", assetH.AddValuation)
 
 		// WhatsApp — pareamento do número
 		auth.GET("/whatsapp/link", whatsappH.GetLink)
