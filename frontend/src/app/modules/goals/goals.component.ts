@@ -6,6 +6,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-backdrop.directive';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 
@@ -18,7 +19,7 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
 @Component({
   selector: 'app-goals',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AppCurrencyPipe, MoneyMaskDirective],
+  imports: [CommonModule, FormsModule, RouterModule, AppCurrencyPipe, MoneyMaskDirective, DismissOnBackdropDirective],
   template: `
 <div class="goals-page">
 
@@ -281,8 +282,8 @@ const GAUGE_C  = +(Math.PI * GAUGE_R).toFixed(2);    // ≈ 226.19  (half circum
 
   <!-- ── Form modal ──────────────────────────────────────────────────── -->
   @if (showForm()) {
-    <div class="overlay" (click)="closeForm()">
-      <div class="form-modal" (click)="$event.stopPropagation()">
+    <div class="overlay" appDismissOnBackdrop (backdropDismiss)="closeForm()">
+      <div class="form-modal">
 
         <div class="fm-header">
           <h2>{{ editingId() ? 'Editar Objetivo' : 'Novo Objetivo' }}</h2>

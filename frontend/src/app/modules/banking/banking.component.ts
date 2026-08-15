@@ -5,6 +5,7 @@ import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
+import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-backdrop.directive';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 
@@ -75,7 +76,7 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
 @Component({
   selector: 'app-banking',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent, AppCurrencyPipe],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent, AppCurrencyPipe, DismissOnBackdropDirective],
   template: `
 <div class="settings-layout">
   <!-- Sidebar -->
@@ -304,8 +305,8 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
 
 <!-- ── FORM MODAL (Conta / Cartão) ── -->
 @if (formOpen()) {
-  <div class="modal-overlay" (click)="closeForm()">
-    <div class="modal" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" appDismissOnBackdrop (backdropDismiss)="closeForm()">
+    <div class="modal">
       <div class="modal-head">
         <h2>{{ formTitle() }}</h2>
         <button class="modal-close" (click)="closeForm()">✕</button>
@@ -432,8 +433,8 @@ const DAYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
 
 <!-- ── ADJUST BALANCE MODAL ── -->
 @if (adjustOpen()) {
-  <div class="modal-overlay" (click)="adjustOpen.set(false)">
-    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" appDismissOnBackdrop (backdropDismiss)="adjustOpen.set(false)">
+    <div class="modal modal--sm">
       <div class="modal-head">
         <h2>Ajustar saldo</h2>
         <button class="modal-close" (click)="adjustOpen.set(false)">✕</button>

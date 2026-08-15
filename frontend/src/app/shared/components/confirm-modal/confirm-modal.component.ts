@@ -1,14 +1,15 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DismissOnBackdropDirective } from '../../directives/dismiss-on-backdrop.directive';
 
 @Component({
   selector: 'app-confirm-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DismissOnBackdropDirective],
   template: `
     @if (visible) {
-      <div class="modal-overlay" (click)="cancelled.emit()">
-        <div class="confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-overlay" appDismissOnBackdrop (backdropDismiss)="cancelled.emit()">
+        <div class="confirm-modal">
           <div class="confirm-icon">{{ icon }}</div>
           <h3 class="confirm-title">{{ title }}</h3>
           <p class="confirm-msg" [innerHTML]="message"></p>

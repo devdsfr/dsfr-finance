@@ -6,6 +6,7 @@ import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AppCurrencyPipe } from '../../../shared/pipes/app-currency.pipe';
+import { DismissOnBackdropDirective } from '../../../shared/directives/dismiss-on-backdrop.directive';
 import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
@@ -15,7 +16,7 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
 @Component({
   selector: 'app-spending-limits',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppCurrencyPipe, MoneyMaskDirective, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, AppCurrencyPipe, MoneyMaskDirective, ConfirmModalComponent, DismissOnBackdropDirective],
   template: `
 <div class="sl-page">
 
@@ -162,8 +163,8 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
 
   <!-- Inline form (modal-style slide-in) -->
   @if (showForm) {
-    <div class="form-overlay" (click)="cancelForm()">
-      <div class="form-panel" (click)="$event.stopPropagation()">
+    <div class="form-overlay" appDismissOnBackdrop (backdropDismiss)="cancelForm()">
+      <div class="form-panel">
         <div class="form-panel__header">
           <span>{{ editing ? 'Editar Limite' : 'Definir Limite' }}</span>
           <button class="close-btn" (click)="cancelForm()">✕</button>

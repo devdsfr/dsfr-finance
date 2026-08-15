@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { DismissOnBackdropDirective } from '../../../shared/directives/dismiss-on-backdrop.directive';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 interface Category { id: string; name: string; color: string; icon: string; type: string; }
@@ -10,7 +11,7 @@ interface Category { id: string; name: string; color: string; icon: string; type
 @Component({
   selector: 'app-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent, DismissOnBackdropDirective],
   template: `
     <div class="cat-page">
 
@@ -63,8 +64,8 @@ interface Category { id: string; name: string; color: string; icon: string; type
 
     <!-- ── Create/Edit Modal ── -->
     @if (showForm) {
-      <div class="overlay" (click)="showForm = false">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" appDismissOnBackdrop (backdropDismiss)="showForm = false">
+        <div class="modal">
 
           <div class="mh">
             <span class="mh-title">{{ editing ? 'Editando' : 'Criando' }} categoria de {{ form.type === 'income' ? 'receita' : 'despesa' }}</span>
@@ -128,8 +129,8 @@ interface Category { id: string; name: string; color: string; icon: string; type
 
     <!-- ── Archive Confirm Modal ── -->
     @if (archiveTarget) {
-      <div class="overlay" (click)="archiveTarget = null">
-        <div class="confirm-modal" (click)="$event.stopPropagation()">
+      <div class="overlay" appDismissOnBackdrop (backdropDismiss)="archiveTarget = null">
+        <div class="confirm-modal">
           <button class="mh-close confirm-close" (click)="archiveTarget = null">✕</button>
           <p class="confirm-title">
             Você quer mesmo arquivar a categoria<br>

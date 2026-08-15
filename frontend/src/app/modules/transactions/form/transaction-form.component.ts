@@ -8,6 +8,7 @@ import { TagInputComponent } from '../../../shared/components/tag-input/tag-inpu
 import { FileUploadComponent } from '../../../shared/components/file-upload/file-upload.component';
 import { MoneyMaskDirective } from '../../../shared/directives/money-mask.directive';
 import { RecurrenceScopeModalComponent, RecurrenceScope } from '../../../shared/components/recurrence-scope-modal/recurrence-scope-modal.component';
+import { DismissOnBackdropDirective } from '../../../shared/directives/dismiss-on-backdrop.directive';
 
 interface Category { id: string; name: string; type: string; color?: string; icon?: string; }
 interface Account  { id: string; name: string; logo?: string; color?: string; }
@@ -16,10 +17,10 @@ interface CreditCard { id: string; name: string; logo?: string; color?: string; 
 @Component({
   selector: 'app-transaction-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TagInputComponent, FileUploadComponent, MoneyMaskDirective, RecurrenceScopeModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, TagInputComponent, FileUploadComponent, MoneyMaskDirective, RecurrenceScopeModalComponent, DismissOnBackdropDirective],
   template: `
-    <div class="overlay" (click)="goBack()">
-      <div class="modal" (click)="$event.stopPropagation()">
+    <div class="overlay" appDismissOnBackdrop (backdropDismiss)="goBack()">
+      <div class="modal">
 
         <!-- Type toggle -->
         <div class="type-bar">

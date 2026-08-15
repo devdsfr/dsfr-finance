@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
+import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-backdrop.directive';
+import { BlankZeroDirective } from '../../shared/directives/blank-zero.directive';
 import { catchError, of } from 'rxjs';
 
 interface Asset {
@@ -45,18 +47,25 @@ const TYPES = [
   { v: 'outro',       label: 'Outro',       icon: '📦' },
 ];
 
+/** Campos numéricos começam nulos para o input aparecer vazio, não com "0". */
 const emptyForm = () => ({
   name: '', type: 'lote', wallet_name: 'Principal',
-  purchase_value: 0, market_value: 0, purchase_date: new Date().toISOString().slice(0, 10),
-  city: '', state: '', address: '', area: null as number | null, area_unit: 'm2',
-  is_financed: false, down_payment: 0, installment_count: 0, installment_value: 0,
+  purchase_value: null as number | null,
+  market_value: null as number | null,
+  purchase_date: new Date().toISOString().slice(0, 10),
+  city: '', state: '', address: '',
+  area: null as number | null, area_unit: 'm2',
+  is_financed: false,
+  down_payment: null as number | null,
+  installment_count: null as number | null,
+  installment_value: null as number | null,
   first_due_date: '', seller: '', notes: '', generate_installments: true,
 });
 
 @Component({
   selector: 'app-assets',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppCurrencyPipe],
+  imports: [CommonModule, FormsModule, AppCurrencyPipe, DismissOnBackdropDirective, BlankZeroDirective],
   template: `
 <div class="assets">
 
@@ -184,8 +193,8 @@ const emptyForm = () => ({
 
 <!-- ── Formulário ── -->
 @if (formOpen()) {
-  <div class="overlay" (click)="formOpen.set(false)">
-    <div class="modal" (click)="$event.stopPropagation()">
+  <div class="overlay" appDismissOnBackdrop (backdropDismiss)="formOpen.set(false)">
+    <div class="modal">
       <h2>Nova propriedade</h2>
 
       <div class="row">
@@ -204,12 +213,12 @@ const emptyForm = () => ({
       <div class="row">
         <div class="fg">
           <label>Valor de compra (R$)</label>
-          <input class="input" type="number" [(ngModel)]="form.purchase_value" />
+          <input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.purchase_value" />
         </div>
         <div class="fg">
           <label>Valor de mercado hoje (R$)</label>
-          <input class="input" type="number" [(ngModel)]="form.market_value"
-                 [placeholder]="form.purchase_value || 'igual ao de compra'" />
+          <input class="input" type="number" appBlankZero [(ngModel)]="form.market_value"
+                 placeholder="igual ao de compra" />
         </div>
         <div class="fg">
           <label>Data da compra</label>
@@ -220,7 +229,7 @@ const emptyForm = () => ({
       <div class="row">
         <div class="fg"><label>Cidade</label><input class="input" [(ngModel)]="form.city" /></div>
         <div class="fg fg--sm"><label>UF</label><input class="input" maxlength="2" [(ngModel)]="form.state" /></div>
-        <div class="fg"><label>Área</label><input class="input" type="number" [(ngModel)]="form.area" /></div>
+        <div class="fg"><label>Área</label><input class="input" type="number" appBlankZero placeholder="0" [(ngModel)]="form.area" /></div>
         <div class="fg fg--sm">
           <label>Unidade</label>
           <select class="input" [(ngModel)]="form.area_unit">
@@ -244,9 +253,9 @@ const emptyForm = () => ({
 
       @if (form.is_financed) {
         <div class="row">
-          <div class="fg"><label>Entrada (R$)</label><input class="input" type="number" [(ngModel)]="form.down_payment" /></div>
-          <div class="fg"><label>Nº de parcelas</label><input class="input" type="number" [(ngModel)]="form.installment_count" /></div>
-          <div class="fg"><label>Valor da parcela (R$)</label><input class="input" type="number" [(ngModel)]="form.installment_value" /></div>
+          <div class="fg"><label>Entrada (R$)</label><input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.down_payment" /></div>
+          <div class="fg"><label>Nº de parcelas</label><input class="input" type="number" appBlankZero placeholder="Ex: 48" [(ngModel)]="form.installment_count" /></div>
+          <div class="fg"><label>Valor da parcela (R$)</label><input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.installment_value" /></div>
           <div class="fg"><label>1º vencimento</label><input class="input" type="date" [(ngModel)]="form.first_due_date" /></div>
         </div>
         <div class="row">
@@ -277,11 +286,11 @@ const emptyForm = () => ({
 
 <!-- ── Reavaliação ── -->
 @if (valuationFor(); as a) {
-  <div class="overlay" (click)="valuationFor.set(null)">
-    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+  <div class="overlay" appDismissOnBackdrop (backdropDismiss)="valuationFor.set(null)">
+    <div class="modal modal--sm">
       <h2>Atualizar valor</h2>
       <p class="hint">{{ a.name }} · comprado por {{ a.purchase_value | appCurrency }}</p>
-      <div class="fg"><label>Quanto vale hoje (R$)</label><input class="input" type="number" [(ngModel)]="valuationValue" /></div>
+      <div class="fg"><label>Quanto vale hoje (R$)</label><input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="valuationValue" /></div>
       <div class="fg"><label>Data</label><input class="input" type="date" [(ngModel)]="valuationDate" /></div>
       <div class="fg"><label>Observação</label><input class="input" [(ngModel)]="valuationNote" placeholder="Ex: avaliação da imobiliária" /></div>
       <div class="foot">
@@ -294,8 +303,8 @@ const emptyForm = () => ({
 
 <!-- ── Confirmar exclusão ── -->
 @if (confirmDelete(); as a) {
-  <div class="overlay" (click)="confirmDelete.set(null)">
-    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+  <div class="overlay" appDismissOnBackdrop (backdropDismiss)="confirmDelete.set(null)">
+    <div class="modal modal--sm">
       <h2>Excluir propriedade</h2>
       <p class="hint">
         Remover <strong>{{ a.name }}</strong>? As parcelas ainda não pagas serão apagadas.
@@ -428,7 +437,7 @@ export class AssetsComponent implements OnInit {
   installments     = signal<any[]>([]);
 
   form = emptyForm();
-  valuationValue = 0;
+  valuationValue: number | null = null;
   valuationDate  = new Date().toISOString().slice(0, 10);
   valuationNote  = '';
 

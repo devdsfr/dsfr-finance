@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-backdrop.directive';
 import { PlanService } from '../../core/services/plan.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
@@ -79,7 +80,7 @@ const AI_PROVIDERS = [
 @Component({
   selector: 'app-ai-subscriptions',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent, DismissOnBackdropDirective],
   template: `
 <div class="page-header">
   <h1>Assinaturas Tech</h1>
@@ -116,8 +117,8 @@ const AI_PROVIDERS = [
 
   <!-- Form modal -->
   @if (showForm) {
-    <div class="overlay" (click)="cancelForm()">
-      <div class="form-modal" (click)="$event.stopPropagation()">
+    <div class="overlay" appDismissOnBackdrop (backdropDismiss)="cancelForm()">
+      <div class="form-modal">
         <div class="fm-head">
           <h3>{{ editing ? 'Editar assinatura' : 'Nova assinatura' }}</h3>
           <button class="fm-close" (click)="cancelForm()">✕</button>

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-backdrop.directive';
 import { PlanService } from '../../core/services/plan.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
@@ -101,7 +102,7 @@ function months2text(n: number): string {
 @Component({
   selector: 'app-debt-strategy',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent, DismissOnBackdropDirective],
   template: `
     @if (!plan.isPremium()) {
       <div class="upsell-card">
@@ -359,8 +360,8 @@ function months2text(n: number): string {
 
     <!-- ── Modal form ────────────────────────────────────────────────── -->
     @if (showForm()) {
-      <div class="overlay" (click)="closeForm()">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" appDismissOnBackdrop (backdropDismiss)="closeForm()">
+        <div class="modal">
           <h2>{{ editingDebt() ? 'Editar Dívida' : 'Nova Dívida' }}</h2>
           <form (ngSubmit)="save()" class="mform">
             <div class="mform-row">

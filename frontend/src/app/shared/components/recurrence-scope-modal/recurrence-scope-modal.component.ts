@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DismissOnBackdropDirective } from '../../directives/dismiss-on-backdrop.directive';
 
 export type RecurrenceScope = 'one' | 'future' | 'all';
 
@@ -10,11 +11,11 @@ export type RecurrenceScope = 'one' | 'future' | 'all';
 @Component({
   selector: 'app-recurrence-scope-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DismissOnBackdropDirective],
   template: `
     @if (visible) {
-      <div class="overlay" (click)="cancelled.emit()">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" appDismissOnBackdrop (backdropDismiss)="cancelled.emit()">
+        <div class="modal">
           <h2>{{ mode === 'delete' ? 'Excluir lançamento recorrente' : 'Alterar lançamento recorrente' }}</h2>
           <p class="sub">
             Este lançamento se repete em outros meses. O que você quer

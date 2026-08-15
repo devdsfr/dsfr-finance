@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-backdrop.directive';
 import { PlanService } from '../../core/services/plan.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
@@ -99,7 +100,7 @@ function computeAllocations(rows: { ideal_pct: number; current_value: number }[]
 @Component({
   selector: 'app-investment-strategy',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent, DismissOnBackdropDirective],
   template: `
     @if (!plan.isPremium()) {
       <div class="upsell-card">
@@ -436,8 +437,8 @@ function computeAllocations(rows: { ideal_pct: number; current_value: number }[]
 
     <!-- ── Modal: carteira ──────────────────────────────────────────── -->
     @if (showPortfolioForm()) {
-      <div class="overlay" (click)="closePortfolioForm()">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" appDismissOnBackdrop (backdropDismiss)="closePortfolioForm()">
+        <div class="modal">
           <h2>{{ editingPortfolio() ? 'Editar Carteira' : 'Nova Carteira' }}</h2>
           <form (ngSubmit)="savePortfolio()" class="mform">
             <div class="fg">
@@ -469,8 +470,8 @@ function computeAllocations(rows: { ideal_pct: number; current_value: number }[]
 
     <!-- ── Modal: ativo ─────────────────────────────────────────────── -->
     @if (showAssetForm()) {
-      <div class="overlay" (click)="closeAssetForm()">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" appDismissOnBackdrop (backdropDismiss)="closeAssetForm()">
+        <div class="modal">
           <h2>{{ editingAsset() ? 'Editar Ativo' : 'Novo Ativo' }}</h2>
           <form (ngSubmit)="saveAsset()" class="mform">
             <div class="fg">

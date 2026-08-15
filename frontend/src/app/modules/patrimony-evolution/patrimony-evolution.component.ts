@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AssetsComponent } from './assets.component';
+import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-backdrop.directive';
+import { BlankZeroDirective } from '../../shared/directives/blank-zero.directive';
 
 interface Snapshot {
   id?: string;
@@ -35,7 +37,7 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
 @Component({
   selector: 'app-patrimony-evolution',
   standalone: true,
-  imports: [CommonModule, FormsModule, AssetsComponent],
+  imports: [CommonModule, FormsModule, AssetsComponent, DismissOnBackdropDirective, BlankZeroDirective],
   template: `
 <div class="page">
   <div class="page-header">
@@ -181,8 +183,8 @@ const EMPTY = (wallet = 'Principal'): Snapshot => ({
 
   <!-- ── Form modal ── -->
   @if (showForm()) {
-    <div class="modal-overlay" (click)="closeForm()">
-      <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" appDismissOnBackdrop (backdropDismiss)="closeForm()">
+      <div class="modal">
         <div class="modal-header">
           <h2>Registrar mês</h2>
           <button class="modal-close" (click)="closeForm()">✕</button>
@@ -225,37 +227,37 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
           <div class="form-row">
             <div class="fg">
               <label>Patrimônio total</label>
-              <input type="number" step="0.01" [(ngModel)]="form.total" name="total" class="input" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.total" name="total" class="input" />
             </div>
             <div class="fg">
               <label>Valor investido</label>
-              <input type="number" step="0.01" [(ngModel)]="form.invested" name="invested" class="input" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.invested" name="invested" class="input" />
             </div>
           </div>
           <div class="form-row">
             <div class="fg">
               <label>Lucro total</label>
-              <input type="number" step="0.01" [(ngModel)]="form.profit" name="profit" class="input" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.profit" name="profit" class="input" />
             </div>
             <div class="fg">
               <label>Ganho de Capital</label>
-              <input type="number" step="0.01" [(ngModel)]="form.capital_gains" name="capital_gains" class="input" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.capital_gains" name="capital_gains" class="input" />
             </div>
           </div>
           <div class="form-row">
             <div class="fg">
               <label>Dividendos Recebidos</label>
-              <input type="number" step="0.01" [(ngModel)]="form.dividends" name="dividends" class="input" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.dividends" name="dividends" class="input" />
             </div>
             <div class="fg">
               <label>Proventos 12M</label>
-              <input type="number" step="0.01" [(ngModel)]="form.income_12m" name="income_12m" class="input" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.income_12m" name="income_12m" class="input" />
             </div>
           </div>
           <div class="form-row">
             <div class="fg fg--reserve">
               <label>🛟 Reserva de Emergência</label>
-              <input type="number" step="0.01" min="0" [(ngModel)]="form.emergency_reserve"
+              <input type="number" step="0.01" min="0" appBlankZero [(ngModel)]="form.emergency_reserve"
                      name="emergency_reserve" class="input" placeholder="0.00" />
               <small class="fg-hint">Quanto desta carteira é reserva de emergência (liquidez diária). Entra no Termômetro Financeiro da Visão Geral.</small>
             </div>
@@ -263,15 +265,15 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
           <div class="form-row">
             <div class="fg">
               <label>Variação % mensal</label>
-              <input type="number" step="0.01" [(ngModel)]="form.variation_pct" name="variation_pct" class="input" placeholder="1.98" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.variation_pct" name="variation_pct" class="input" placeholder="1.98" />
             </div>
             <div class="fg">
               <label>Variação R$ mensal</label>
-              <input type="number" step="0.01" [(ngModel)]="form.variation_val" name="variation_val" class="input" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.variation_val" name="variation_val" class="input" />
             </div>
             <div class="fg">
               <label>Rentabilidade %</label>
-              <input type="number" step="0.01" [(ngModel)]="form.rentability" name="rentability" class="input" placeholder="10.93" />
+              <input type="number" step="0.01" appBlankZero [(ngModel)]="form.rentability" name="rentability" class="input" placeholder="10.93" />
             </div>
           </div>
           <div class="fg">
@@ -351,8 +353,8 @@ Proventos Recebidos (12M) R$ 280,96"></textarea>
 
   <!-- ── Delete confirmation modal ── -->
   @if (confirmDelete()) {
-    <div class="modal-overlay" (click)="confirmDelete.set(null)">
-      <div class="confirm-modal" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" appDismissOnBackdrop (backdropDismiss)="confirmDelete.set(null)">
+      <div class="confirm-modal">
         <div class="confirm-icon">🗑️</div>
         <h3 class="confirm-title">Excluir registro</h3>
         <p class="confirm-msg">
