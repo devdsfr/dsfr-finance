@@ -35,6 +35,11 @@ type Asset struct {
 	FirstDueDate     *string `json:"first_due_date"`
 	Seller           *string `json:"seller"`
 
+	// Consórcio
+	CreditLetterValue float64 `json:"credit_letter_value"`
+	IsAwarded         bool    `json:"is_awarded"`
+	AwardedDate       *string `json:"awarded_date"`
+
 	Notes string `json:"notes"`
 
 	// Calculados na listagem
@@ -57,6 +62,7 @@ func (h *AssetHandler) List(c *gin.Context) {
 		       a.city, a.state, a.address, a.area, a.area_unit,
 		       a.is_financed, a.down_payment, a.installment_count, a.installment_value,
 		       TO_CHAR(a.first_due_date,'YYYY-MM-DD'), a.seller, a.notes,
+		       a.credit_letter_value, a.is_awarded, TO_CHAR(a.awarded_date,'YYYY-MM-DD'),
 		       -- progresso vem das parcelas efetivamente pagas
 		       COALESCE(p.paid_count,0), COALESCE(p.paid_value,0),
 		       TO_CHAR(p.next_due,'YYYY-MM-DD')
@@ -79,35 +85,67 @@ func (h *AssetHandler) List(c *gin.Context) {
 	list := []Asset{}
 	for rows.Next() {
 		var a Asset
-		var purchaseDate, firstDue, nextDue sql.NullString
+		var purchaseDate, firstDue, nextDue, awardedDate sql.NullString
 		if err := rows.Scan(&a.ID, &a.Name, &a.Type, &a.WalletName,
 			&a.PurchaseValue, &a.MarketValue, &purchaseDate,
 			&a.City, &a.State, &a.Address, &a.Area, &a.AreaUnit,
 			&a.IsFinanced, &a.DownPayment, &a.InstallmentCount, &a.InstallmentValue,
 			&firstDue, &a.Seller, &a.Notes,
+			&a.CreditLetterValue, &a.IsAwarded, &awardedDate,
 			&a.PaidCount, &a.PaidValue, &nextDue); err != nil {
 			continue
 		}
 		if purchaseDate.Valid { a.PurchaseDate = &purchaseDate.String }
 		if firstDue.Valid     { a.FirstDueDate = &firstDue.String }
 		if nextDue.Valid      { a.NextDueDate = &nextDue.String }
+		if awardedDate.Valid  { a.AwardedDate = &awardedDate.String }
 
 		// Entrada também conta como pago no progresso financeiro.
 		a.PaidValue += a.DownPayment
-		total := a.PurchaseValue
-		if total > 0 {
-			a.RemainingValue = total - a.PaidValue
-			if a.RemainingValue < 0 {
-				a.RemainingValue = 0
+
+		if a.Type == "consorcio" {
+			// Total do plano = tudo que será desembolsado até o fim.
+			total := a.InstallmentValue * float64(a.InstallmentCount)
+			if total <= 0 {
+				total = a.CreditLetterValue
 			}
-			a.ProgressPct = a.PaidValue / total
-			if a.ProgressPct > 1 {
-				a.ProgressPct = 1
+			if total > 0 {
+				a.RemainingValue = total - a.PaidValue
+				if a.RemainingValue < 0 {
+					a.RemainingValue = 0
+				}
+				a.ProgressPct = a.PaidValue / total
+				if a.ProgressPct > 1 {
+					a.ProgressPct = 1
+				}
 			}
-		}
-		a.Appreciation = a.MarketValue - a.PurchaseValue
-		if a.PurchaseValue > 0 {
-			a.AppreciationPct = a.Appreciation / a.PurchaseValue
+			// Antes da contemplação você não tem o bem, tem um direito:
+			// o patrimônio vale o que já foi pago (o resgatável na desistência).
+			// Contemplado, passa a valer a carta de crédito.
+			if a.IsAwarded {
+				a.MarketValue = a.CreditLetterValue
+			} else {
+				a.MarketValue = a.PaidValue
+			}
+			// Valorização não faz sentido aqui: não há ativo se valorizando.
+			a.Appreciation = 0
+			a.AppreciationPct = 0
+		} else {
+			total := a.PurchaseValue
+			if total > 0 {
+				a.RemainingValue = total - a.PaidValue
+				if a.RemainingValue < 0 {
+					a.RemainingValue = 0
+				}
+				a.ProgressPct = a.PaidValue / total
+				if a.ProgressPct > 1 {
+					a.ProgressPct = 1
+				}
+			}
+			a.Appreciation = a.MarketValue - a.PurchaseValue
+			if a.PurchaseValue > 0 {
+				a.AppreciationPct = a.Appreciation / a.PurchaseValue
+			}
 		}
 		list = append(list, a)
 	}
@@ -134,6 +172,11 @@ type assetInput struct {
 	FirstDueDate     *string `json:"first_due_date"`
 	Seller           *string `json:"seller"`
 
+	// Consórcio
+	CreditLetterValue float64 `json:"credit_letter_value"`
+	IsAwarded         bool    `json:"is_awarded"`
+	AwardedDate       *string `json:"awarded_date"`
+
 	Notes string `json:"notes"`
 	/** Quando true, gera as parcelas como contas a pagar. */
 	GenerateInstallments bool `json:"generate_installments"`
@@ -154,6 +197,20 @@ func (h *AssetHandler) Create(c *gin.Context) {
 	// Sem avaliação informada, o bem vale o que custou.
 	if in.MarketValue == 0 { in.MarketValue = in.PurchaseValue }
 
+	if in.Type == "consorcio" {
+		// No consórcio o desembolso total é o custo; a carta é o que se recebe.
+		in.IsFinanced = true
+		if in.PurchaseValue == 0 {
+			in.PurchaseValue = in.InstallmentValue * float64(in.InstallmentCount)
+		}
+		// Enquanto não contemplado, ainda não há bem: começa valendo a entrada.
+		if in.IsAwarded {
+			in.MarketValue = in.CreditLetterValue
+		} else {
+			in.MarketValue = in.DownPayment
+		}
+	}
+
 	tx, err := h.db.BeginTx(c, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -172,12 +229,15 @@ func (h *AssetHandler) Create(c *gin.Context) {
 		  (id, workspace_id, name, type, wallet_name, purchase_value, market_value,
 		   purchase_date, city, state, address, area, area_unit,
 		   is_financed, down_payment, installment_count, installment_value,
-		   first_due_date, seller, installment_group_id, notes, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,NOW(),NOW())`,
+		   first_due_date, seller, installment_group_id, notes,
+		   credit_letter_value, is_awarded, awarded_date, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
+		        $22,$23,$24,NOW(),NOW())`,
 		assetID, wsID, in.Name, in.Type, in.WalletName, in.PurchaseValue, in.MarketValue,
 		nullDate(in.PurchaseDate), in.City, in.State, in.Address, in.Area, in.AreaUnit,
 		in.IsFinanced, in.DownPayment, in.InstallmentCount, in.InstallmentValue,
-		nullDate(in.FirstDueDate), in.Seller, groupID, in.Notes)
+		nullDate(in.FirstDueDate), in.Seller, groupID, in.Notes,
+		in.CreditLetterValue, in.IsAwarded, nullDate(in.AwardedDate))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -219,16 +279,23 @@ func (h *AssetHandler) generateInstallments(c *gin.Context, tx *sql.Tx, wsID, as
 	}
 
 	// Categoria dedicada, criada uma vez por workspace.
+	// Consórcio ganha categoria própria: o gasto tem natureza diferente
+	// de comprar um imóvel, e separar ajuda na leitura dos relatórios.
+	catName, catIcon := "Imóveis e Terrenos", "🏞️"
+	if in.Type == "consorcio" {
+		catName, catIcon = "Consórcio", "🎟️"
+	}
+
 	var catID string
 	_ = tx.QueryRowContext(c,
-		`SELECT id FROM categories WHERE workspace_id=$1 AND name='Imóveis e Terrenos' LIMIT 1`,
-		wsID).Scan(&catID)
+		`SELECT id FROM categories WHERE workspace_id=$1 AND name=$2 LIMIT 1`,
+		wsID, catName).Scan(&catID)
 	if catID == "" {
 		catID = uuid.New().String()
 		if _, err := tx.ExecContext(c, `
 			INSERT INTO categories (id, workspace_id, name, color, icon, type, created_at, updated_at)
-			VALUES ($1,$2,'Imóveis e Terrenos','#8b5cf6','🏞️','expense',NOW(),NOW())`,
-			catID, wsID); err != nil {
+			VALUES ($1,$2,$3,'#8b5cf6',$4,'expense',NOW(),NOW())`,
+			catID, wsID, catName, catIcon); err != nil {
 			catID = ""
 		}
 	}
@@ -272,11 +339,13 @@ func (h *AssetHandler) Update(c *gin.Context) {
 		UPDATE assets SET
 		  name=$1, type=$2, wallet_name=$3, purchase_value=$4, market_value=$5,
 		  purchase_date=$6, city=$7, state=$8, address=$9, area=$10, area_unit=$11,
-		  seller=$12, notes=$13, updated_at=NOW()
-		WHERE id=$14 AND workspace_id=$15`,
+		  seller=$12, notes=$13,
+		  credit_letter_value=$14, is_awarded=$15, awarded_date=$16, updated_at=NOW()
+		WHERE id=$17 AND workspace_id=$18`,
 		in.Name, in.Type, in.WalletName, in.PurchaseValue, in.MarketValue,
 		nullDate(in.PurchaseDate), in.City, in.State, in.Address, in.Area, in.AreaUnit,
-		in.Seller, in.Notes, id, wsID)
+		in.Seller, in.Notes,
+		in.CreditLetterValue, in.IsAwarded, nullDate(in.AwardedDate), id, wsID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -35,6 +35,10 @@ interface Asset {
   next_due_date?: string;
   appreciation: number;
   appreciation_pct: number;
+  // Consórcio
+  credit_letter_value: number;
+  is_awarded: boolean;
+  awarded_date?: string;
 }
 
 const TYPES = [
@@ -44,6 +48,7 @@ const TYPES = [
   { v: 'apartamento', label: 'Apartamento', icon: '🏢' },
   { v: 'sitio',       label: 'Sítio/Chácara', icon: '🌳' },
   { v: 'veiculo',     label: 'Veículo',     icon: '🚗' },
+  { v: 'consorcio',   label: 'Consórcio',   icon: '🎟️' },
   { v: 'outro',       label: 'Outro',       icon: '📦' },
 ];
 
@@ -60,6 +65,10 @@ const emptyForm = () => ({
   installment_count: null as number | null,
   installment_value: null as number | null,
   first_due_date: '', seller: '', notes: '', generate_installments: true,
+  // Consórcio
+  credit_letter_value: null as number | null,
+  is_awarded: false,
+  awarded_date: '',
 });
 
 @Component({
@@ -124,30 +133,52 @@ const emptyForm = () => ({
           <button class="icon-btn" title="Excluir" (click)="confirmDelete.set(a)">🗑</button>
         </div>
 
-        <div class="values">
-          <div class="val">
-            <span class="val__lbl">Comprei por</span>
-            <span class="val__num">{{ a.purchase_value | appCurrency }}</span>
+        @if (a.type === 'consorcio') {
+          <div class="values">
+            <div class="val">
+              <span class="val__lbl">Carta de crédito</span>
+              <span class="val__num">{{ a.credit_letter_value | appCurrency }}</span>
+            </div>
+            <div class="val">
+              <span class="val__lbl">Já paguei</span>
+              <span class="val__num">{{ a.paid_value | appCurrency }}</span>
+            </div>
+            <div class="val">
+              <span class="val__lbl">Situação</span>
+              <span class="val__num" [class.pos]="a.is_awarded">
+                {{ a.is_awarded ? '🎉 Contemplado' : 'Aguardando' }}
+              </span>
+            </div>
           </div>
-          <div class="val">
-            <span class="val__lbl">Vale hoje</span>
-            <span class="val__num">{{ a.market_value | appCurrency }}</span>
+        } @else {
+          <div class="values">
+            <div class="val">
+              <span class="val__lbl">Comprei por</span>
+              <span class="val__num">{{ a.purchase_value | appCurrency }}</span>
+            </div>
+            <div class="val">
+              <span class="val__lbl">Vale hoje</span>
+              <span class="val__num">{{ a.market_value | appCurrency }}</span>
+            </div>
+            <div class="val">
+              <span class="val__lbl">Valorização</span>
+              <span class="val__num" [class.pos]="a.appreciation > 0" [class.neg]="a.appreciation < 0">
+                {{ a.appreciation | appCurrency }}
+                @if (a.purchase_value > 0) {
+                  <small>({{ a.appreciation_pct * 100 | number:'1.0-1' }}%)</small>
+                }
+              </span>
+            </div>
           </div>
-          <div class="val">
-            <span class="val__lbl">Valorização</span>
-            <span class="val__num" [class.pos]="a.appreciation > 0" [class.neg]="a.appreciation < 0">
-              {{ a.appreciation | appCurrency }}
-              @if (a.purchase_value > 0) {
-                <small>({{ a.appreciation_pct * 100 | number:'1.0-1' }}%)</small>
-              }
-            </span>
-          </div>
-        </div>
+        }
 
         @if (a.is_financed && a.installment_count > 0) {
           <div class="progress">
             <div class="progress__head">
-              <span>Parcelamento: {{ a.paid_count }}/{{ a.installment_count }} pagas</span>
+              <span>
+                {{ a.type === 'consorcio' ? 'Consórcio' : 'Parcelamento' }}:
+                {{ a.paid_count }}/{{ a.installment_count }} pagas
+              </span>
               <span>{{ a.progress_pct * 100 | number:'1.0-0' }}%</span>
             </div>
             <div class="progress__track">
@@ -165,7 +196,9 @@ const emptyForm = () => ({
         }
 
         <div class="card__actions">
-          <button class="link-btn" (click)="openValuation(a)">Atualizar valor</button>
+          @if (a.type !== 'consorcio') {
+            <button class="link-btn" (click)="openValuation(a)">Atualizar valor</button>
+          }
           @if (a.is_financed) {
             <button class="link-btn" (click)="toggleInstallments(a)">
               {{ openInstallments() === a.id ? 'Ocultar parcelas' : 'Ver parcelas' }}
@@ -210,57 +243,100 @@ const emptyForm = () => ({
         </div>
       </div>
 
-      <div class="row">
-        <div class="fg">
-          <label>Valor de compra (R$)</label>
-          <input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.purchase_value" />
-        </div>
-        <div class="fg">
-          <label>Valor de mercado hoje (R$)</label>
-          <input class="input" type="number" appBlankZero [(ngModel)]="form.market_value"
-                 placeholder="igual ao de compra" />
-        </div>
-        <div class="fg">
-          <label>Data da compra</label>
-          <input class="input" type="date" [(ngModel)]="form.purchase_date" />
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="fg"><label>Cidade</label><input class="input" [(ngModel)]="form.city" /></div>
-        <div class="fg fg--sm"><label>UF</label><input class="input" maxlength="2" [(ngModel)]="form.state" /></div>
-        <div class="fg"><label>Área</label><input class="input" type="number" appBlankZero placeholder="0" [(ngModel)]="form.area" /></div>
-        <div class="fg fg--sm">
-          <label>Unidade</label>
-          <select class="input" [(ngModel)]="form.area_unit">
-            <option value="m2">m²</option>
-            <option value="hectare">hectare</option>
-            <option value="alqueire">alqueire</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="fg">
-        <label>Endereço / referência</label>
-        <input class="input" [(ngModel)]="form.address" placeholder="Quadra, rua, ponto de referência…" />
-      </div>
-
-      <!-- Parcelamento -->
-      <label class="check">
-        <input type="checkbox" [(ngModel)]="form.is_financed" />
-        <span>Comprei parcelado</span>
-      </label>
-
-      @if (form.is_financed) {
+      @if (isConsorcio()) {
+        <p class="hint hint--box">
+          🎟️ No consórcio você ainda não tem o bem — tem um direito. Enquanto não for
+          contemplado, o patrimônio mostra o quanto você já pagou, que é o que voltaria
+          se desistisse. Ao marcar como contemplado, passa a valer a carta de crédito.
+        </p>
         <div class="row">
-          <div class="fg"><label>Entrada (R$)</label><input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.down_payment" /></div>
-          <div class="fg"><label>Nº de parcelas</label><input class="input" type="number" appBlankZero placeholder="Ex: 48" [(ngModel)]="form.installment_count" /></div>
+          <div class="fg">
+            <label>Valor da carta de crédito (R$)</label>
+            <input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.credit_letter_value" />
+          </div>
+          <div class="fg">
+            <label>Data da adesão</label>
+            <input class="input" type="date" [(ngModel)]="form.purchase_date" />
+          </div>
+        </div>
+      } @else {
+        <div class="row">
+          <div class="fg">
+            <label>Valor de compra (R$)</label>
+            <input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.purchase_value" />
+          </div>
+          <div class="fg">
+            <label>Valor de mercado hoje (R$)</label>
+            <input class="input" type="number" appBlankZero [(ngModel)]="form.market_value"
+                   placeholder="igual ao de compra" />
+          </div>
+          <div class="fg">
+            <label>Data da compra</label>
+            <input class="input" type="date" [(ngModel)]="form.purchase_date" />
+          </div>
+        </div>
+      }
+
+      @if (!isConsorcio()) {
+        <div class="row">
+          <div class="fg"><label>Cidade</label><input class="input" [(ngModel)]="form.city" /></div>
+          <div class="fg fg--sm"><label>UF</label><input class="input" maxlength="2" [(ngModel)]="form.state" /></div>
+          <div class="fg"><label>Área</label><input class="input" type="number" appBlankZero placeholder="0" [(ngModel)]="form.area" /></div>
+          <div class="fg fg--sm">
+            <label>Unidade</label>
+            <select class="input" [(ngModel)]="form.area_unit">
+              <option value="m2">m²</option>
+              <option value="hectare">hectare</option>
+              <option value="alqueire">alqueire</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>Endereço / referência</label>
+          <input class="input" [(ngModel)]="form.address" placeholder="Quadra, rua, ponto de referência…" />
+        </div>
+
+        <!-- Parcelamento -->
+        <label class="check">
+          <input type="checkbox" [(ngModel)]="form.is_financed" />
+          <span>Comprei parcelado</span>
+        </label>
+      }
+
+      @if (form.is_financed || isConsorcio()) {
+        <div class="row">
+          @if (!isConsorcio()) {
+            <div class="fg"><label>Entrada (R$)</label><input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.down_payment" /></div>
+          }
+          <div class="fg">
+            <label>{{ isConsorcio() ? 'Prazo (meses)' : 'Nº de parcelas' }}</label>
+            <input class="input" type="number" appBlankZero placeholder="Ex: 48" [(ngModel)]="form.installment_count" />
+          </div>
           <div class="fg"><label>Valor da parcela (R$)</label><input class="input" type="number" appBlankZero placeholder="0,00" [(ngModel)]="form.installment_value" /></div>
-          <div class="fg"><label>1º vencimento</label><input class="input" type="date" [(ngModel)]="form.first_due_date" /></div>
+          <div class="fg">
+            <label>{{ isConsorcio() ? '1ª parcela' : '1º vencimento' }}</label>
+            <input class="input" type="date" [(ngModel)]="form.first_due_date" />
+          </div>
         </div>
         <div class="row">
-          <div class="fg fg--grow"><label>Vendedor / loteadora</label><input class="input" [(ngModel)]="form.seller" /></div>
+          <div class="fg fg--grow">
+            <label>{{ isConsorcio() ? 'Administradora' : 'Vendedor / loteadora' }}</label>
+            <input class="input" [(ngModel)]="form.seller" />
+          </div>
         </div>
+
+        @if (isConsorcio()) {
+          <label class="check">
+            <input type="checkbox" [(ngModel)]="form.is_awarded" />
+            <span>Já fui contemplado</span>
+          </label>
+          @if (form.is_awarded) {
+            <div class="row">
+              <div class="fg"><label>Data da contemplação</label><input class="input" type="date" [(ngModel)]="form.awarded_date" /></div>
+            </div>
+          }
+        }
         <label class="check">
           <input type="checkbox" [(ngModel)]="form.generate_installments" />
           <span>Gerar as parcelas como contas a pagar</span>
@@ -381,6 +457,9 @@ const emptyForm = () => ({
     .check { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: #374151;
       margin: .5rem 0; cursor: pointer; }
     .hint { font-size: .78rem; color: #6b7280; margin: .3rem 0 .8rem; line-height: 1.5; }
+    .hint--box { background: #f5f3ff; border-left: 3px solid #8b5cf6; border-radius: .35rem;
+      padding: .7rem .85rem; margin-bottom: 1rem; }
+    :host-context([data-theme="dark"]) .hint--box { background: rgba(139,92,246,.12) !important; border-left-color: #a78bfa !important; }
     .foot { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
     .btn { border-radius: .35rem; padding: .5rem 1.2rem; font-size: .85rem; font-weight: 600; cursor: pointer; }
     .btn--primary { background: #2e7736; color: #fff; border: none; }
@@ -452,6 +531,9 @@ export class AssetsComponent implements OnInit {
     this.api.get<any>('/assets').pipe(catchError(() => of({ data: [] })))
       .subscribe(r => { this.list.set(r.data ?? []); this.loading.set(false); });
   }
+
+  /** Consórcio tem regras próprias: não há bem até a contemplação. */
+  isConsorcio(): boolean { return this.form.type === 'consorcio'; }
 
   iconFor(t: string)  { return TYPES.find(x => x.v === t)?.icon ?? '📦'; }
   labelFor(t: string) { return TYPES.find(x => x.v === t)?.label ?? 'Outro'; }
