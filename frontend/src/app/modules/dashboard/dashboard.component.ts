@@ -8,6 +8,7 @@ import { TranslationService } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 import { ConfigurableDashboardComponent } from './configurable-dashboard.component';
+import { FinanceAgentPanelComponent } from './finance-agent-panel.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -16,7 +17,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe, AppCurrencyPipe, ConfigurableDashboardComponent],
+  imports: [CommonModule, RouterModule, TranslatePipe, AppCurrencyPipe, ConfigurableDashboardComponent, FinanceAgentPanelComponent],
   template: `
     <div class="dash">
 
@@ -131,6 +132,11 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
           </button>
         </div>
       </div>
+
+      <!-- ── Agente financeiro ────────────────────────────────── -->
+      @if (!loading()) {
+        <app-finance-agent-panel />
+      }
 
       <!-- ── Termômetro Financeiro ────────────────────────────── -->
       @if (!loading()) {

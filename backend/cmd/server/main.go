@@ -99,6 +99,7 @@ func main() {
 	settingsH := handlers.NewSettingsHandler(db)
 	patrimonySnapH := handlers.NewPatrimonySnapshotHandler(db)
 	assetH := handlers.NewAssetHandler(db)
+	agentH := handlers.NewAgentHandler(financeAgentSvc, financeProfileSvc)
 	goalH := handlers.NewGoalHandler(goalRepo)
 	investmentH := handlers.NewInvestmentHandler(investmentRepo)
 	oauthH := handlers.NewOAuthHandler(oauthSvc, cfg.AppURL)
@@ -208,6 +209,11 @@ func main() {
 		// Import — extrato bancário OFX
 		auth.POST("/import/statement/analyze", stmtImportH.Analyze)
 		auth.POST("/import/statement", stmtImportH.Import)
+
+		// Agente financeiro no app (chat da Visão Geral)
+		auth.POST("/agent/ask", agentH.Ask)
+		auth.GET("/agent/context", agentH.Context)
+		auth.GET("/agent/context.md", agentH.ContextMarkdown)
 
 		// Bens e propriedades (lotes, terrenos, imóveis)
 		auth.GET("/assets", assetH.List)

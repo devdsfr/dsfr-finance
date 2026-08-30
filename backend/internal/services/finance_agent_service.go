@@ -414,6 +414,94 @@ func (s *FinanceAgentService) adviseFallback(ctx context.Context, wsID string, p
 		brl(sim.SobraAtual), sim.ComprometimentoTotal*100)
 }
 
+// ── Consulta pelo app (chat da Visão Geral) ─────────────────────────────
+
+// ChatTurn é uma rodada anterior da conversa, para dar continuidade.
+type ChatTurn struct {
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+}
+
+// Consult responde uma pergunta livre usando o perfil financeiro completo.
+// Diferente do WhatsApp, aqui nunca criamos lançamento — o app tem formulário
+// para isso. A resposta é sempre análise.
+func (s *FinanceAgentService) Consult(ctx context.Context, wsID, question string, history []ChatTurn) (string, error) {
+	prof, err := s.profile.Build(ctx, wsID)
+	if err != nil {
+		return "", err
+	}
+	profJSON, _ := json.Marshal(prof)
+
+	// Se a pergunta cita um valor, já entregamos a simulação pronta.
+	var simJSON []byte
+	if amount, parcelas := extractAmountAndInstallments(question); amount > 0 {
+		if sim, err := s.profile.SimulatePurchase(ctx, wsID, amount, parcelas); err == nil {
+			simJSON, _ = json.Marshal(sim)
+		}
+	}
+
+	if !s.ai.Enabled() {
+		return "", fmt.Errorf("agente indisponível: configure AI_API_KEY")
+	}
+
+	var sb strings.Builder
+	if len(history) > 0 {
+		sb.WriteString("Conversa até agora:\n")
+		for _, t := range history {
+			sb.WriteString("Usuário: " + t.Question + "\nVocê: " + t.Answer + "\n")
+		}
+		sb.WriteString("\n")
+	}
+	sb.WriteString("Perfil financeiro (números do sistema, use como estão):\n")
+	sb.Write(profJSON)
+	if simJSON != nil {
+		sb.WriteString("\n\nSimulação já calculada para o valor citado:\n")
+		sb.Write(simJSON)
+	}
+	sb.WriteString("\n\nPergunta: " + question)
+
+	return s.ai.Complete(agentWebPrompt, sb.String(), 700)
+}
+
+// No app há mais espaço que no WhatsApp, então a resposta pode respirar —
+// mas o limite regulatório é o mesmo.
+const agentWebPrompt = agentSystemPrompt + `
+
+AJUSTE PARA O APP
+- Aqui você pode usar até 6 linhas e listas curtas quando ajudar.
+- Comece pela conclusão. Depois mostre os números que a sustentam.
+- Quando fizer sentido, sugira uma alternativa concreta (esperar N meses,
+  dar entrada maior, reduzir o valor do bem).
+- Nunca invente número que não esteja nos dados fornecidos.`
+
+// extractAmountAndInstallments acha "35 mil em 24x", "R$ 4.000", "2500".
+func extractAmountAndInstallments(text string) (float64, int) {
+	low := strings.ToLower(text)
+
+	parcelas := 1
+	if m := reParcel.FindStringSubmatch(low); m != nil {
+		for _, g := range m[1:] {
+			if g != "" {
+				if n, err := strconv.Atoi(g); err == nil && n > 0 {
+					parcelas = n
+				}
+			}
+		}
+	}
+
+	// "35 mil" → 35000
+	if m := regexp.MustCompile(`(\d+(?:[.,]\d+)?)\s*mil\b`).FindStringSubmatch(low); m != nil {
+		v := parseAmount(strings.ReplaceAll(m[1], ".", ""))
+		if v > 0 {
+			return v * 1000, parcelas
+		}
+	}
+	if m := reAmount.FindStringSubmatch(low); m != nil {
+		return parseAmount(m[1]), parcelas
+	}
+	return 0, parcelas
+}
+
 // ── Consultas ───────────────────────────────────────────────────────────
 
 func (s *FinanceAgentService) replyBalance(ctx context.Context, wsID string) string {
