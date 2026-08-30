@@ -38,9 +38,12 @@ type Config struct {
 	WhatsAppToken       string
 	WhatsAppPhoneID     string
 	// Agente financeiro (IA)
-	AIAPIKey          string
-	AIModel           string
-	AIMonthlyCallCap  int
+	AIAPIKey  string
+	AIModel   string
+	// Vazio = Anthropic. Preenchido = provedor OpenAI-compatível
+	// (Groq, OpenRouter, DeepSeek, NVIDIA NIM...).
+	AIBaseURL        string
+	AIMonthlyCallCap int
 }
 
 func Load() *Config {
@@ -84,6 +87,7 @@ func Load() *Config {
 
 		AIAPIKey:         getEnv("AI_API_KEY", ""),
 		AIModel:          getEnv("AI_MODEL", "claude-haiku-4-5-20251001"),
+		AIBaseURL:        getEnv("AI_BASE_URL", ""),
 		AIMonthlyCallCap: aiCap,
 	}
 }

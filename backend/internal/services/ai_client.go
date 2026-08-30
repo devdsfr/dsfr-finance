@@ -10,37 +10,39 @@ import (
 	"time"
 )
 
-// AIClient é um wrapper mínimo sobre a Messages API da Anthropic.
-// Serve só para interpretar frases e redigir respostas curtas — nenhum
-// cálculo financeiro passa por aqui.
+// AIClient fala com um provedor de LLM. Suporta dois formatos de API:
+//
+//   - Anthropic (padrão quando AI_BASE_URL está vazio)
+//   - OpenAI-compatível — cobre Groq, OpenRouter, DeepSeek, NVIDIA NIM,
+//     Together, Cerebras, SiliconFlow e afins, que usam o mesmo contrato
+//
+// Trocar de provedor é só mudar AI_BASE_URL, AI_MODEL e AI_API_KEY.
+// Serve apenas para interpretar frases e redigir respostas: nenhum cálculo
+// financeiro passa por aqui.
 type AIClient struct {
-	apiKey string
-	model  string
-	client *http.Client
+	apiKey  string
+	model   string
+	baseURL string // vazio = Anthropic
+	client  *http.Client
 }
 
-func NewAIClient(apiKey, model string) *AIClient {
+func NewAIClient(apiKey, model, baseURL string) *AIClient {
 	if model == "" {
 		model = "claude-haiku-4-5-20251001"
 	}
 	return &AIClient{
-		apiKey: apiKey,
-		model:  model,
-		client: &http.Client{Timeout: 25 * time.Second},
+		apiKey:  apiKey,
+		model:   model,
+		baseURL: strings.TrimRight(baseURL, "/"),
+		client:  &http.Client{Timeout: 45 * time.Second},
 	}
 }
 
 func (a *AIClient) Enabled() bool { return a.apiKey != "" }
 
-type aiResponse struct {
-	Content []struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
-	} `json:"content"`
-	Error *struct {
-		Message string `json:"message"`
-	} `json:"error"`
-}
+// openAICompatible indica se devemos usar /chat/completions em vez da
+// Messages API da Anthropic.
+func (a *AIClient) openAICompatible() bool { return a.baseURL != "" }
 
 // Complete manda system + user e devolve o texto da resposta.
 func (a *AIClient) Complete(system, user string, maxTokens int) (string, error) {
@@ -50,14 +52,30 @@ func (a *AIClient) Complete(system, user string, maxTokens int) (string, error) 
 	if maxTokens <= 0 {
 		maxTokens = 400
 	}
+	if a.openAICompatible() {
+		return a.completeOpenAI(system, user, maxTokens)
+	}
+	return a.completeAnthropic(system, user, maxTokens)
+}
 
+// ── Anthropic ───────────────────────────────────────────────────────────
+
+type anthropicResponse struct {
+	Content []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	} `json:"content"`
+	Error *struct {
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+func (a *AIClient) completeAnthropic(system, user string, maxTokens int) (string, error) {
 	payload := map[string]any{
 		"model":      a.model,
 		"max_tokens": maxTokens,
 		"system":     system,
-		"messages": []map[string]any{
-			{"role": "user", "content": user},
-		},
+		"messages":   []map[string]any{{"role": "user", "content": user}},
 	}
 	buf, _ := json.Marshal(payload)
 
@@ -69,18 +87,12 @@ func (a *AIClient) Complete(system, user string, maxTokens int) (string, error) 
 	req.Header.Set("anthropic-version", "2023-06-01")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := a.client.Do(req)
+	raw, err := a.do(req)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 
-	raw, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode >= 300 {
-		return "", fmt.Errorf("ia %d: %s", resp.StatusCode, string(raw))
-	}
-
-	var out aiResponse
+	var out anthropicResponse
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return "", err
 	}
@@ -97,8 +109,80 @@ func (a *AIClient) Complete(system, user string, maxTokens int) (string, error) 
 	return strings.TrimSpace(sb.String()), nil
 }
 
+// ── OpenAI-compatível (Groq, OpenRouter, DeepSeek, NVIDIA NIM…) ─────────
+
+type openAIResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+	Error *struct {
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+func (a *AIClient) completeOpenAI(system, user string, maxTokens int) (string, error) {
+	payload := map[string]any{
+		"model":      a.model,
+		"max_tokens": maxTokens,
+		"messages": []map[string]any{
+			{"role": "system", "content": system},
+			{"role": "user", "content": user},
+		},
+	}
+	buf, _ := json.Marshal(payload)
+
+	req, err := http.NewRequest(http.MethodPost, a.baseURL+"/chat/completions", bytes.NewReader(buf))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+a.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	// O OpenRouter pede estes cabeçalhos; os demais provedores ignoram.
+	req.Header.Set("HTTP-Referer", "https://dsfr-finance.app")
+	req.Header.Set("X-Title", "DSFR Finance")
+
+	raw, err := a.do(req)
+	if err != nil {
+		return "", err
+	}
+
+	var out openAIResponse
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return "", err
+	}
+	if out.Error != nil {
+		return "", fmt.Errorf("ia: %s", out.Error.Message)
+	}
+	if len(out.Choices) == 0 {
+		return "", fmt.Errorf("ia: resposta vazia")
+	}
+	return strings.TrimSpace(out.Choices[0].Message.Content), nil
+}
+
+// ── Comum ───────────────────────────────────────────────────────────────
+
+func (a *AIClient) do(req *http.Request) ([]byte, error) {
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		msg := string(raw)
+		if len(msg) > 300 {
+			msg = msg[:300]
+		}
+		return nil, fmt.Errorf("ia %d: %s", resp.StatusCode, msg)
+	}
+	return raw, nil
+}
+
 // CompleteJSON pede uma resposta em JSON e devolve só o objeto, tolerando
-// que o modelo embrulhe em ```json.
+// que o modelo embrulhe em ```json — comum nos modelos abertos.
 func (a *AIClient) CompleteJSON(system, user string, target any) error {
 	txt, err := a.Complete(system, user, 500)
 	if err != nil {
