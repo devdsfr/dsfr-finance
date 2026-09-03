@@ -69,6 +69,11 @@ import { environment } from '../../../../environments/environment';
             </div>
           }
         } @else if (!needsMFA()) {
+          @if (sessionExpired()) {
+            <div class="notice">
+              Sua sessão expirou. Entre novamente para continuar — seus dados estão salvos.
+            </div>
+          }
           <form (ngSubmit)="login()" class="form" novalidate>
             <div class="form-group">
               <label>{{ 'auth.email' | translate }}</label>
@@ -158,6 +163,8 @@ import { environment } from '../../../../environments/environment';
     .btn--ghost { background: none; color: #6b7280; text-align: center; box-shadow: none; }
     .btn--ghost:hover { color: #374151; }
     .error { color: #b91c1c; font-size: .82rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: .5rem; padding: .5rem .65rem; }
+    .notice { color: #92400e; font-size: .82rem; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: .5rem; padding: .55rem .7rem; margin-bottom: .9rem; line-height: 1.45; }
     .cold-start { font-size: .78rem; color: #92700d; background: #fffbeb; border: 1px solid #fde68a; border-radius: .5rem; padding: .5rem .65rem; line-height: 1.45; }
     .spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -217,6 +224,9 @@ export class LoginComponent implements OnInit {
   error = signal('');
   needsMFA = signal(false);
   mode = signal<'login' | 'forgot'>('login');
+
+  /** Marcado pelo interceptor quando o servidor recusa o token (401). */
+  sessionExpired = signal(false);
   forgotSent = signal(false);
   showPass = signal(false);
 
@@ -255,6 +265,11 @@ export class LoginComponent implements OnInit {
     // Erro devolvido pelo callback OAuth (ex.: provedor não configurado).
     const oauthErr = this.route.snapshot.queryParamMap.get('oauth_error');
     if (oauthErr) this.error.set(oauthErr);
+
+    // Sessão encerrada pelo interceptor por token recusado.
+    if (this.route.snapshot.queryParamMap.get('expired')) {
+      this.sessionExpired.set(true);
+    }
   }
 
   setLang(lang: Lang): void { this.i18n.setLang(lang); }

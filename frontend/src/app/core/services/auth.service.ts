@@ -44,7 +44,11 @@ export class AuthService {
     );
   }
 
-  logout(): void {
+  /**
+   * Encerra a sessão. `reason: 'expired'` sinaliza que o token foi recusado
+   * pelo servidor, para o login explicar o motivo em vez de só aparecer.
+   */
+  logout(reason?: 'expired'): void {
     const uid = this.currentUser()?.id;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -54,7 +58,8 @@ export class AuthService {
       localStorage.removeItem(`dsfr_dash_data_${uid}`);
     }
     this.currentUser.set(null);
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/auth/login'],
+      reason === 'expired' ? { queryParams: { expired: '1' } } : {});
   }
 
   isLoggedIn(): boolean {
