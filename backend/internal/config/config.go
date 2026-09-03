@@ -42,8 +42,13 @@ type Config struct {
 	AIModel   string
 	// Vazio = Anthropic. Preenchido = provedor OpenAI-compatível
 	// (Groq, OpenRouter, DeepSeek, NVIDIA NIM...).
-	AIBaseURL        string
-	AIMonthlyCallCap int
+	AIBaseURL string
+	// Provedor reserva: os free tiers têm teto diário baixo, então vale
+	// ter um segundo destino para o agente não parar no meio do dia.
+	AIFallbackAPIKey  string
+	AIFallbackModel   string
+	AIFallbackBaseURL string
+	AIMonthlyCallCap  int
 }
 
 func Load() *Config {
@@ -87,8 +92,11 @@ func Load() *Config {
 
 		AIAPIKey:         getEnv("AI_API_KEY", ""),
 		AIModel:          getEnv("AI_MODEL", "claude-haiku-4-5-20251001"),
-		AIBaseURL:        getEnv("AI_BASE_URL", ""),
-		AIMonthlyCallCap: aiCap,
+		AIBaseURL:         getEnv("AI_BASE_URL", ""),
+		AIFallbackAPIKey:  getEnv("AI_FALLBACK_API_KEY", ""),
+		AIFallbackModel:   getEnv("AI_FALLBACK_MODEL", ""),
+		AIFallbackBaseURL: getEnv("AI_FALLBACK_BASE_URL", ""),
+		AIMonthlyCallCap:  aiCap,
 	}
 }
 

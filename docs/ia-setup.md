@@ -1,39 +1,43 @@
 # Configurar a IA do agente financeiro
 
-O backend aceita dois formatos de API: **Anthropic** e **OpenAI-compatível**.
-Como quase todo provedor gratuito usa o formato da OpenAI, trocar de provedor
-é só mudar três variáveis de ambiente — sem tocar em código.
+Dados de limites e políticas conforme o comparativo do OpenRouter
+(*Free LLM APIs Compared*, jun/2026).
 
-| Variável | Para que serve |
+---
+
+## O critério que vem antes de velocidade e limite
+
+Aqui trafega **dado financeiro**. Antes de olhar RPM ou preço, olhe se o
+provedor **treina modelos com seus prompts**:
+
+| Provedor | Treina com seus dados? |
 |---|---|
-| `AI_API_KEY` | Sua chave |
-| `AI_MODEL` | Nome do modelo |
-| `AI_BASE_URL` | Vazio = Anthropic. Preenchido = provedor OpenAI-compatível |
+| **Groq** | ❌ Não |
+| **OpenRouter** | ❌ Não |
+| **Cerebras** | ❌ Não |
+| **Google AI Studio** | ⚠️ **Sim**, fora da UE/Reino Unido/EEE — inclui o Brasil |
+| **Mistral (Experiment)** | ⚠️ **Sim** — o opt-in é obrigatório para usar a cota grátis |
+
+Isso elimina Google AI Studio e Mistral para este caso de uso, mesmo tendo
+cotas melhores. Um resumo do seu orçamento virando dado de treino é um preço
+alto demais por uma cota maior.
+
+**Recomendação: Groq como principal, OpenRouter como reserva.** Ambos com
+política de não treinar, e juntos somam 1.050 requisições por dia.
 
 ---
 
-## Sobre o DeepSeek
+## Passo 1 — Groq (principal)
 
-O DeepSeek **não tem free tier permanente** — o que existe são créditos de
-cadastro que expiram em 30 a 90 dias. Depois disso é pago (embora barato).
+Free tier permanente, sem cartão, e o mais rápido da lista: o hardware LPU roda
+Llama 3.3 70B a cerca de 320 tokens por segundo. Para respostas curtas como as
+do agente, é praticamente instantâneo.
 
-Se você quer o DeepSeek de graça, o caminho é acessá-lo por um intermediário
-que oferece cota gratuita: **OpenRouter** ou **NVIDIA NIM**.
+**Limites:** 30 requisições/minuto, **1.000/dia**, contexto de 128K.
 
----
-
-## Opção 1 — Groq (recomendado para começar)
-
-Gratuito de verdade, sem cartão, e absurdamente rápido — o hardware deles roda
-Llama 3.3 70B a centenas de tokens por segundo. Para respostas curtas como as
-do agente, isso significa resposta quase instantânea.
-
-**Limites:** 30 requisições/minuto e 1.000/dia no Llama 3.3 70B. Muito acima do
-uso de um app de finanças pessoais.
-
-1. Crie conta em **console.groq.com**
-2. Vá em *API Keys* → *Create API Key*
-3. No Render, configure:
+1. Crie conta em **console.groq.com** (login com Google ou GitHub)
+2. *API Keys* → *Create API Key* → copie (só aparece uma vez)
+3. No Render → seu backend → *Environment*:
 
 ```
 AI_API_KEY=gsk_sua_chave_aqui
@@ -41,42 +45,70 @@ AI_BASE_URL=https://api.groq.com/openai/v1
 AI_MODEL=llama-3.3-70b-versatile
 ```
 
-## Opção 2 — OpenRouter (se quiser o DeepSeek)
+## Passo 2 — OpenRouter (reserva)
 
-Dá acesso a 20+ modelos gratuitos por um endpoint só, incluindo variantes do
-DeepSeek, com troca automática de provedor quando um está congestionado.
+Se o Groq falhar ou estourar a cota, o backend cai automaticamente para o
+segundo provedor. Como o OpenRouter roteia para 20+ modelos gratuitos com
+failover interno, ele é uma boa segunda camada.
 
-**Limites:** 20 requisições/minuto e 50/dia enquanto você não tiver comprado
-créditos. Sobe para 1.000/dia depois de qualquer compra de US$ 10.
+**Limites:** 20 requisições/minuto, **50/dia** (sobe para 1.000/dia depois de
+qualquer recarga de US$ 10). Sem cartão para começar.
 
 1. Crie conta em **openrouter.ai**
 2. *Keys* → *Create Key*
-3. No Render:
+3. Adicione no Render:
 
 ```
-AI_API_KEY=sk-or-v1-sua_chave_aqui
-AI_BASE_URL=https://openrouter.ai/api/v1
-AI_MODEL=deepseek/deepseek-chat-v3-0324:free
+AI_FALLBACK_API_KEY=sk-or-v1-sua_chave_aqui
+AI_FALLBACK_BASE_URL=https://openrouter.ai/api/v1
+AI_FALLBACK_MODEL=meta-llama/llama-3.3-70b-instruct:free
 ```
 
-> O sufixo `:free` é o que garante o modelo sem custo. Confira a lista atual em
-> openrouter.ai/models?q=free, porque os modelos gratuitos mudam com o tempo.
+> O sufixo `:free` é o que garante custo zero. A lista de modelos gratuitos
+> muda; confira em openrouter.ai/models?q=free.
 
-## Opção 3 — Google Gemini
+### Se você quer o DeepSeek
 
-Free tier generoso e boa qualidade. Endpoint compatível com OpenAI:
+O DeepSeek **não tem free tier permanente** — o que existe é um crédito de
+teste de 10 milhões de tokens, que acaba. Para usá-lo continuamente sem pagar,
+acesse via OpenRouter trocando o modelo:
 
 ```
-AI_API_KEY=sua_chave_do_ai_studio
-AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
-AI_MODEL=gemini-2.0-flash
+AI_FALLBACK_MODEL=deepseek/deepseek-chat-v3-0324:free
 ```
 
-Chave em **aistudio.google.com/apikey**.
+O DeepSeek R1 se destaca em raciocínio de múltiplos passos e matemática. Vale
+notar que no nosso caso isso rende pouco: **as contas são feitas em Go**, e o
+modelo só redige. Um Llama 70B entrega a mesma qualidade final aqui.
 
-## Opção 4 — Anthropic (pago, melhor qualidade)
+---
 
-Deixe `AI_BASE_URL` **vazio**:
+## Como o failover funciona
+
+O backend tenta o provedor principal. Se ele devolver erro — chave inválida,
+cota estourada, instabilidade — registra no log e tenta o reserva. Só falha de
+verdade quando os dois falham.
+
+```
+ia: provedor principal falhou: ia 429: rate limit exceeded
+→ resposta veio do reserva, usuário não percebe
+```
+
+Configurar só o principal também funciona; o reserva é opcional.
+
+---
+
+## Outras opções
+
+**Cerebras** — 30 RPM, ~1M tokens/dia, não treina com seus dados. Boa
+alternativa ao Groq:
+
+```
+AI_BASE_URL=https://api.cerebras.ai/v1
+AI_MODEL=llama-3.3-70b
+```
+
+**Anthropic** (pago, melhor redação) — deixe `AI_BASE_URL` **vazio**:
 
 ```
 AI_API_KEY=sk-ant-sua_chave
@@ -85,34 +117,39 @@ AI_MODEL=claude-haiku-4-5-20251001
 
 ---
 
-## Qual escolher
-
-Para o agente financeiro, o trabalho do modelo é **traduzir números em frase** —
-a conta em si é feita em Go. Isso significa que um modelo gratuito dá conta bem.
-
-- **Groq**: mais rápido, limite mais alto, sem cartão. Melhor custo-benefício.
-- **OpenRouter**: se você quer especificamente DeepSeek, ou variedade de modelos.
-- **Gemini**: bom meio-termo de qualidade e limite.
-- **Anthropic**: quando quiser a melhor redação e não se importar em pagar.
-
-Trocar depois é só mudar as variáveis e reiniciar o serviço.
-
----
-
 ## Testar
 
-Depois de configurar e o Render reiniciar, abra a **Visão Geral** e pergunte:
+Reinicie o serviço no Render, abra a **Visão Geral** e pergunte:
 
 > vale a pena comprar uma moto de 18 mil em 24x?
 
-Se responder com seus números, está funcionando. Se aparecer
-"O agente não respondeu", olhe os logs do backend — o erro vem com o código
-HTTP e a mensagem do provedor, o que diz na hora se é chave inválida,
-limite estourado ou nome de modelo errado.
+Se responder com os seus números, está funcionando.
 
 | Erro no log | Causa |
 |---|---|
 | `ia 401` | Chave inválida |
 | `ia 404` | Nome do modelo errado para esse provedor |
-| `ia 429` | Limite de requisições atingido |
+| `ia 429` | Cota atingida — o reserva assume, se configurado |
 | `IA não configurada` | `AI_API_KEY` vazia |
+
+---
+
+## Ressalvas honestas sobre free tier
+
+Reproduzindo o que o próprio artigo do OpenRouter alerta:
+
+- **Sem SLA.** Limites podem apertar sem aviso e há indisponibilidade sem
+  compensação. Aceitável para uso pessoal, arriscado para produto com clientes.
+- **Contexto reduzido.** Alguns provedores servem janela menor no endpoint
+  gratuito que no pago.
+- **Quantização menor.** Pesos em 8 ou 4 bits reduzem qualidade em tarefas
+  complexas — pouco relevante aqui, já que o modelo só redige.
+- **Bloqueio de IP.** VPN e faixas de datacenter costumam ser bloqueadas.
+  O Render é datacenter; se aparecer bloqueio, o failover ajuda.
+
+Se um dia o app tiver usuários de verdade, vale reavaliar: a recarga de US$ 10
+no OpenRouter sobe o teto para 1.000/dia e habilita failover entre provedores.
+
+---
+
+Fonte: [Free LLM APIs Compared — OpenRouter, jun/2026](https://openrouter.ai/blog/tutorials/free-llm-apis-compared/)

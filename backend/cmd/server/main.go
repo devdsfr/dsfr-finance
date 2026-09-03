@@ -76,7 +76,8 @@ func main() {
 
 	// Agente financeiro no WhatsApp
 	waSvc := services.NewWhatsAppService(cfg.WhatsAppToken, cfg.WhatsAppPhoneID, cfg.WhatsAppAppSecret)
-	aiClient := services.NewAIClient(cfg.AIAPIKey, cfg.AIModel, cfg.AIBaseURL)
+	aiClient := services.NewAIClient(cfg.AIAPIKey, cfg.AIModel, cfg.AIBaseURL).
+		WithFallback(cfg.AIFallbackAPIKey, cfg.AIFallbackModel, cfg.AIFallbackBaseURL)
 	financeProfileSvc := services.NewFinanceProfileService(db)
 	financeAgentSvc := services.NewFinanceAgentService(db, financeProfileSvc, aiClient)
 

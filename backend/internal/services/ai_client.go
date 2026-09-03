@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -19,32 +20,53 @@ import (
 // Trocar de provedor é só mudar AI_BASE_URL, AI_MODEL e AI_API_KEY.
 // Serve apenas para interpretar frases e redigir respostas: nenhum cálculo
 // financeiro passa por aqui.
-type AIClient struct {
+// aiProvider é um destino configurado (chave + modelo + endpoint).
+type aiProvider struct {
+	name    string
 	apiKey  string
 	model   string
 	baseURL string // vazio = Anthropic
-	client  *http.Client
+}
+
+type AIClient struct {
+	providers []aiProvider
+	client    *http.Client
 }
 
 func NewAIClient(apiKey, model, baseURL string) *AIClient {
 	if model == "" {
 		model = "claude-haiku-4-5-20251001"
 	}
-	return &AIClient{
-		apiKey:  apiKey,
-		model:   model,
-		baseURL: strings.TrimRight(baseURL, "/"),
-		client:  &http.Client{Timeout: 45 * time.Second},
+	c := &AIClient{client: &http.Client{Timeout: 45 * time.Second}}
+	if apiKey != "" {
+		c.providers = append(c.providers, aiProvider{
+			name:    "principal",
+			apiKey:  apiKey,
+			model:   model,
+			baseURL: strings.TrimRight(baseURL, "/"),
+		})
 	}
+	return c
 }
 
-func (a *AIClient) Enabled() bool { return a.apiKey != "" }
+// WithFallback adiciona um provedor reserva. Os free tiers têm teto diário
+// baixo — o do OpenRouter é 50 requisições/dia — então um segundo destino
+// evita o agente parar de responder no meio do dia.
+func (a *AIClient) WithFallback(apiKey, model, baseURL string) *AIClient {
+	if apiKey != "" {
+		a.providers = append(a.providers, aiProvider{
+			name:    "reserva",
+			apiKey:  apiKey,
+			model:   model,
+			baseURL: strings.TrimRight(baseURL, "/"),
+		})
+	}
+	return a
+}
 
-// openAICompatible indica se devemos usar /chat/completions em vez da
-// Messages API da Anthropic.
-func (a *AIClient) openAICompatible() bool { return a.baseURL != "" }
+func (a *AIClient) Enabled() bool { return len(a.providers) > 0 }
 
-// Complete manda system + user e devolve o texto da resposta.
+// Complete tenta cada provedor na ordem até um responder.
 func (a *AIClient) Complete(system, user string, maxTokens int) (string, error) {
 	if !a.Enabled() {
 		return "", fmt.Errorf("IA não configurada")
@@ -52,10 +74,28 @@ func (a *AIClient) Complete(system, user string, maxTokens int) (string, error) 
 	if maxTokens <= 0 {
 		maxTokens = 400
 	}
-	if a.openAICompatible() {
-		return a.completeOpenAI(system, user, maxTokens)
+
+	var lastErr error
+	for _, p := range a.providers {
+		var txt string
+		var err error
+		if p.baseURL != "" {
+			txt, err = a.completeOpenAI(p, system, user, maxTokens)
+		} else {
+			txt, err = a.completeAnthropic(p, system, user, maxTokens)
+		}
+		if err == nil && txt != "" {
+			return txt, nil
+		}
+		if err != nil {
+			log.Printf("ia: provedor %s falhou: %v", p.name, err)
+			lastErr = err
+		}
 	}
-	return a.completeAnthropic(system, user, maxTokens)
+	if lastErr == nil {
+		lastErr = fmt.Errorf("resposta vazia")
+	}
+	return "", lastErr
 }
 
 // ── Anthropic ───────────────────────────────────────────────────────────
@@ -70,9 +110,9 @@ type anthropicResponse struct {
 	} `json:"error"`
 }
 
-func (a *AIClient) completeAnthropic(system, user string, maxTokens int) (string, error) {
+func (a *AIClient) completeAnthropic(p aiProvider, system, user string, maxTokens int) (string, error) {
 	payload := map[string]any{
-		"model":      a.model,
+		"model":      p.model,
 		"max_tokens": maxTokens,
 		"system":     system,
 		"messages":   []map[string]any{{"role": "user", "content": user}},
@@ -83,7 +123,7 @@ func (a *AIClient) completeAnthropic(system, user string, maxTokens int) (string
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("x-api-key", a.apiKey)
+	req.Header.Set("x-api-key", p.apiKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -122,9 +162,9 @@ type openAIResponse struct {
 	} `json:"error"`
 }
 
-func (a *AIClient) completeOpenAI(system, user string, maxTokens int) (string, error) {
+func (a *AIClient) completeOpenAI(p aiProvider, system, user string, maxTokens int) (string, error) {
 	payload := map[string]any{
-		"model":      a.model,
+		"model":      p.model,
 		"max_tokens": maxTokens,
 		"messages": []map[string]any{
 			{"role": "system", "content": system},
@@ -133,11 +173,11 @@ func (a *AIClient) completeOpenAI(system, user string, maxTokens int) (string, e
 	}
 	buf, _ := json.Marshal(payload)
 
-	req, err := http.NewRequest(http.MethodPost, a.baseURL+"/chat/completions", bytes.NewReader(buf))
+	req, err := http.NewRequest(http.MethodPost, p.baseURL+"/chat/completions", bytes.NewReader(buf))
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Authorization", "Bearer "+a.apiKey)
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	// O OpenRouter pede estes cabeçalhos; os demais provedores ignoram.
 	req.Header.Set("HTTP-Referer", "https://dsfr-finance.app")

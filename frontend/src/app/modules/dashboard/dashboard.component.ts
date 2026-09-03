@@ -89,6 +89,17 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       <div class="hero">
         <div class="hero__left">
           <p class="greeting">{{ greeting() }}, <strong>{{ firstName() }}!</strong></p>
+
+          <!-- Navegação de mês: evita a tela parecer zerada no início do mês -->
+          <div class="dash-month">
+            <button class="dm-arrow" (click)="shiftMonth(-1)" title="Mês anterior">‹</button>
+            <span class="dm-label">{{ dashMonthLabel() }}</span>
+            <button class="dm-arrow" (click)="shiftMonth(1)" title="Próximo mês">›</button>
+            @if (!isCurrentMonth()) {
+              <button class="dm-today" (click)="goCurrentMonth()">Mês atual</button>
+            }
+          </div>
+
           <div class="month-summary">
             <div class="ms-item">
               <span class="ms-label">{{ 'dashboard.income_month' | translate }}</span>
@@ -700,6 +711,17 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
       flex-wrap: wrap;
     }
     .hero__left { flex: 1; min-width: 200px; }
+    .dash-month { display: flex; align-items: center; gap: .3rem; margin: .5rem 0 .75rem; }
+    .dm-arrow { background: none; border: 1px solid #e5e7eb; border-radius: .3rem;
+      width: 24px; height: 24px; line-height: 1; color: #374151; cursor: pointer; font-size: .95rem; }
+    .dm-arrow:hover { border-color: #2e7736; color: #2e7736; }
+    .dm-label { font-size: .82rem; font-weight: 600; color: #374151; min-width: 120px; text-align: center; }
+    .dm-today { background: none; border: none; color: #2e7736; font-size: .74rem;
+      font-weight: 600; cursor: pointer; padding: 0 .3rem; }
+    :host-context([data-theme="dark"]) .dm-arrow { border-color: #232d42 !important; color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .dm-arrow:hover { border-color: #4ade80 !important; color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .dm-label { color: #c5cdd9 !important; }
+    :host-context([data-theme="dark"]) .dm-today { color: #4ade80 !important; }
     .greeting { margin: 0 0 1rem; font-size: 1.1rem; color: #374151; }
     .greeting strong { color: #111; }
     .month-summary { display: flex; gap: 2rem; flex-wrap: wrap; }
@@ -1674,6 +1696,36 @@ export class DashboardComponent implements OnInit {
     });
   });
 
+  /**
+   * Mês exibido na Visão Geral (YYYY-MM). Sem isso, a tela ficava presa no
+   * mês corrente — e no dia 1º de um mês novo tudo aparecia zerado, mesmo
+   * com os dados do mês anterior intactos.
+   */
+  dashMonth = signal(new Date().toISOString().slice(0, 7));
+
+  dashMonthLabel = computed(() => {
+    const [y, m] = this.dashMonth().split('-').map(Number);
+    const s = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+      .format(new Date(y, m - 1, 1));
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  });
+
+  isCurrentMonth = computed(() => this.dashMonth() === new Date().toISOString().slice(0, 7));
+
+  shiftMonth(delta: number): void {
+    const [y, m] = this.dashMonth().split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    this.dashMonth.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    this.loading.set(true);
+    this.loadMonth();
+  }
+
+  goCurrentMonth(): void {
+    this.dashMonth.set(new Date().toISOString().slice(0, 7));
+    this.loading.set(true);
+    this.loadMonth();
+  }
+
   firstName(): string {
     return (this.auth.currentUser()?.name ?? '').split(' ')[0];
   }
@@ -1694,7 +1746,13 @@ export class DashboardComponent implements OnInit {
     // Histórico do termômetro (para as abas de meses anteriores).
     this.loadThermoHistory();
 
-    const now = new Date();
+    this.loadMonth();
+  }
+
+  /** Recarrega a Visão Geral no mês selecionado. */
+  loadMonth(): void {
+    const [yy, mm] = this.dashMonth().split('-').map(Number);
+    const now = new Date(yy, mm - 1, 1);
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const dateFrom = `${y}-${m}-01`;
