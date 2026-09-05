@@ -1795,11 +1795,13 @@ export class DashboardComponent implements OnInit {
             const openMonth = today <= closing ? curMonth : nextMonthStr;
             // Fatura atual = gastos do ciclo aberto + saldo não pago rolado dos ciclos anteriores.
             const inv = list.find((x: any) => x.month === openMonth);
-            const ownCharges = inv ? Math.abs(inv.expense ?? 0) : 0;
+            // Só o que ainda está EM ABERTO. Usar o total gasto (expense) fazia a
+            // fatura continuar aparecendo no mês mesmo depois de paga.
+            const ownUnpaid = inv ? Math.abs(inv.unpaid ?? 0) : 0;
             const rolledUnpaid = list
               .filter((x: any) => x.month < openMonth)
               .reduce((s: number, x: any) => s + Math.abs(x.unpaid ?? 0), 0);
-            return { ...c, current_invoice: ownCharges + rolledUnpaid };
+            return { ...c, current_invoice: ownUnpaid + rolledUnpaid };
           }));
           this.saveCache();
         });

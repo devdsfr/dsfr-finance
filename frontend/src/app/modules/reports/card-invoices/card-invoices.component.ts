@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -423,6 +423,21 @@ export class CardInvoicesComponent implements OnInit {
 
   canGoNext = computed(() => this.monthIdx() < this.invoices().length - 1);
 
+  constructor() {
+    // O ciclo (monthStart/monthEnd) depende do closing_day, que chega em outra
+    // requisição. Chamar loadTransactions() direto criava uma corrida: a lista
+    // era buscada com o ciclo errado (mês-calendário) e voltava vazia mesmo com
+    // a fatura tendo valor. Reagindo ao ciclo, a busca refaz sozinha quando o
+    // cartão carrega ou o mês muda.
+    effect(() => {
+      const start = this.monthStart();
+      const end   = this.monthEnd();
+      const id    = this.selectedCardId();
+      if (!start || !end || !id) return;
+      untracked(() => this.fetchTransactions(id, start, end));
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit() {
     this.api.get<any>('/credit-cards').subscribe(r => {
       const raw: any[] = r.data ?? [];
@@ -465,14 +480,13 @@ export class CardInvoicesComponent implements OnInit {
         const idx = list.findIndex(i => i.month === month);
         this.monthIdx.set(idx >= 0 ? idx : 0);
       }
-      this.loadTransactions();
+      // Os lançamentos são buscados pelo effect, que reage ao ciclo do mês.
     });
   }
 
   prevMonth() {
     if (this.monthIdx() < this.invoices().length - 1) {
       this.monthIdx.update(i => i + 1);
-      this.loadTransactions();
     }
   }
 
@@ -527,16 +541,10 @@ export class CardInvoicesComponent implements OnInit {
   nextMonth() {
     if (this.canGoNext()) {
       this.monthIdx.update(i => i - 1);
-      this.loadTransactions();
     }
   }
 
-  loadTransactions() {
-    const start = this.monthStart();
-    const end   = this.monthEnd();
-    const id    = this.selectedCardId();
-    if (!start || !id) return;
-
+  private fetchTransactions(id: string, start: string, end: string) {
     this.loadingTxns.set(true);
     this.transactions.set([]);
 
