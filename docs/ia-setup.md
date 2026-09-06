@@ -61,21 +61,40 @@ qualquer recarga de US$ 10). Sem cartão para começar.
 ```
 AI_FALLBACK_API_KEY=sk-or-v1-sua_chave_aqui
 AI_FALLBACK_BASE_URL=https://openrouter.ai/api/v1
-AI_FALLBACK_MODEL=meta-llama/llama-3.3-70b-instruct:free
+AI_FALLBACK_MODEL=minimax/minimax-m3:free
 ```
 
-> O sufixo `:free` é o que garante custo zero. A lista de modelos gratuitos
-> muda; confira em openrouter.ai/models?q=free.
+> O sufixo `:free` é o que garante custo zero.
+
+### Escolhendo o modelo gratuito
+
+A lista rotaciona de verdade — o `meta-llama/llama-3.3-70b-instruct:free`,
+recomendado aqui antes, foi retirado e passou a devolver 404. Para ver o que
+está no ar hoje:
+
+```
+curl -s https://openrouter.ai/api/v1/models | grep -o '"id":"[^"]*:free"'
+```
+
+Ao escolher, evite modelos de **raciocínio com thinking ligado por padrão**.
+O cliente pede `max_tokens: 400`, e nesses modelos os tokens de raciocínio
+entram nessa conta: o modelo pensa até estourar o teto e devolve conteúdo
+vazio. O sintoma é "resposta vazia" em vez de um erro claro. No catálogo,
+olhe o campo `reasoning.default_enabled` do modelo.
+
+Combinação verificada em set/2026:
+
+```
+AI_MODEL=minimax/minimax-m3:free                       # nao ativa thinking
+AI_FALLBACK_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+```
 
 ### Se você quer o DeepSeek
 
 O DeepSeek **não tem free tier permanente** — o que existe é um crédito de
-teste de 10 milhões de tokens, que acaba. Para usá-lo continuamente sem pagar,
-acesse via OpenRouter trocando o modelo:
-
-```
-AI_FALLBACK_MODEL=deepseek/deepseek-chat-v3-0324:free
-```
+teste de tokens, que acaba. Via OpenRouter, os DeepSeek disponíveis hoje são
+todos pagos (baratos, mas pagos): não há variante `:free` no catálogo atual.
+Confira com o comando da seção anterior antes de configurar.
 
 O DeepSeek R1 se destaca em raciocínio de múltiplos passos e matemática. Vale
 notar que no nosso caso isso rende pouco: **as contas são feitas em Go**, e o
@@ -125,11 +144,15 @@ Reinicie o serviço no Render, abra a **Visão Geral** e pergunte:
 
 Se responder com os seus números, está funcionando.
 
-| Erro no log | Causa |
+Ou, logado, abra `/api/v1/agent/status?ping=1`: ele chama cada provedor de
+verdade e devolve o erro de cada um, sem expor a chave.
+
+| Erro | Causa |
 |---|---|
 | `ia 401` | Chave inválida |
-| `ia 404` | Nome do modelo errado para esse provedor |
+| `ia 404` | Nome do modelo errado, ou modelo retirado do catálogo |
 | `ia 429` | Cota atingida — o reserva assume, se configurado |
+| `ia: resposta vazia` | Modelo gastou os tokens raciocinando (veja acima) |
 | `IA não configurada` | `AI_API_KEY` vazia |
 
 ---
