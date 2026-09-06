@@ -1439,16 +1439,18 @@ export class DashboardComponent implements OnInit {
     const limits   = this.spendingLimits();
     const overdue  = this.overduePayable();
 
-    // Reserva declarada nas carteiras do Patrimônio (mês mais recente registrado),
-    // somada ao saldo em conta para medir a cobertura de emergência.
+    // Reserva declarada nas carteiras do Patrimônio, somada ao saldo em conta
+    // para medir a cobertura de emergência. Cada carteira é atualizada em meses
+    // diferentes, então vale o registro mais recente DE CADA UMA — filtrar pelo
+    // último mês global descartava a reserva das carteiras não atualizadas.
     const snaps = this.patrimonySnapshots();
-    let declaredReserve = 0;
-    if (snaps.length) {
-      const lastMonth = snaps.reduce((m: string, s: any) => (s.month > m ? s.month : m), '');
-      declaredReserve = snaps
-        .filter((s: any) => s.month === lastMonth)
-        .reduce((sum: number, s: any) => sum + (+s.emergency_reserve || 0), 0);
-    }
+    const lastByWallet = new Map<string, any>();
+    snaps.forEach((s: any) => {
+      const cur = lastByWallet.get(s.wallet_name);
+      if (!cur || s.month > cur.month) lastByWallet.set(s.wallet_name, s);
+    });
+    const declaredReserve = [...lastByWallet.values()]
+      .reduce((sum: number, s: any) => sum + (+s.emergency_reserve || 0), 0);
     const cash = this.totalBalance() + declaredReserve;
 
     // Gasto médio mensal: usa o histórico de fluxo quando houver, senão o mês atual.

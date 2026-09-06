@@ -589,28 +589,62 @@ export class PatrimonyEvolutionComponent implements OnInit {
 
     if (w !== '__all__') return [...src].sort((a, b) => a.month.localeCompare(b.month));
 
-    // Aggregate: one entry per month, sum numeric fields across wallets
-    const monthMap = new Map<string, Snapshot>();
-    [...src].sort((a, b) => a.month.localeCompare(b.month)).forEach(snap => {
-      if (!monthMap.has(snap.month)) {
-        monthMap.set(snap.month, { ...snap, wallet_name: '__all__' });
-      } else {
-        const e = monthMap.get(snap.month)!;
-        e.total         += snap.total;
-        e.invested      += snap.invested;
-        e.profit        += snap.profit;
-        e.capital_gains += snap.capital_gains;
-        e.dividends     += snap.dividends;
-        e.income_12m    += snap.income_12m;
-        e.variation_val += snap.variation_val;
-        e.emergency_reserve += (snap.emergency_reserve ?? 0);
-        // variation_pct and rentability: weighted average by total
-        // (simple average for now)
-        e.variation_pct  = (e.variation_pct + snap.variation_pct) / 2;
-        e.rentability    = (e.rentability + snap.rentability) / 2;
-      }
+    // Consolidado por mês. Cada carteira é atualizada em meses diferentes, então
+    // somar apenas o que foi registrado naquele mês fazia carteiras sumirem do
+    // total — o gráfico despencava e "Todas as carteiras" mostrava só a última
+    // carteira lançada. Aqui cada carteira é levada adiante pelo seu registro
+    // mais recente até que um novo apareça.
+    const sorted = [...src].sort((a, b) => a.month.localeCompare(b.month));
+    const months = [...new Set(sorted.map(s => s.month))];
+    const byMonth = new Map<string, Snapshot[]>();
+    sorted.forEach(s => {
+      const arr = byMonth.get(s.month) ?? [];
+      arr.push(s);
+      byMonth.set(s.month, arr);
     });
-    return [...monthMap.values()];
+
+    const carried = new Map<string, Snapshot>(); // carteira → último registro conhecido
+    const out: Snapshot[] = [];
+    let prevTotal = 0;
+
+    months.forEach((month, i) => {
+      (byMonth.get(month) ?? []).forEach(s => carried.set(s.wallet_name, s));
+      const parts = [...carried.values()];
+      const sum = (f: (s: Snapshot) => number) => parts.reduce((acc, s) => acc + (f(s) || 0), 0);
+
+      const total    = sum(s => s.total);
+      const invested = sum(s => s.invested);
+
+      // Rentabilidade consolidada: média ponderada pelo valor investido de cada
+      // carteira. A média simples dava o mesmo peso a uma carteira de R$ 900 e a
+      // uma de R$ 11 mil.
+      const rentability = invested > 0
+        ? parts.reduce((acc, s) => acc + (s.rentability || 0) * (s.invested || 0), 0) / invested
+        : 0;
+
+      // Variação vem da própria série consolidada, não da soma das variações
+      // individuais — assim ela bate com os totais mostrados no gráfico.
+      const variation_val = i === 0 ? 0 : total - prevTotal;
+      const variation_pct = i === 0 || prevTotal === 0 ? 0 : (variation_val / prevTotal) * 100;
+      prevTotal = total;
+
+      out.push({
+        month,
+        wallet_name: '__all__',
+        total,
+        invested,
+        profit:            sum(s => s.profit),
+        capital_gains:     sum(s => s.capital_gains),
+        dividends:         sum(s => s.dividends),
+        income_12m:        sum(s => s.income_12m),
+        emergency_reserve: sum(s => s.emergency_reserve ?? 0),
+        variation_pct,
+        variation_val,
+        rentability,
+        notes: '',
+      });
+    });
+    return out;
   });
 
   latest = computed(() => {
