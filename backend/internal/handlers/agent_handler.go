@@ -49,6 +49,25 @@ func (h *AgentHandler) Ask(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"answer": answer})
 }
 
+// GET /agent/status — diagnóstico da configuração de IA.
+// Com ?ping=1 faz uma chamada real em cada provedor e devolve o erro de cada
+// um, separando "variável não chegou no deploy" de "chave inválida",
+// "modelo errado" e "cota estourada". Nunca devolve a chave.
+func (h *AgentHandler) Status(c *gin.Context) {
+	ai := h.agent.AI()
+	res := gin.H{
+		"enabled":   ai.Enabled(),
+		"providers": ai.Providers(),
+	}
+	if !ai.Enabled() {
+		res["hint"] = "AI_API_KEY não está definida no ambiente do backend."
+	}
+	if c.Query("ping") != "" && ai.Enabled() {
+		res["ping"] = ai.Ping()
+	}
+	c.JSON(http.StatusOK, res)
+}
+
 // GET /agent/context — visualização do contexto em JSON (números crus).
 func (h *AgentHandler) Context(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)

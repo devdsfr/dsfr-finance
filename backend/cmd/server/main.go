@@ -213,6 +213,7 @@ func main() {
 
 		// Agente financeiro no app (chat da Visão Geral)
 		auth.POST("/agent/ask", agentH.Ask)
+		auth.GET("/agent/status", agentH.Status)
 		auth.GET("/agent/context", agentH.Context)
 		auth.GET("/agent/context.md", agentH.ContextMarkdown)
 

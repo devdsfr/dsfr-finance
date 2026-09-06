@@ -26,6 +26,9 @@ func NewFinanceAgentService(db *sql.DB, profile *FinanceProfileService, ai *AICl
 	return &FinanceAgentService{db: db, profile: profile, ai: ai}
 }
 
+// AI expõe o cliente para diagnóstico (rota /agent/status).
+func (s *FinanceAgentService) AI() *AIClient { return s.ai }
+
 // ── Guardrail regulatório ───────────────────────────────────────────────
 // A Resolução CVM 19/2021 exige autorização para recomendação individualizada
 // de investimentos, e isso vale para robôs. O agente opina sobre orçamento,

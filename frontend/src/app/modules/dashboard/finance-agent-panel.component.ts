@@ -161,17 +161,35 @@ export class FinanceAgentPanelComponent {
     this.loading.set(true);
     this.question = '';
 
+    // O backend devolve o motivo em `error` (chave ausente, chave inválida,
+    // modelo inexistente, cota estourada). Engolir isso num aviso genérico
+    // deixava o problema indistinguível — agora a mensagem real aparece.
     this.api.post<any>('/agent/ask', { question: q, history: this.turns() })
-      .pipe(catchError(() => of(null)))
-      .subscribe(res => {
+      .pipe(catchError((e: any) => of({ __error: e?.error?.error || e?.message || '' })))
+      .subscribe((res: any) => {
         this.loading.set(false);
         if (!res?.answer) {
-          this.toast.error('O agente não respondeu. Verifique se a chave de IA está configurada.');
+          this.toast.error(this.agentErrorMessage(res?.__error));
           this.question = q; // devolve a pergunta para não perder o texto
           return;
         }
         this.turns.update(t => [...t, { question: q, answer: res.answer }]);
       });
+  }
+
+  /** Traduz o erro do provedor de IA em algo acionável. */
+  private agentErrorMessage(raw?: string): string {
+    const e = (raw ?? '').toLowerCase();
+    if (!e) return 'O agente não respondeu. Tente de novo em instantes.';
+    if (e.includes('ai_api_key') || e.includes('não configurada'))
+      return 'IA não configurada: falta AI_API_KEY no backend.';
+    if (e.includes('ia 401') || e.includes('invalid api key') || e.includes('unauthorized'))
+      return 'Chave de IA inválida ou expirada. Gere outra no provedor.';
+    if (e.includes('ia 404') || e.includes('model'))
+      return 'Modelo não encontrado nesse provedor. Confira AI_MODEL.';
+    if (e.includes('ia 429') || e.includes('rate limit') || e.includes('quota'))
+      return 'Cota de IA atingida. Tente mais tarde ou configure o provedor reserva.';
+    return `O agente não respondeu: ${raw}`;
   }
 
   clear(): void { this.turns.set([]); }

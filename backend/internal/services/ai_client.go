@@ -66,6 +66,50 @@ func (a *AIClient) WithFallback(apiKey, model, baseURL string) *AIClient {
 
 func (a *AIClient) Enabled() bool { return len(a.providers) > 0 }
 
+// ProviderInfo descreve um provedor sem expor a chave.
+type ProviderInfo struct {
+	Name     string `json:"name"`
+	Model    string `json:"model"`
+	Endpoint string `json:"endpoint"`
+}
+
+// Providers lista o que está configurado, para diagnóstico na tela. Nunca
+// devolve a chave — só o suficiente para saber se o deploy recebeu as
+// variáveis e se o modelo é o esperado para aquele endpoint.
+func (a *AIClient) Providers() []ProviderInfo {
+	out := make([]ProviderInfo, 0, len(a.providers))
+	for _, p := range a.providers {
+		endpoint := p.baseURL
+		if endpoint == "" {
+			endpoint = "anthropic"
+		}
+		out = append(out, ProviderInfo{Name: p.name, Model: p.model, Endpoint: endpoint})
+	}
+	return out
+}
+
+// Ping faz uma chamada mínima em cada provedor e devolve o erro de cada um.
+// É o jeito mais direto de separar "chave não chegou no Render" de "chave
+// inválida", "modelo errado" e "cota estourada".
+func (a *AIClient) Ping() []map[string]string {
+	out := make([]map[string]string, 0, len(a.providers))
+	for _, p := range a.providers {
+		var err error
+		if p.baseURL != "" {
+			_, err = a.completeOpenAI(p, "Responda apenas: ok", "ok", 5)
+		} else {
+			_, err = a.completeAnthropic(p, "Responda apenas: ok", "ok", 5)
+		}
+		r := map[string]string{"name": p.name, "model": p.model, "status": "ok"}
+		if err != nil {
+			r["status"] = "erro"
+			r["error"] = err.Error()
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
 // Complete tenta cada provedor na ordem até um responder.
 func (a *AIClient) Complete(system, user string, maxTokens int) (string, error) {
 	if !a.Enabled() {
