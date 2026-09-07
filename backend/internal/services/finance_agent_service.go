@@ -428,7 +428,9 @@ type ChatTurn struct {
 // Consult responde uma pergunta livre usando o perfil financeiro completo.
 // Diferente do WhatsApp, aqui nunca criamos lançamento — o app tem formulário
 // para isso. A resposta é sempre análise.
-func (s *FinanceAgentService) Consult(ctx context.Context, wsID, question string, history []ChatTurn) (string, error) {
+// focus opcional muda o contexto e a instrução: "debt" anexa as dívidas
+// detalhadas e as duas ordens de quitação já calculadas em Go.
+func (s *FinanceAgentService) Consult(ctx context.Context, wsID, question string, history []ChatTurn, focus string) (string, error) {
 	prof, err := s.profile.Build(ctx, wsID)
 	if err != nil {
 		return "", err
@@ -461,10 +463,39 @@ func (s *FinanceAgentService) Consult(ctx context.Context, wsID, question string
 		sb.WriteString("\n\nSimulação já calculada para o valor citado:\n")
 		sb.Write(simJSON)
 	}
+
+	system := agentWebPrompt
+	if focus == "debt" {
+		if ov, err := s.profile.DebtDetail(ctx, wsID); err == nil && len(ov.Dividas) > 0 {
+			ov.SobraMediaMensal = prof.SobraMediaMensal
+			debtJSON, _ := json.Marshal(ov)
+			sb.WriteString("\n\nDívidas em detalhe (ordens já calculadas pelo sistema):\n")
+			sb.Write(debtJSON)
+		}
+		system = agentDebtPrompt
+	}
 	sb.WriteString("\n\nPergunta: " + question)
 
-	return s.ai.Complete(agentWebPrompt, sb.String(), 700)
+	return s.ai.Complete(system, sb.String(), 700)
 }
+
+// Prompt da tela de Estratégia de Dívidas. As duas ordens já vêm calculadas;
+// o modelo escolhe entre elas e explica, não recalcula.
+const agentDebtPrompt = agentWebPrompt + `
+
+FOCO: QUITAÇÃO DE DÍVIDAS
+- O bloco "Dívidas em detalhe" traz ordem_avalanche (maior juros primeiro,
+  economiza mais dinheiro) e ordem_bola_de_neve (menor saldo primeiro, quita
+  uma dívida antes e sustenta a motivação). Use essas ordens como estão.
+- Recomende UMA das duas e diga por quê, no caso concreto dele. Se as taxas
+  forem parecidas, a bola de neve costuma vencer; se houver uma taxa muito
+  acima das outras, a avalanche.
+- Sempre diga quanto de juros as dívidas custam por mês (juros_total_no_mes).
+  É o número que torna a urgência concreta.
+- Só sugira acelerar pagamento com o que sobra de fato (sobra_media_mensal).
+  Se a sobra for negativa, diga isso antes de qualquer plano de aceleração.
+- Não sugira novo empréstimo para quitar dívida sem alertar que só compensa
+  se a taxa nova for comprovadamente menor que a atual.`
 
 // No app há mais espaço que no WhatsApp, então a resposta pode respirar —
 // mas o limite regulatório é o mesmo.

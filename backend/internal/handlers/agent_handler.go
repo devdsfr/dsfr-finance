@@ -28,6 +28,9 @@ func (h *AgentHandler) Ask(c *gin.Context) {
 	var body struct {
 		Question string              `json:"question" binding:"required"`
 		History  []services.ChatTurn `json:"history"`
+		// Foco da tela que perguntou. Só valores conhecidos passam — o campo
+		// vem do cliente e não pode virar injeção no prompt.
+		Focus string `json:"focus"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -41,7 +44,11 @@ func (h *AgentHandler) Ask(c *gin.Context) {
 		body.History = body.History[len(body.History)-6:]
 	}
 
-	answer, err := h.agent.Consult(c, wsID, body.Question, body.History)
+	if body.Focus != "debt" {
+		body.Focus = ""
+	}
+
+	answer, err := h.agent.Consult(c, wsID, body.Question, body.History, body.Focus)
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
 		return

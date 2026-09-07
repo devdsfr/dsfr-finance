@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"math"
+	"sort"
 	"time"
 )
 
@@ -38,6 +39,92 @@ type FinanceProfile struct {
 }
 
 func round2(v float64) float64 { return math.Round(v*100) / 100 }
+
+// ── Dívidas detalhadas (contexto da tela de Estratégia) ─────────────────
+//
+// O perfil agregado tem só o total devido. Para falar de ORDEM de quitação
+// é preciso dívida a dívida, com juros e saldo — é o que muda a resposta
+// entre "pague a mais cara" e "pague a menor".
+
+type DebtItem struct {
+	Nome            string  `json:"nome"`
+	Tipo            string  `json:"tipo,omitempty"`
+	Saldo           float64 `json:"saldo_devedor"`
+	JurosMensalPct  float64 `json:"juros_mensal_pct"`
+	Parcela         float64 `json:"parcela_mensal"`
+	ParcelasRestant int     `json:"parcelas_restantes"`
+	// Quanto essa dívida custa de juros em um mês, ao saldo de hoje. É o
+	// número que ordena a estratégia avalanche.
+	JurosNoMes float64 `json:"juros_no_mes"`
+}
+
+type DebtOverview struct {
+	Dividas          []DebtItem `json:"dividas"`
+	SaldoTotal       float64    `json:"saldo_total"`
+	ParcelaTotal     float64    `json:"parcela_mensal_total"`
+	JurosTotalNoMes  float64    `json:"juros_total_no_mes"`
+	OrdemAvalanche   []string   `json:"ordem_avalanche"` // maior juros primeiro
+	OrdemBolaDeNeve  []string   `json:"ordem_bola_de_neve"`
+	SobraMediaMensal float64    `json:"sobra_media_mensal"`
+}
+
+// DebtDetail lista as dívidas e já calcula, em Go, as duas ordens clássicas
+// de quitação e o custo mensal de juros de cada uma.
+func (s *FinanceProfileService) DebtDetail(ctx context.Context, wsID string) (*DebtOverview, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT name, COALESCE(type,''), COALESCE(remaining_balance,0),
+		       COALESCE(monthly_rate,0), COALESCE(monthly_payment,0),
+		       COALESCE(remaining_months,0)
+		  FROM debts
+		 WHERE workspace_id=$1 AND COALESCE(remaining_balance,0) > 0
+		 ORDER BY remaining_balance DESC`, wsID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ov := &DebtOverview{Dividas: []DebtItem{}}
+	for rows.Next() {
+		var d DebtItem
+		// monthly_rate é guardado como fração (0.015 = 1,5% a.m.); o modelo
+		// lê melhor em percentual, então convertemos na saída.
+		var rate float64
+		if err := rows.Scan(&d.Nome, &d.Tipo, &d.Saldo, &rate,
+			&d.Parcela, &d.ParcelasRestant); err != nil {
+			return nil, err
+		}
+		d.JurosNoMes = round2(d.Saldo * rate)
+		d.JurosMensalPct = round2(rate * 100)
+		d.Saldo = round2(d.Saldo)
+		d.Parcela = round2(d.Parcela)
+
+		ov.Dividas = append(ov.Dividas, d)
+		ov.SaldoTotal += d.Saldo
+		ov.ParcelaTotal += d.Parcela
+		ov.JurosTotalNoMes += d.JurosNoMes
+	}
+	ov.SaldoTotal = round2(ov.SaldoTotal)
+	ov.ParcelaTotal = round2(ov.ParcelaTotal)
+	ov.JurosTotalNoMes = round2(ov.JurosTotalNoMes)
+
+	// Avalanche: ataca a maior taxa primeiro — é a que economiza mais juros.
+	// Bola de neve: ataca o menor saldo primeiro — quita antes e sustenta a
+	// disciplina. As duas ordens vão prontas para o modelo só comparar.
+	byRate := append([]DebtItem(nil), ov.Dividas...)
+	sort.SliceStable(byRate, func(i, j int) bool {
+		return byRate[i].JurosMensalPct > byRate[j].JurosMensalPct
+	})
+	bySize := append([]DebtItem(nil), ov.Dividas...)
+	sort.SliceStable(bySize, func(i, j int) bool { return bySize[i].Saldo < bySize[j].Saldo })
+
+	for _, d := range byRate {
+		ov.OrdemAvalanche = append(ov.OrdemAvalanche, d.Nome)
+	}
+	for _, d := range bySize {
+		ov.OrdemBolaDeNeve = append(ov.OrdemBolaDeNeve, d.Nome)
+	}
+	return ov, nil
+}
 
 // Build monta o perfil consolidado do workspace.
 func (s *FinanceProfileService) Build(ctx context.Context, wsID string) (*FinanceProfile, error) {

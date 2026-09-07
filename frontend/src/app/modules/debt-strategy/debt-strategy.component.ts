@@ -8,6 +8,7 @@ import { DismissOnBackdropDirective } from '../../shared/directives/dismiss-on-b
 import { PlanService } from '../../core/services/plan.service';
 import { MoneyMaskDirective } from '../../shared/directives/money-mask.directive';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { FinanceAgentPanelComponent } from '../../shared/components/finance-agent-panel.component';
 
 interface Debt {
   id: string; name: string; type: string; system: string;
@@ -102,7 +103,7 @@ function months2text(n: number): string {
 @Component({
   selector: 'app-debt-strategy',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent, DismissOnBackdropDirective],
+  imports: [CommonModule, FormsModule, RouterModule, MoneyMaskDirective, ConfirmModalComponent, DismissOnBackdropDirective, FinanceAgentPanelComponent],
   template: `
     @if (!plan.isPremium()) {
       <div class="upsell-card">
@@ -162,6 +163,20 @@ function months2text(n: number): string {
 
       <!-- ── Main ─────────────────────────────────────────────────────── -->
       <main class="ds-main">
+
+        <!-- O agente recebe focus="debt": o backend anexa as dívidas em
+             detalhe e as ordens de quitação já calculadas em Go. -->
+        @if (debts().length > 0) {
+          <app-finance-agent-panel
+            title="Pergunte sobre suas dívidas"
+            subtitle="Ele vê saldo, juros e parcela de cada dívida sua."
+            icon="🎯"
+            focus="debt"
+            [showDownload]="false"
+            placeholder="Ex: qual dívida eu quito primeiro?"
+            [suggestions]="debtSuggestions"
+            disclaimer="Analiso ordem de quitação e custo de juros. Não recomendo investimentos específicos." />
+        }
 
         @if (!selected()) {
           <div class="welcome">
@@ -648,6 +663,13 @@ export class DebtStrategyComponent implements OnInit {
   private api   = inject(ApiService);
   private toast = inject(ToastService);
   plan = inject(PlanService);
+
+  readonly debtSuggestions = [
+    'Qual dívida eu devo quitar primeiro?',
+    'Quanto estou pagando de juros por mês?',
+    'Vale mais a pena amortizar ou investir a diferença?',
+    'Em quanto tempo consigo ficar sem dívidas?',
+  ];
 
   loading     = signal(true);
   debts       = signal<Debt[]>([]);

@@ -8,7 +8,7 @@ import { TranslationService } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 import { ConfigurableDashboardComponent } from './configurable-dashboard.component';
-import { FinanceAgentPanelComponent } from './finance-agent-panel.component';
+import { FinanceAgentPanelComponent } from '../../shared/components/finance-agent-panel.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 

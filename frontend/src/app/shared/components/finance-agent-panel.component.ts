@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, Input, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -24,16 +24,18 @@ const SUGGESTIONS = [
 <div class="agent">
   <div class="agent__head">
     <div class="agent__id">
-      <span class="agent__icon">🧠</span>
+      <span class="agent__icon">{{ icon }}</span>
       <div>
-        <h2>Pergunte ao seu agente financeiro</h2>
-        <p class="agent__sub">Ele conhece suas contas, dívidas, parcelas e reserva.</p>
+        <h2>{{ title }}</h2>
+        <p class="agent__sub">{{ subtitle }}</p>
       </div>
     </div>
-    <button class="dl-btn" (click)="downloadContext()" [disabled]="downloading()"
-            title="Baixar seu contexto financeiro em Markdown">
-      {{ downloading() ? 'Gerando…' : '⬇ Baixar contexto (.md)' }}
-    </button>
+    @if (showDownload) {
+      <button class="dl-btn" (click)="downloadContext()" [disabled]="downloading()"
+              title="Baixar seu contexto financeiro em Markdown">
+        {{ downloading() ? 'Gerando…' : '⬇ Baixar contexto (.md)' }}
+      </button>
+    }
   </div>
 
   <!-- Conversa -->
@@ -64,7 +66,7 @@ const SUGGESTIONS = [
   <div class="composer">
     <input class="composer__input" type="text" [(ngModel)]="question"
            (keyup.enter)="ask()" [disabled]="loading()"
-           placeholder="Ex: quero comprar uma moto de 18 mil, vale a pena?" />
+           [placeholder]="placeholder" />
     <button class="composer__send" (click)="ask()" [disabled]="loading() || !question.trim()">
       Perguntar
     </button>
@@ -74,9 +76,7 @@ const SUGGESTIONS = [
     <button class="clear-btn" (click)="clear()">Limpar conversa</button>
   }
 
-  <p class="disclaimer">
-    Analiso orçamento, dívidas e parcelamentos. Não recomendo investimentos específicos.
-  </p>
+  <p class="disclaimer">{{ disclaimer }}</p>
 </div>
   `,
   styles: [`
@@ -142,7 +142,20 @@ export class FinanceAgentPanelComponent {
   private http = inject(HttpClient);
   private toast = inject(ToastService);
 
-  readonly suggestions = SUGGESTIONS;
+  /**
+   * O painel é o mesmo em todas as telas; muda o enquadramento. `focus`
+   * é o único que altera o comportamento do backend — ele troca o prompt
+   * e anexa o contexto específico daquele assunto.
+   */
+  @Input() title = 'Pergunte ao seu agente financeiro';
+  @Input() subtitle = 'Ele conhece suas contas, dívidas, parcelas e reserva.';
+  @Input() icon = '🧠';
+  @Input() placeholder = 'Ex: quero comprar uma moto de 18 mil, vale a pena?';
+  @Input() suggestions: string[] = SUGGESTIONS;
+  @Input() showDownload = true;
+  @Input() focus: '' | 'debt' = '';
+  @Input() disclaimer =
+    'Analiso orçamento, dívidas e parcelamentos. Não recomendo investimentos específicos.';
 
   question = '';
   turns       = signal<Turn[]>([]);
@@ -164,7 +177,7 @@ export class FinanceAgentPanelComponent {
     // O backend devolve o motivo em `error` (chave ausente, chave inválida,
     // modelo inexistente, cota estourada). Engolir isso num aviso genérico
     // deixava o problema indistinguível — agora a mensagem real aparece.
-    this.api.post<any>('/agent/ask', { question: q, history: this.turns() })
+    this.api.post<any>('/agent/ask', { question: q, history: this.turns(), focus: this.focus })
       .pipe(catchError((e: any) => of({ __error: e?.error?.error || e?.message || '' })))
       .subscribe((res: any) => {
         this.loading.set(false);
