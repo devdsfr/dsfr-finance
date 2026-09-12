@@ -6,6 +6,7 @@ import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
+import { invoicesAsBills } from '../../shared/utils/invoice-bills';
 
 interface Commitment {
   id: string;
@@ -327,9 +328,12 @@ export class CommitmentsComponent implements OnInit {
     const today = this.todayStr();
 
     forkJoin({
-      pay:     this.api.get<any>(`/transactions?type=expense&paid=false&date_from=${from}&date_to=${to}&limit=200`).pipe(catchError(() => of({ data: [] }))),
-      receive: this.api.get<any>(`/transactions?type=income&paid=false&date_from=${from}&date_to=${to}&limit=200`).pipe(catchError(() => of({ data: [] }))),
-      debts:   this.api.get<any>('/debts').pipe(catchError(() => of({ data: [] }))),
+      // no_card=true + faturas: a compra no cartão não compromete o caixa na
+      // data da compra. O que cai no calendário é o vencimento da fatura.
+      pay:      this.api.get<any>(`/transactions?type=expense&paid=false&no_card=true&date_from=${from}&date_to=${to}&limit=200`).pipe(catchError(() => of({ data: [] }))),
+      invoices: this.api.get<any>(`/reports/card-invoices-due?date_from=${from}&date_to=${to}`).pipe(catchError(() => of({ data: [] }))),
+      receive:  this.api.get<any>(`/transactions?type=income&paid=false&date_from=${from}&date_to=${to}&limit=200`).pipe(catchError(() => of({ data: [] }))),
+      debts:    this.api.get<any>('/debts').pipe(catchError(() => of({ data: [] }))),
     }).subscribe(res => {
       const mkStatus = (date: string): Commitment['status'] =>
         date < today ? 'overdue' : date === today ? 'today' : 'upcoming';
@@ -340,7 +344,10 @@ export class CommitmentsComponent implements OnInit {
           return { id: t.id, description: t.description, amount: Math.abs(t.amount ?? 0), date, kind, status: mkStatus(date), paid: !!t.paid };
         });
 
-      const all = [...map(res.pay.data ?? [], 'pay'), ...map(res.receive.data ?? [], 'receive')];
+      const all = [
+        ...map([...(res.pay.data ?? []), ...invoicesAsBills(res.invoices.data ?? [])], 'pay'),
+        ...map(res.receive.data ?? [], 'receive'),
+      ];
       this.items.set(all);
 
       const debts: any[] = res.debts.data ?? [];

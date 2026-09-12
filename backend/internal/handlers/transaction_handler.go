@@ -48,6 +48,7 @@ func (h *TransactionHandler) List(c *gin.Context) {
 		AccountID:    c.Query("account_id"),
 		CategoryID:   c.Query("category_id"),
 		CreditCardID: c.Query("credit_card_id"),
+		NoCard:       c.Query("no_card") == "true",
 		Type:         c.Query("type"),
 		Paid:         paid,
 		Ignored:      ignored,

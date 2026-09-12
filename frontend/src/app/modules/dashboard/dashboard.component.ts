@@ -9,6 +9,7 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
 import { ConfigurableDashboardComponent } from './configurable-dashboard.component';
 import { FinanceAgentPanelComponent } from '../../shared/components/finance-agent-panel.component';
+import { invoicesAsBills } from '../../shared/utils/invoice-bills';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -286,13 +287,17 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                 <div class="bill-banner bill-banner--danger">{{ 'dashboard.payable_overdue' | translate }}</div>
                 @for (bill of overduePayable().slice(0, 4); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
-                    <div class="bill-icon" [style.background]="billColor(bill, '#ef4444')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
+                    <div class="bill-icon" [style.background]="billColor(bill, '#ef4444')" [class.bill-icon--emoji]="bill.kind === 'invoice' || !!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy':'UTC' }}</span>
                     </div>
                     <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
-                    @if (!bill.paid) {
+                    @if (bill.kind === 'invoice') {
+                      <a class="pay-btn pay-btn--link" title="Abrir a fatura do cartão"
+                         [routerLink]="['/reports/card-invoices']"
+                         [queryParams]="{ card_id: bill.card_id, month: bill.month }">›</a>
+                    } @else if (!bill.paid) {
                       <button class="pay-btn" title="Clique para marcar como pago"
                               [disabled]="markingPaid.has(bill.id)"
                               (click)="markPaid(bill)">👍</button>
@@ -306,13 +311,17 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                 <p class="section-label">{{ 'dashboard.upcoming' | translate }}</p>
                 @for (bill of (showAllPayable() ? upcomingPayable() : upcomingPayable().slice(0, 4)); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
-                    <div class="bill-icon" [style.background]="billColor(bill, '#6b7280')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
+                    <div class="bill-icon" [style.background]="billColor(bill, '#6b7280')" [class.bill-icon--emoji]="bill.kind === 'invoice' || !!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
                       <span class="bill-name">{{ bill.description }}</span>
                       <span class="bill-date">{{ bill.date | date:'dd/MM/yyyy':'UTC' }}</span>
                     </div>
                     <span class="bill-amt">{{ bill.amount | appCurrency }}</span>
-                    @if (!bill.paid) {
+                    @if (bill.kind === 'invoice') {
+                      <a class="pay-btn pay-btn--link" title="Abrir a fatura do cartão"
+                         [routerLink]="['/reports/card-invoices']"
+                         [queryParams]="{ card_id: bill.card_id, month: bill.month }">›</a>
+                    } @else if (!bill.paid) {
                       <button class="pay-btn" title="Clique para marcar como pago"
                               [disabled]="markingPaid.has(bill.id)"
                               (click)="markPaid(bill)">👍</button>
@@ -815,6 +824,8 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     .pay-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0 .25rem; opacity: .35; transition: opacity .15s, transform .1s; flex-shrink: 0; }
     .pay-btn:hover { opacity: 1; transform: scale(1.2); }
     .pay-btn:disabled { cursor: default; opacity: .2; }
+    /* Fatura não se marca como paga aqui: o link leva à tela do cartão. */
+    .pay-btn--link { text-decoration: none; color: #6b7280; font-weight: 700; opacity: .5; }
     .pay-done { color: #16a34a; font-size: .85rem; font-weight: 700; flex-shrink: 0; }
     .bill-icon {
       width: 32px; height: 32px; border-radius: 50%; display: flex;
@@ -1766,7 +1777,10 @@ export class DashboardComponent implements OnInit {
     forkJoin({
       accounts:   this.api.get<any>('/accounts').pipe(catchError(() => of({ data: [] }))),
       cards:      this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
-      payable:    this.api.get<any>(`/transactions?type=expense&paid=false&date_from=${dateFrom}&date_to=${dateTo}&limit=100`).pipe(catchError(() => of({ data: [] }))),
+      // no_card=true: compra no cartão não sai do caixa na data da compra.
+      // O que vence é a fatura, que entra abaixo como uma linha só.
+      payable:    this.api.get<any>(`/transactions?type=expense&paid=false&no_card=true&date_from=${dateFrom}&date_to=${dateTo}&limit=100`).pipe(catchError(() => of({ data: [] }))),
+      invoices:   this.api.get<any>(`/reports/card-invoices-due?date_from=${dateFrom}&date_to=${dateTo}`).pipe(catchError(() => of({ data: [] }))),
       receivable: this.api.get<any>(`/transactions?type=income&paid=false&date_from=${dateFrom}&date_to=${dateTo}&limit=100`).pipe(catchError(() => of({ data: [] }))),
       summary:    this.api.get<any>(`/reports/flow?month=${y}-${m}`).pipe(catchError(() => of({ data: { income: 0, expense: 0 } }))),
       cats:       this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
@@ -1808,7 +1822,11 @@ export class DashboardComponent implements OnInit {
           this.saveCache();
         });
       }
-      this.payableBills.set((res.payable.data ?? []).slice().sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+      const bills = [
+        ...(res.payable.data ?? []),
+        ...invoicesAsBills(res.invoices.data ?? []),
+      ].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      this.payableBills.set(bills);
       this.receivableBills.set((res.receivable.data ?? []).slice().sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()));
       this.income.set(res.summary.data?.income ?? res.summary.income ?? 0);
       this.expense.set(res.summary.data?.expense ?? res.summary.expense ?? 0);
@@ -1899,12 +1917,14 @@ export class DashboardComponent implements OnInit {
   }
 
   billIcon(bill: any): string {
+    if (bill.kind === 'invoice') return '💳';
     const cat = this.billCat(bill);
     if (cat?.icon) return cat.icon;
     return (bill.description ?? '?')[0].toUpperCase();
   }
 
   billColor(bill: any, fallback: string): string {
+    if (bill.kind === 'invoice') return '#f3f4f6';
     const cat = this.billCat(bill);
     if (cat?.icon) return '#f3f4f6';
     return cat?.color ?? fallback;

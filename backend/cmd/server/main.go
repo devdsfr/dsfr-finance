@@ -166,6 +166,9 @@ func main() {
 		auth.GET("/reports/categories", reportH.CategorySummary)
 		auth.GET("/reports/tags-cta", reportH.TagsCTA)
 		auth.GET("/reports/installments", reportH.ActiveInstallments)
+		// Caminho fora de /reports/cards/ de propósito: um segmento estático
+		// irmão de :card_id faz o roteador do Gin entrar em conflito.
+		auth.GET("/reports/card-invoices-due", reportH.InvoicesDue)
 		auth.GET("/reports/cards/:card_id/invoices", reportH.CardInvoiceHistory)
 		auth.GET("/reports/export/csv", middleware.RequirePremium(db), reportH.ExportCSV)
 		auth.GET("/reports/export/excel", middleware.RequirePremium(db), reportH.ExportExcel)

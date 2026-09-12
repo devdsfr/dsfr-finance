@@ -23,7 +23,10 @@ type TransactionFilter struct {
 	AccountID    string
 	CategoryID   string
 	CreditCardID string
-	Type         string
+	// NoCard traz apenas lançamentos que saem direto do caixa. Compra no
+	// cartão não é conta a pagar na data da compra — quem vence é a fatura.
+	NoCard bool
+	Type   string
 	Paid         *bool
 	Ignored      *bool
 	DateFrom     string
@@ -52,6 +55,9 @@ func (r *TransactionRepository) List(f TransactionFilter) ([]*models.Transaction
 		where = append(where, fmt.Sprintf("t.credit_card_id = $%d", i))
 		args = append(args, f.CreditCardID)
 		i++
+	}
+	if f.NoCard {
+		where = append(where, "t.credit_card_id IS NULL")
 	}
 	if f.Type != "" {
 		where = append(where, fmt.Sprintf("t.type = $%d", i))

@@ -5,6 +5,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
+import { invoicesAsBills } from '../../shared/utils/invoice-bills';
 
 interface MonthRow {
   month: string;        // YYYY-MM
@@ -207,7 +208,11 @@ export class ForecastComponent implements OnInit {
 
     forkJoin({
       accounts: this.api.get<any>('/accounts').pipe(catchError(() => of({ data: [] }))),
-      pay:      this.api.get<any>(`/transactions?type=expense&paid=false&date_from=${from}&date_to=${to}&limit=1000`).pipe(catchError(() => of({ data: [] }))),
+      // no_card=true + faturas: a projeção é de CAIXA. A compra no cartão só
+      // vira saída quando a fatura vence, e o mês do vencimento pode não ser
+      // o mês da compra.
+      pay:      this.api.get<any>(`/transactions?type=expense&paid=false&no_card=true&date_from=${from}&date_to=${to}&limit=1000`).pipe(catchError(() => of({ data: [] }))),
+      invoices: this.api.get<any>(`/reports/card-invoices-due?date_from=${from}&date_to=${to}`).pipe(catchError(() => of({ data: [] }))),
       receive:  this.api.get<any>(`/transactions?type=income&paid=false&date_from=${from}&date_to=${to}&limit=1000`).pipe(catchError(() => of({ data: [] }))),
       debts:    this.api.get<any>('/debts').pipe(catchError(() => of({ data: [] }))),
     }).subscribe(res => {
@@ -231,6 +236,7 @@ export class ForecastComponent implements OnInit {
       };
       add(res.receive.data ?? [], 'income');
       add(res.pay.data ?? [], 'expense');
+      add(invoicesAsBills(res.invoices.data ?? []), 'expense');
 
       // Parcelas de dívidas: soma monthly_payment nos próximos min(months, remaining) meses.
       const debts: any[] = res.debts.data ?? [];

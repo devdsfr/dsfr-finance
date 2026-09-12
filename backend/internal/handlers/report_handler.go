@@ -134,6 +134,19 @@ func (h *ReportHandler) ActiveInstallments(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": data})
 }
 
+// InvoicesDue — faturas em aberto como contas a pagar, pelo vencimento.
+// Usado pela Visão Geral, Compromissos e Previsão: a compra no cartão não
+// sai do caixa na data da compra, e sim quando a fatura vence.
+func (h *ReportHandler) InvoicesDue(c *gin.Context) {
+	wsID := middleware.GetWorkspaceID(c)
+	data, err := h.repo.InvoicesDue(wsID, c.Query("date_from"), c.Query("date_to"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": data})
+}
+
 // CardInvoiceHistory — AC-FC-08
 func (h *ReportHandler) CardInvoiceHistory(c *gin.Context) {
 	wsID := middleware.GetWorkspaceID(c)

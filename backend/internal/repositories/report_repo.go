@@ -225,6 +225,115 @@ func (r *ReportRepository) CardInvoiceHistory(workspaceID, cardID string) ([]mod
 	return result, nil
 }
 
+// InvoiceDue é uma fatura em aberto vista como conta a pagar: o que importa
+// para o caixa é o VENCIMENTO, não a data das compras que a formaram.
+type InvoiceDue struct {
+	CardID   string  `json:"card_id"`
+	CardName string  `json:"card_name"`
+	Color    string  `json:"color"`
+	Icon     string  `json:"icon"`
+	Month    string  `json:"month"`    // competência da fatura (YYYY-MM)
+	DueDate  string  `json:"due_date"` // YYYY-MM-DD
+	Amount   float64 `json:"amount"`   // apenas o que continua em aberto
+	Count    int     `json:"count"`
+}
+
+// InvoicesDue devolve uma linha por fatura em aberto de cada cartão, com o
+// vencimento já calculado a partir do ciclo.
+//
+// A regra do vencimento: a fatura da competência M fecha no dia `closing` do
+// mês M. Se o dia de vencimento for depois do fechamento, vence no próprio
+// mês M; senão, cai no mês seguinte (fecha dia 16, vence dia 26 → mesmo mês;
+// fecha dia 27, vence dia 1 → mês seguinte).
+//
+// Faturas antigas ainda em aberto aparecem com o vencimento delas, no
+// passado — é assim que uma fatura atrasada aparece como atrasada.
+func (r *ReportRepository) InvoicesDue(workspaceID, from, to string) ([]InvoiceDue, error) {
+	q := `
+		WITH ciclo AS (
+			SELECT t.credit_card_id AS card_id,
+			       CASE WHEN EXTRACT(DAY FROM t.date)::int <= COALESCE(NULLIF(cc.closing_day,0), 31)
+			            THEN date_trunc('month', t.date)
+			            ELSE date_trunc('month', t.date) + interval '1 month'
+			       END AS competencia,
+			       t.amount,
+			       cc.name, cc.closing_day, cc.due_day,
+			       COALESCE(cc.color,'') AS color, COALESCE(cc.icon,'') AS icon
+			  FROM transactions t
+			  JOIN credit_cards cc ON cc.id = t.credit_card_id
+			 WHERE t.workspace_id = $1
+			   AND t.type = 'expense'
+			   AND t.paid = false
+			   AND COALESCE(t.ignored, false) = false
+		),
+		agrupado AS (
+			SELECT card_id, name, color, icon, competencia, due_day,
+			       SUM(amount) AS total,
+			       COUNT(*)    AS cnt,
+			       -- Mês em que a fatura vence: o próprio, se o dia de
+			       -- vencimento for depois do fechamento; senão, o seguinte.
+			       CASE WHEN due_day > COALESCE(NULLIF(closing_day,0), 31)
+			            THEN competencia
+			            ELSE competencia + interval '1 month'
+			       END AS venc_mes
+			  FROM ciclo
+			 GROUP BY card_id, name, color, icon, competencia, closing_day, due_day
+		),
+		com_vencimento AS (
+			SELECT card_id, name, color, icon, competencia, total, cnt,
+			       -- Dia do vencimento, limitado ao último dia do mês (dia 31
+			       -- em mês de 30 vira o dia 30, não estoura para o seguinte).
+			       (venc_mes + (LEAST(
+			          due_day,
+			          EXTRACT(DAY FROM (venc_mes + interval '1 month - 1 day'))::int
+			        ) - 1) * interval '1 day')::date AS due_date
+			  FROM agrupado
+			 WHERE total > 0 AND due_day > 0
+		)
+		SELECT card_id, name, color, icon,
+		       TO_CHAR(competencia, 'YYYY-MM') AS month,
+		       -- Alias diferente de due_date de propósito: o WHERE e o ORDER BY
+		       -- abaixo precisam da coluna date, não deste texto formatado.
+		       TO_CHAR(due_date, 'YYYY-MM-DD') AS due_date_txt,
+		       total, cnt
+		  FROM com_vencimento`
+
+	args := []interface{}{workspaceID}
+	i := 2
+	var where []string
+	if from != "" {
+		where = append(where, fmt.Sprintf("due_date >= $%d", i))
+		args = append(args, from)
+		i++
+	}
+	if to != "" {
+		where = append(where, fmt.Sprintf("due_date <= $%d", i))
+		args = append(args, to)
+		i++
+	}
+	if len(where) > 0 {
+		q += " WHERE " + joinStrings(where, " AND ")
+	}
+	q += " ORDER BY due_date"
+
+	rows, err := r.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := []InvoiceDue{}
+	for rows.Next() {
+		var d InvoiceDue
+		if err := rows.Scan(&d.CardID, &d.CardName, &d.Color, &d.Icon,
+			&d.Month, &d.DueDate, &d.Amount, &d.Count); err != nil {
+			return nil, err
+		}
+		result = append(result, d)
+	}
+	return result, rows.Err()
+}
+
 func joinStrings(s []string, sep string) string {
 	result := ""
 	for i, v := range s {
