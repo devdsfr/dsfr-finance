@@ -44,6 +44,13 @@ func (h *SpendingHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// O bind traz category_id, account_id e credit_card_id do corpo; só ID e
+	// WorkspaceID são sobrescritos. Sem esta checagem o limite podia apontar
+	// para recurso de outro workspace (AUD-001).
+	if err := h.repo.ValidateRefs(wsID, &l); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	l.ID = uuid.New().String()
 	l.WorkspaceID = wsID
 	if l.AlertPct == 0 {

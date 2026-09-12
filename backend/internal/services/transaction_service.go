@@ -46,7 +46,88 @@ type CreateTransactionRequest struct {
 	Scope            string   `json:"scope"`
 }
 
+// ── Propriedade das referências (AUD-001) ───────────────────────────────
+//
+// Os IDs vêm do corpo da requisição e o workspace vem do token. Sem conferir
+// um contra o outro, um lançamento criado no workspace A podia apontar para
+// a conta do workspace B — e, ao ser marcado como pago, mexer no saldo dela.
+//
+// As mensagens são deliberadamente genéricas: dizer "esta conta pertence a
+// outro usuário" confirmaria a existência do recurso. Id inexistente e id de
+// outro workspace devolvem exatamente a mesma resposta.
+var (
+	errInvalidAccount         = fmt.Errorf("conta inválida")
+	errInvalidCreditCard      = fmt.Errorf("cartão inválido")
+	errInvalidCategory        = fmt.Errorf("categoria inválida")
+	errInvalidTransferAccount = fmt.Errorf("conta de destino inválida")
+	errInvalidTag             = fmt.Errorf("tag inválida")
+)
+
+// validateReferences confere toda FK informada contra o workspace do token.
+// Campo ausente ou vazio continua permitido — só o que vem preenchido precisa
+// pertencer ao workspace. Roda ANTES de qualquer escrita.
+func (s *TransactionService) validateReferences(workspaceID string, req CreateTransactionRequest) error {
+	check := func(id *string, exists func(string, string) (bool, error), invalid error) error {
+		if id == nil || *id == "" {
+			return nil
+		}
+		ok, err := exists(workspaceID, *id)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return invalid
+		}
+		return nil
+	}
+
+	if err := check(req.AccountID, s.repo.AccountExists, errInvalidAccount); err != nil {
+		return err
+	}
+	if err := check(req.CreditCardID, s.repo.CreditCardExists, errInvalidCreditCard); err != nil {
+		return err
+	}
+	if err := check(req.CategoryID, s.repo.CategoryExists, errInvalidCategory); err != nil {
+		return err
+	}
+	// Isolamento apenas. A regra de saldo da transferência é o AUD-003.
+	if err := check(req.TransferAccount, s.repo.AccountExists, errInvalidTransferAccount); err != nil {
+		return err
+	}
+
+	// Tags: tudo ou nada. Salvar as válidas e descartar a estranha esconderia
+	// a tentativa de acesso cruzado atrás de um sucesso parcial.
+	if len(req.TagIDs) > 0 {
+		seen := make(map[string]struct{}, len(req.TagIDs))
+		unique := make([]string, 0, len(req.TagIDs))
+		for _, id := range req.TagIDs {
+			if id == "" {
+				return errInvalidTag
+			}
+			if _, dup := seen[id]; dup {
+				continue
+			}
+			seen[id] = struct{}{}
+			unique = append(unique, id)
+		}
+		n, err := s.repo.CountTagsInWorkspace(workspaceID, unique)
+		if err != nil {
+			return err
+		}
+		if n != len(unique) {
+			return errInvalidTag
+		}
+	}
+	return nil
+}
+
 func (s *TransactionService) Create(workspaceID, userID string, req CreateTransactionRequest) ([]*models.Transaction, error) {
+	// Antes de qualquer escrita: nenhuma linha deve nascer de uma referência
+	// que não pertence a este workspace.
+	if err := s.validateReferences(workspaceID, req); err != nil {
+		return nil, err
+	}
+
 	// repeat_months takes priority over installments for income; installments splits amount
 	repeatMonths := req.RepeatMonths
 	if repeatMonths < 1 {
@@ -117,12 +198,23 @@ func (s *TransactionService) Create(workspaceID, userID string, req CreateTransa
 			return nil, err
 		}
 		if len(req.TagIDs) > 0 {
-			_ = s.repo.SetTags(tx.ID, req.TagIDs)
+			if err := s.repo.SetTags(workspaceID, tx.ID, req.TagIDs); err != nil {
+				return nil, err
+			}
 		}
 		// Lançamento já criado como pago impacta o saldo da conta na hora.
 		if tx.Paid {
-			if accID := s.resolveAccountID(workspaceID, tx.AccountID); accID != "" {
-				_ = s.repo.AdjustAccountBalance(accID, s.balanceImpact(tx.Type, tx.Amount))
+			accID, err := s.resolveAccountID(workspaceID, tx.AccountID)
+			if err != nil {
+				return nil, err
+			}
+			if accID != "" {
+				// Erro aqui deixa de ser descartado: falha no ajuste de saldo
+				// precisa chegar ao chamador (AUD-001 §12). A atomicidade
+				// entre a inserção e o ajuste é o AUD-005, fora deste escopo.
+				if err := s.repo.AdjustAccountBalance(workspaceID, accID, s.balanceImpact(tx.Type, tx.Amount)); err != nil {
+					return nil, err
+				}
 			}
 		}
 		created = append(created, tx)
@@ -143,10 +235,19 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 		return nil, fmt.Errorf("transaction not found")
 	}
 
+	// Mesma validação da criação: trocar o account_id por uma conta de outro
+	// workspace numa edição é o mesmo ataque, por outra porta.
+	if err := s.validateReferences(workspaceID, req); err != nil {
+		return nil, err
+	}
+
 	// Snapshot do estado ANTES da edição, para reconciliar o saldo da conta.
 	oldPaid := existing.Paid
 	oldImpact := s.balanceImpact(existing.Type, existing.Amount)
-	oldAccountID := s.resolveAccountID(workspaceID, existing.AccountID)
+	oldAccountID, err := s.resolveAccountID(workspaceID, existing.AccountID)
+	if err != nil {
+		return nil, err
+	}
 
 	existing.AccountID = req.AccountID
 	existing.CreditCardID = req.CreditCardID
@@ -169,7 +270,9 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 		return nil, err
 	}
 	if req.TagIDs != nil {
-		_ = s.repo.SetTags(txID, req.TagIDs)
+		if err := s.repo.SetTags(workspaceID, txID, req.TagIDs); err != nil {
+			return nil, err
+		}
 	}
 
 	// Reconcilia o saldo: desfaz o impacto antigo (se estava pago) e aplica o
@@ -177,12 +280,19 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 	// pelo modal mantém o Saldo Geral coerente — mesmo comportamento do toggle
 	// da lista (MarkPaid/MarkUnpaid).
 	if oldPaid && oldAccountID != "" {
-		_ = s.repo.AdjustAccountBalance(oldAccountID, -oldImpact)
+		if err := s.repo.AdjustAccountBalance(workspaceID, oldAccountID, -oldImpact); err != nil {
+			return nil, err
+		}
 	}
 	if req.Paid {
-		newAccountID := s.resolveAccountID(workspaceID, req.AccountID)
+		newAccountID, err := s.resolveAccountID(workspaceID, req.AccountID)
+		if err != nil {
+			return nil, err
+		}
 		if newAccountID != "" {
-			_ = s.repo.AdjustAccountBalance(newAccountID, s.balanceImpact(req.Type, req.Amount))
+			if err := s.repo.AdjustAccountBalance(workspaceID, newAccountID, s.balanceImpact(req.Type, req.Amount)); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -200,7 +310,9 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 			if siblings, err := s.repo.ListByGroup(workspaceID, *existing.InstallmentGroup, fromDate); err == nil {
 				for _, sib := range siblings {
 					if sib.ID != txID {
-						_ = s.repo.SetTags(sib.ID, req.TagIDs)
+						if err := s.repo.SetTags(workspaceID, sib.ID, req.TagIDs); err != nil {
+							return nil, err
+						}
 					}
 				}
 			}
@@ -234,7 +346,9 @@ func (s *TransactionService) Update(workspaceID, userID, txID string, req Create
 					break
 				}
 				if len(req.TagIDs) > 0 {
-					_ = s.repo.SetTags(tx.ID, req.TagIDs)
+					if err := s.repo.SetTags(workspaceID, tx.ID, req.TagIDs); err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
@@ -254,11 +368,24 @@ func (s *TransactionService) balanceImpact(txType string, amount float64) float6
 }
 
 // resolveAccountID usa a conta vinculada ou, na falta, a primeira do workspace.
-func (s *TransactionService) resolveAccountID(workspaceID string, accountID *string) string {
+//
+// A conta vinculada é reconferida aqui mesmo já tendo passado por
+// validateReferences: este é o último ponto antes do ajuste de saldo, e ele
+// também é alcançado por caminhos que não vêm do corpo da requisição (um
+// lançamento gravado antes desta correção pode carregar um account_id de
+// outro workspace). Nenhum id chega ao saldo sem passar por aqui.
+func (s *TransactionService) resolveAccountID(workspaceID string, accountID *string) (string, error) {
 	if accountID != nil && *accountID != "" {
-		return *accountID
+		ok, err := s.repo.AccountExists(workspaceID, *accountID)
+		if err != nil {
+			return "", err
+		}
+		if !ok {
+			return "", errInvalidAccount
+		}
+		return *accountID, nil
 	}
-	return s.repo.GetFirstAccountID(workspaceID)
+	return s.repo.GetFirstAccountID(workspaceID), nil
 }
 
 func (s *TransactionService) MarkPaid(workspaceID, userID, txID string) (*models.Transaction, error) {
@@ -275,19 +402,21 @@ func (s *TransactionService) MarkPaid(workspaceID, userID, txID string) (*models
 	if err := s.repo.Update(tx); err != nil {
 		return nil, err
 	}
-	// Adjust account balance: use linked account or fall back to workspace's first account
-	accountID := ""
-	if tx.AccountID != nil && *tx.AccountID != "" {
-		accountID = *tx.AccountID
-	} else {
-		accountID = s.repo.GetFirstAccountID(workspaceID)
+	// Adjust account balance: use linked account or fall back to workspace's first account.
+	// Passa por resolveAccountID para que a conta gravada no lançamento seja
+	// reconferida contra o workspace antes de tocar em saldo (AUD-001).
+	accountID, err := s.resolveAccountID(workspaceID, tx.AccountID)
+	if err != nil {
+		return nil, err
 	}
 	if accountID != "" {
 		delta := tx.Amount
 		if tx.Type == "expense" {
 			delta = -tx.Amount
 		}
-		_ = s.repo.AdjustAccountBalance(accountID, delta)
+		if err := s.repo.AdjustAccountBalance(workspaceID, accountID, delta); err != nil {
+			return nil, err
+		}
 	}
 	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)
 	return tx, nil
@@ -306,19 +435,19 @@ func (s *TransactionService) MarkUnpaid(workspaceID, userID, txID string) (*mode
 	if err := s.repo.Update(tx); err != nil {
 		return nil, err
 	}
-	// Reverse the balance adjustment
-	accountID := ""
-	if tx.AccountID != nil && *tx.AccountID != "" {
-		accountID = *tx.AccountID
-	} else {
-		accountID = s.repo.GetFirstAccountID(workspaceID)
+	// Reverse the balance adjustment (mesma reconferência de workspace).
+	accountID, err := s.resolveAccountID(workspaceID, tx.AccountID)
+	if err != nil {
+		return nil, err
 	}
 	if accountID != "" {
 		delta := -tx.Amount
 		if tx.Type == "expense" {
 			delta = tx.Amount
 		}
-		_ = s.repo.AdjustAccountBalance(accountID, delta)
+		if err := s.repo.AdjustAccountBalance(workspaceID, accountID, delta); err != nil {
+			return nil, err
+		}
 	}
 	go s.activitySvc.Log(workspaceID, userID, "update", "transaction", &txID, nil)
 	return tx, nil
@@ -346,8 +475,14 @@ func (s *TransactionService) DeleteScoped(workspaceID, userID, txID, scope strin
 
 	// Apagar um lançamento PAGO precisa reverter o impacto que ele teve no saldo.
 	if existing.Paid {
-		if accID := s.resolveAccountID(workspaceID, existing.AccountID); accID != "" {
-			_ = s.repo.AdjustAccountBalance(accID, -s.balanceImpact(existing.Type, existing.Amount))
+		accID, err := s.resolveAccountID(workspaceID, existing.AccountID)
+		if err != nil {
+			return 0, err
+		}
+		if accID != "" {
+			if err := s.repo.AdjustAccountBalance(workspaceID, accID, -s.balanceImpact(existing.Type, existing.Amount)); err != nil {
+				return 0, err
+			}
 		}
 	}
 
@@ -365,7 +500,7 @@ func (s *TransactionService) Duplicate(workspaceID, userID, txID string) (*model
 	if err != nil || src == nil {
 		return nil, fmt.Errorf("transaction not found")
 	}
-	tags, _ := s.repo.GetTags(txID)
+	tags, _ := s.repo.GetTags(workspaceID, txID)
 	tagIDs := make([]string, len(tags))
 	for i, t := range tags {
 		tagIDs[i] = t.ID

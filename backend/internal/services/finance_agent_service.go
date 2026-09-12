@@ -341,9 +341,13 @@ func (s *FinanceAgentService) undo(ctx context.Context, wsID, phone string) stri
 		if txType == "expense" {
 			delta = amount
 		}
+		// Filtro por workspace igual ao do registro do lançamento (AUD-001):
+		// o account_id vem da linha apagada e não pode alcançar conta de
+		// outro workspace.
 		_, _ = s.db.ExecContext(ctx,
-			`UPDATE accounts SET balance = balance + $1, updated_at=NOW() WHERE id=$2`,
-			delta, accountID.String)
+			`UPDATE accounts SET balance = balance + $1, updated_at=NOW()
+			 WHERE id=$2 AND workspace_id=$3`,
+			delta, accountID.String, wsID)
 	}
 
 	// Zera o ponteiro para não desfazer duas vezes o mesmo lançamento.

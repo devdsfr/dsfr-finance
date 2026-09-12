@@ -12,6 +12,24 @@ type GoalRepository struct {
 	db *sql.DB
 }
 
+// ValidateRefs confere as referências do objetivo contra o workspace
+// (AUD-001). Mesmo raciocínio dos limites de gastos: não move saldo, mas um
+// objetivo apontando para conta ou categoria de outro workspace fica preso em
+// 0%, porque as consultas de progresso filtram por workspace.
+func (r *GoalRepository) ValidateRefs(workspaceID string, g *models.Goal) error {
+	if ok, err := OptionalRefBelongsTo(r.db, workspaceID, g.CategoryID, CategoryBelongsTo); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("categoria inválida")
+	}
+	if ok, err := OptionalRefBelongsTo(r.db, workspaceID, g.AccountID, AccountBelongsTo); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("conta inválida")
+	}
+	return nil
+}
+
 func NewGoalRepository(db *sql.DB) *GoalRepository {
 	return &GoalRepository{db: db}
 }

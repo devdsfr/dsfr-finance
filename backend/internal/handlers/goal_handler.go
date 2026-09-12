@@ -41,6 +41,12 @@ func (h *GoalHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// category_id e account_id vêm do corpo e precisam ser do workspace do
+	// token (AUD-001).
+	if err := h.repo.ValidateRefs(wsID, &g); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	g.ID = uuid.New().String()
 	g.WorkspaceID = wsID
 	if g.ChartStyle == "" {
@@ -69,6 +75,12 @@ func (h *GoalHandler) Update(c *gin.Context) {
 	}
 	var body models.Goal
 	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// A edição também troca category_id e account_id, então precisa da mesma
+	// checagem da criação (AUD-001).
+	if err := h.repo.ValidateRefs(wsID, &body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

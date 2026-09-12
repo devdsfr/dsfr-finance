@@ -16,6 +16,34 @@ func NewSpendingRepository(db *sql.DB) *SpendingRepository {
 	return &SpendingRepository{db: db}
 }
 
+// ValidateRefs confere as referências do limite contra o workspace (AUD-001).
+//
+// Um limite não move saldo, mas apontar para categoria/conta/cartão de outro
+// workspace corrompe a configuração em silêncio: as consultas de gasto
+// filtram por workspace, então o limite nunca casaria com lançamento algum e
+// ficaria eternamente em 0%.
+//
+// Mensagens genéricas, iguais às do TransactionService: id inexistente e id
+// de outro workspace devolvem a mesma resposta.
+func (r *SpendingRepository) ValidateRefs(workspaceID string, l *models.SpendingLimit) error {
+	if ok, err := OptionalRefBelongsTo(r.db, workspaceID, l.CategoryID, CategoryBelongsTo); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("categoria inválida")
+	}
+	if ok, err := OptionalRefBelongsTo(r.db, workspaceID, l.AccountID, AccountBelongsTo); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("conta inválida")
+	}
+	if ok, err := OptionalRefBelongsTo(r.db, workspaceID, l.CreditCardID, CreditCardBelongsTo); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("cartão inválido")
+	}
+	return nil
+}
+
 func (r *SpendingRepository) List(workspaceID string) ([]*models.SpendingLimit, error) {
 	q := `SELECT id, workspace_id, category_id, account_id, credit_card_id,
 	             amount, period, alert_pct, created_at, updated_at

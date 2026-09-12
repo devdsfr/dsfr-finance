@@ -72,7 +72,7 @@ func (h *TransactionHandler) List(c *gin.Context) {
 	for i, tx := range txs {
 		ids[i] = tx.ID
 	}
-	tagsByTx, _ := h.repo.GetTagsForTransactions(ids)
+	tagsByTx, _ := h.repo.GetTagsForTransactions(wsID, ids)
 	for _, tx := range txs {
 		tx.Tags = tagsByTx[tx.ID]
 	}
@@ -95,7 +95,7 @@ func (h *TransactionHandler) Get(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
-	tx.Tags, _ = h.repo.GetTags(tx.ID)
+	tx.Tags, _ = h.repo.GetTags(wsID, tx.ID)
 	c.JSON(http.StatusOK, tx)
 }
 

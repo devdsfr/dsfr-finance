@@ -287,13 +287,70 @@ func (r *TransactionRepository) DeleteSeries(id, workspaceID, groupID, fromDate 
 	return n, nil
 }
 
-// AdjustAccountBalance adds delta to the account's stored balance (positive = add, negative = subtract)
-func (r *TransactionRepository) AdjustAccountBalance(accountID string, delta float64) error {
-	_, err := r.db.Exec(
-		`UPDATE accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2`,
-		delta, accountID,
+// ── Propriedade das referências (AUD-001) ───────────────────────────────
+//
+// Os IDs de conta, cartão, categoria e tag chegam no corpo da requisição.
+// Sem conferir a quem pertencem, um lançamento criado no workspace A podia
+// apontar — e mexer no saldo — de uma conta do workspace B.
+//
+// São quatro consultas explícitas em vez de uma genérica com nome de tabela
+// interpolado: nenhum identificador de tabela é montado em tempo de execução.
+
+// Delegam para ownership.go, que é o ponto único da regra — a mesma
+// verificação é usada pela importação de extrato, pelos limites de gastos e
+// pelos objetivos, que não têm este repositório.
+
+func (r *TransactionRepository) AccountExists(workspaceID, id string) (bool, error) {
+	return AccountBelongsTo(r.db, workspaceID, id)
+}
+
+func (r *TransactionRepository) CreditCardExists(workspaceID, id string) (bool, error) {
+	return CreditCardBelongsTo(r.db, workspaceID, id)
+}
+
+func (r *TransactionRepository) CategoryExists(workspaceID, id string) (bool, error) {
+	return CategoryBelongsTo(r.db, workspaceID, id)
+}
+
+// CountTagsInWorkspace conta quantos dos ids informados existem no workspace.
+// O serviço compara com a quantidade de ids distintos enviados para aplicar a
+// regra tudo-ou-nada: uma tag estranha rejeita a requisição inteira.
+func (r *TransactionRepository) CountTagsInWorkspace(workspaceID string, ids []string) (int, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	var n int
+	err := r.db.QueryRow(
+		`SELECT COUNT(DISTINCT id) FROM tags WHERE workspace_id=$1 AND id = ANY($2)`,
+		workspaceID, pq.Array(ids),
+	).Scan(&n)
+	return n, err
+}
+
+// AdjustAccountBalance adds delta to the account's stored balance
+// (positive = add, negative = subtract).
+//
+// O filtro por workspace é defesa em profundidade: mesmo que um id inválido
+// escape da validação do serviço, a conta de outro workspace não é tocada.
+// RowsAffected diferente de 1 significa que a conta não existe nesse
+// workspace — é erro, não silêncio.
+func (r *TransactionRepository) AdjustAccountBalance(workspaceID, accountID string, delta float64) error {
+	res, err := r.db.Exec(
+		`UPDATE accounts SET balance = balance + $1, updated_at = NOW()
+		  WHERE id = $2 AND workspace_id = $3`,
+		delta, accountID, workspaceID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return fmt.Errorf("conta inválida")
+	}
+	return nil
 }
 
 // GetFirstAccountID returns the first account id in the workspace (fallback for transactions without account_id)
@@ -333,7 +390,12 @@ func (r *TransactionRepository) IgnoreAll(workspaceID string) (int64, error) {
 }
 
 // SetTagsForTransaction replaces all tags on a transaction
-func (r *TransactionRepository) SetTags(txID string, tagIDs []string) error {
+// SetTags substitui as tags do lançamento.
+//
+// O INSERT seleciona de `tags` com filtro de workspace em vez de gravar o id
+// recebido direto: tag de outro workspace simplesmente não produz linha.
+// É defesa em profundidade — o serviço já rejeita a requisição antes disso.
+func (r *TransactionRepository) SetTags(workspaceID, txID string, tagIDs []string) error {
 	dbtx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -344,8 +406,10 @@ func (r *TransactionRepository) SetTags(txID string, tagIDs []string) error {
 	}
 	for _, tid := range tagIDs {
 		if _, err := dbtx.Exec(
-			"INSERT INTO transaction_tags(transaction_id, tag_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
-			txID, tid,
+			`INSERT INTO transaction_tags(transaction_id, tag_id)
+			 SELECT $1, id FROM tags WHERE id=$2 AND workspace_id=$3
+			 ON CONFLICT DO NOTHING`,
+			txID, tid, workspaceID,
 		); err != nil {
 			return err
 		}
@@ -353,13 +417,17 @@ func (r *TransactionRepository) SetTags(txID string, tagIDs []string) error {
 	return dbtx.Commit()
 }
 
-// GetTags returns tags for a transaction
-func (r *TransactionRepository) GetTags(txID string) ([]models.Tag, error) {
+// GetTags returns tags for a transaction.
+//
+// O filtro por workspace não é redundante com SetTags: um vínculo cruzado
+// gravado ANTES da correção do AUD-001 continuaria nesta tabela, e o JOIN
+// devolvia nome e cor de uma tag alheia. Aqui o dado legado deixa de ser lido.
+func (r *TransactionRepository) GetTags(workspaceID, txID string) ([]models.Tag, error) {
 	q := `SELECT t.id, t.workspace_id, t.name, t.color, t.created_at
 	      FROM tags t
 	      JOIN transaction_tags tt ON tt.tag_id = t.id
-	      WHERE tt.transaction_id=$1`
-	rows, err := r.db.Query(q, txID)
+	      WHERE tt.transaction_id=$1 AND t.workspace_id=$2`
+	rows, err := r.db.Query(q, txID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +447,8 @@ func (r *TransactionRepository) GetTags(txID string) ([]models.Tag, error) {
 // in a single round-trip, instead of one query per row (N+1). Returns a map
 // keyed by transaction_id. Used by List() to avoid e.g. 500 sequential
 // queries when the dashboard asks for limit=500.
-func (r *TransactionRepository) GetTagsForTransactions(txIDs []string) (map[string][]models.Tag, error) {
+// Mesmo filtro por workspace de GetTags, pelo mesmo motivo (AUD-001).
+func (r *TransactionRepository) GetTagsForTransactions(workspaceID string, txIDs []string) (map[string][]models.Tag, error) {
 	result := make(map[string][]models.Tag, len(txIDs))
 	if len(txIDs) == 0 {
 		return result, nil
@@ -387,8 +456,8 @@ func (r *TransactionRepository) GetTagsForTransactions(txIDs []string) (map[stri
 	q := `SELECT tt.transaction_id, t.id, t.workspace_id, t.name, t.color, t.created_at
 	      FROM tags t
 	      JOIN transaction_tags tt ON tt.tag_id = t.id
-	      WHERE tt.transaction_id = ANY($1)`
-	rows, err := r.db.Query(q, pq.Array(txIDs))
+	      WHERE tt.transaction_id = ANY($1) AND t.workspace_id = $2`
+	rows, err := r.db.Query(q, pq.Array(txIDs), workspaceID)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dsfr/finance/internal/middleware"
+	"github.com/dsfr/finance/internal/repositories"
 	"github.com/dsfr/finance/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -109,6 +110,17 @@ func (h *StatementImportHandler) Analyze(c *gin.Context) {
 		return
 	}
 
+	// A conta chega do cliente e precisa ser do workspace do token (AUD-001).
+	// Validar já aqui evita que a tela de conferência mostre uma análise feita
+	// contra conta alheia e só falhe na confirmação.
+	if ok, err := repositories.AccountBelongsTo(h.db, wsID, body.AccountID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao validar a conta"})
+		return
+	} else if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "conta inválida"})
+		return
+	}
+
 	// FITIDs já existentes nessa conta
 	existing := map[string]bool{}
 	ids := make([]string, 0, len(body.Transactions))
@@ -163,6 +175,37 @@ func (h *StatementImportHandler) Import(c *gin.Context) {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Validação definitiva, imediatamente antes da escrita. A checagem feita
+	// no Analyze não serve de garantia: nada obriga o cliente a passar por
+	// aquela etapa, e o account_id pode ser outro nesta chamada (AUD-001).
+	if ok, err := repositories.AccountBelongsTo(h.db, wsID, body.AccountID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao validar a conta"})
+		return
+	} else if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "conta inválida"})
+		return
+	}
+
+	// As categorias vêm linha a linha do cliente e também são referências.
+	// Conferidas antes de abrir a transação, para nenhuma linha ser gravada
+	// quando uma única categoria for estranha ao workspace.
+	categoriasVistas := map[string]bool{}
+	for _, row := range body.Transactions {
+		if row.CategoryID == nil || *row.CategoryID == "" || categoriasVistas[*row.CategoryID] {
+			continue
+		}
+		ok, err := repositories.CategoryBelongsTo(h.db, wsID, *row.CategoryID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao validar a categoria"})
+			return
+		}
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "categoria inválida"})
+			return
+		}
+		categoriasVistas[*row.CategoryID] = true
 	}
 
 	tx, err := h.db.BeginTx(c, nil)
