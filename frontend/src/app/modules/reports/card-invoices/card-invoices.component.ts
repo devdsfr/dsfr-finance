@@ -101,10 +101,20 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
           <div class="sum-val sum-val--total">{{ currentTotal() | appCurrency }}</div>
           @if (isPaid()) {
             <span class="pay-badge pay-badge--paid">PAGA</span>
+          } @else if (isPartial()) {
+            <span class="pay-badge pay-badge--partial">PARCIALMENTE PAGA</span>
           } @else if (hasUnpaid()) {
             <span class="pay-badge pay-badge--open">EM ABERTO</span>
           } @else {
             <span class="pay-badge">FECHADA</span>
+          }
+          <!-- Sem esta quebra, o selo ao lado do total do ciclo dava a
+               entender que TUDO estava em aberto, inclusive o que já foi pago. -->
+          @if (isPartial()) {
+            <div class="sum-split">
+              <span class="sum-split__paid">{{ paidInCycle() | appCurrency }} pagos</span>
+              <span class="sum-split__open">{{ owedNow() | appCurrency }} em aberto</span>
+            </div>
           }
         </div>
       </div>
@@ -122,7 +132,10 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
       }
 
       <div class="inv-meta">
-        <span>Fatura atual: <strong>{{ currentTotal() | appCurrency }}</strong></span>
+        <span>Total do ciclo: <strong>{{ currentTotal() | appCurrency }}</strong></span>
+        @if (hasUnpaid()) {
+          <span>Em aberto: <strong class="meta-open">{{ owedNow() | appCurrency }}</strong></span>
+        }
         @if (selectedCard()!.closing_day) {
           <span>Fechamento: <strong>dia {{ selectedCard()!.closing_day }}</strong></span>
         }
@@ -232,6 +245,11 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
       font-size: .68rem; font-weight: 700; background: #f3f4f6; color: #6b7280; letter-spacing: .05em; }
     .pay-badge--open { background: #dcfce7; color: #16a34a; }
     .pay-badge--paid { background: #dbeafe; color: #2563eb; }
+    .pay-badge--partial { background: #fef3c7; color: #b45309; }
+    .sum-split { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .45rem; font-size: .72rem; }
+    .sum-split__paid { color: #16a34a; font-weight: 600; }
+    .sum-split__open { color: #dc2626; font-weight: 700; }
+    .meta-open { color: #dc2626 !important; }
 
     /* Pay action */
     .inv-action { margin-bottom: 1.25rem; }
@@ -289,6 +307,10 @@ const PT_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
     :host-context([data-theme="dark"]) .sum-val { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .sum-val--date { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .pay-badge { color: #8393ad !important; background: #1e2638 !important; }
+    :host-context([data-theme="dark"]) .pay-badge--partial { background: rgba(245,158,11,.16) !important; color: #fbbf24 !important; }
+    :host-context([data-theme="dark"]) .sum-split__paid { color: #4ade80 !important; }
+    :host-context([data-theme="dark"]) .sum-split__open,
+    :host-context([data-theme="dark"]) .meta-open { color: #f87171 !important; }
     :host-context([data-theme="dark"]) .inv-meta { color: #8393ad !important; }
     :host-context([data-theme="dark"]) .inv-meta strong { color: #e2e8f5 !important; }
     :host-context([data-theme="dark"]) .txn-section { background: #161c28 !important; border-color: #232d42 !important; }
@@ -348,6 +370,18 @@ export class CardInvoicesComponent implements OnInit {
 
   hasUnpaid = computed(() => this.owedNow() > 0.005);
   isPaid    = computed(() => this.currentTotal() > 0 && !this.hasUnpaid());
+
+  /** Já quitado dentro do próprio ciclo (total lançado menos o que segue aberto). */
+  paidInCycle = computed(() =>
+    Math.max(0, this.ownCharges() - Math.abs(this.currentMonth()?.unpaid ?? 0))
+  );
+
+  /**
+   * Fatura parcialmente paga: parte dos lançamentos do ciclo já foi quitada,
+   * mas ainda sobra saldo. Sem distinguir esse caso, o selo "EM ABERTO" ao
+   * lado do total do ciclo sugeria que nada tinha sido pago.
+   */
+  isPartial = computed(() => this.paidInCycle() > 0.005 && this.hasUnpaid());
 
   monthLabel = computed(() => {
     const m = this.currentMonth();
