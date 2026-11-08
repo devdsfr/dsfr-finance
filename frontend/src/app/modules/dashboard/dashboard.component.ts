@@ -284,8 +284,11 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                 <span class="bill-total bill-total--expense">{{ totalPayable() | appCurrency }}</span>
               </p>
               @if (overduePayable().length > 0) {
-                <div class="bill-banner bill-banner--danger">{{ 'dashboard.payable_overdue' | translate }}</div>
-                @for (bill of overduePayable().slice(0, 4); track bill.id) {
+                <div class="bill-banner bill-banner--danger">
+                  {{ 'dashboard.payable_overdue' | translate }}
+                  <span class="bill-banner__total">{{ totalOverduePayable() | appCurrency }}</span>
+                </div>
+                @for (bill of (showAllOverdue() ? overduePayable() : overduePayable().slice(0, 4)); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="billColor(bill, '#ef4444')" [class.bill-icon--emoji]="bill.kind === 'invoice' || !!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
@@ -305,6 +308,13 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                       <span class="pay-done">✓</span>
                     }
                   </div>
+                }
+                @if (overduePayable().length > 4) {
+                  <button class="manage-link" (click)="showAllOverdue.set(!showAllOverdue())">
+                    {{ showAllOverdue()
+                        ? 'ver menos ▲'
+                        : 'ver todas as ' + overduePayable().length + ' atrasadas ▼' }}
+                  </button>
                 }
               }
               @if (upcomingPayable().length > 0) {
@@ -420,7 +430,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
               </p>
               @if (overdueReceivable().length > 0) {
                 <div class="bill-banner bill-banner--warning">{{ 'dashboard.receivable_overdue' | translate }}</div>
-                @for (bill of overdueReceivable().slice(0, 4); track bill.id) {
+                @for (bill of (showAllOverdueReceivable() ? overdueReceivable() : overdueReceivable().slice(0, 4)); track bill.id) {
                   <div class="bill-row" [class.bill-row--paid]="bill.paid">
                     <div class="bill-icon" [style.background]="billColor(bill, '#16a34a')" [class.bill-icon--emoji]="!!billCat(bill)?.icon">{{ billIcon(bill) }}</div>
                     <div class="bill-info">
@@ -436,6 +446,13 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
                       <span class="pay-done">✓</span>
                     }
                   </div>
+                }
+                @if (overdueReceivable().length > 4) {
+                  <button class="manage-link" (click)="showAllOverdueReceivable.set(!showAllOverdueReceivable())">
+                    {{ showAllOverdueReceivable()
+                        ? 'ver menos ▲'
+                        : 'ver todas as ' + overdueReceivable().length + ' atrasadas ▼' }}
+                  </button>
                 }
               }
               @if (upcomingReceivable().length > 0) {
@@ -819,6 +836,7 @@ const LOCALE_MAP: Record<string, string> = { pt: 'pt-BR', en: 'en-US', ro: 'ro-R
     }
     .bill-banner--danger  { background: #fef2f2; color: #dc2626; }
     .bill-banner--warning { background: #fef9c3; color: #b45309; }
+    .bill-banner__total { margin-left: .4rem; font-weight: 800; }
     .bill-row { display: flex; align-items: center; gap: .75rem; padding: .55rem 0; border-top: 1px solid #f3f4f6; }
     .bill-row--paid { opacity: .5; }
     .pay-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0 .25rem; opacity: .35; transition: opacity .15s, transform .1s; flex-shrink: 0; }
@@ -1261,7 +1279,9 @@ export class DashboardComponent implements OnInit {
 
   markingPaid = new Set<string>();
   showAllPayable   = signal(false);
+  showAllOverdue   = signal(false);
   showAllReceivable = signal(false);
+  showAllOverdueReceivable = signal(false);
 
   markPaid(bill: any) {
     if (this.markingPaid.has(bill.id)) return;
@@ -1317,6 +1337,8 @@ export class DashboardComponent implements OnInit {
   totalCardExpense = computed(() => this.cards().reduce((s, c) => s + (c.current_invoice ?? 0), 0));
   totalPayable     = computed(() => this.payableBills().reduce((s: number, b: any) => s + (b.amount ?? 0), 0));
   totalReceivable  = computed(() => this.receivableBills().reduce((s: number, b: any) => s + (b.amount ?? 0), 0));
+  /** Quanto do total a pagar já está vencido — o número que exige ação hoje. */
+  totalOverduePayable = computed(() => this.overduePayable().reduce((s: number, b: any) => s + (b.amount ?? 0), 0));
 
   // ── Calculadora dinâmica ──────────────────────────────────────────────────
   simAmount = signal(0);
@@ -1777,11 +1799,16 @@ export class DashboardComponent implements OnInit {
     forkJoin({
       accounts:   this.api.get<any>('/accounts').pipe(catchError(() => of({ data: [] }))),
       cards:      this.api.get<any>('/credit-cards').pipe(catchError(() => of({ data: [] }))),
+      // Sem date_from de propósito: uma conta vencida em outubro continua
+      // devida em novembro. Limitar a busca ao mês selecionado fazia o bloco
+      // "atrasadas" só enxergar o que venceu DENTRO do próprio mês — tudo de
+      // meses anteriores sumia da Visão Geral e do total a pagar.
+      //
       // no_card=true: compra no cartão não sai do caixa na data da compra.
       // O que vence é a fatura, que entra abaixo como uma linha só.
-      payable:    this.api.get<any>(`/transactions?type=expense&paid=false&no_card=true&date_from=${dateFrom}&date_to=${dateTo}&limit=100`).pipe(catchError(() => of({ data: [] }))),
-      invoices:   this.api.get<any>(`/reports/card-invoices-due?date_from=${dateFrom}&date_to=${dateTo}`).pipe(catchError(() => of({ data: [] }))),
-      receivable: this.api.get<any>(`/transactions?type=income&paid=false&date_from=${dateFrom}&date_to=${dateTo}&limit=100`).pipe(catchError(() => of({ data: [] }))),
+      payable:    this.api.get<any>(`/transactions?type=expense&paid=false&no_card=true&date_to=${dateTo}&limit=300`).pipe(catchError(() => of({ data: [] }))),
+      invoices:   this.api.get<any>(`/reports/card-invoices-due?date_to=${dateTo}`).pipe(catchError(() => of({ data: [] }))),
+      receivable: this.api.get<any>(`/transactions?type=income&paid=false&date_to=${dateTo}&limit=300`).pipe(catchError(() => of({ data: [] }))),
       summary:    this.api.get<any>(`/reports/flow?month=${y}-${m}`).pipe(catchError(() => of({ data: { income: 0, expense: 0 } }))),
       cats:       this.api.get<any>('/categories').pipe(catchError(() => of({ data: [] }))),
     }).subscribe(res => {
